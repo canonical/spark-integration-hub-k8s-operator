@@ -1,0 +1,23 @@
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+name: spark-integration-hub-k8s
+display-name: Spark Integration Hub
+summary: Kubernetes based charm for the Spark Integration Hub
+description: This is the Spark integration hub charm.
+
+containers:
+  integration-hub:
+    resource: integration-hub-image
+
+resources:
+  integration-hub-image:
+    type: oci-image
+    description: OCI image for the Spark Integration Hub Charm
+    upstream-source: ghcr.io/canonical/spark-integration-hub:3.4-22.04_edge
+
+requires:
+  s3-credentials:
+    interface: s3
+  cos:
+    interface: pushgateway
