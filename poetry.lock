@@ -557,6 +557,20 @@ files = [
 ]
 
 [[package]]
+name = "envyaml"
+version = "1.10.211231"
+description = "Simple YAML configuration file parser with easy access for structured data"
+optional = false
+python-versions = ">=2.7"
+files = [
+    {file = "envyaml-1.10.211231-py2.py3-none-any.whl", hash = "sha256:8d7a7a6be12587cc5da32a587067506b47b849f4643981099ad148015a72de52"},
+    {file = "envyaml-1.10.211231.tar.gz", hash = "sha256:88f8a076159e3c317d3450a5f404132b6ac91aecee4934ea72eac65f911f1244"},
+]
+
+[package.dependencies]
+PyYAML = "*"
+
+[[package]]
 name = "exceptiongroup"
 version = "1.2.1"
 description = "Backport of PEP 654 (exception groups)"
@@ -1845,6 +1859,26 @@ files = [
 ]
 
 [[package]]
+name = "spark8t"
+version = "0.0.7"
+description = "This project provides some utilities function and CLI commands to run Spark on K8s."
+optional = false
+python-versions = ">3.8,<4.0"
+files = []
+develop = false
+
+[package.dependencies]
+envyaml = ">=1.10.211231"
+jinja2 = ">=3.1.2"
+lightkube = ">=0.11"
+
+[package.source]
+type = "git"
+url = "https://github.com/canonical/spark-k8s-toolkit-py.git"
+reference = "v0.0.7"
+resolved_reference = "cf96fd007934c9aa7b8d8ff453c4185de9cc6ff4"
+
+[[package]]
 name = "stack-data"
 version = "0.6.3"
 description = "Extract data from python stack frames and tracebacks for informative displays"
@@ -2119,4 +2153,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">3.8,<4.0"
-content-hash = "825358b9b81d0b71ffa6d3baa2abd429e347a1c791dc0564a94e966d25865afd"
+content-hash = "60ae00a09c97f13fe0b739f09915e4788cf53d44c87dd346991abb7deb5adefa"
