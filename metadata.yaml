@@ -5,6 +5,18 @@ name: spark-integration-hub-k8s
 display-name: Spark Integration Hub
 summary: Kubernetes based charm for the Spark Integration Hub
 description: This is the Spark integration hub charm.
+source: https://github.com/canonical/spark-integration-hub-k8s-operator
+issues: https://github.com/canonical/spark-integration-hub-k8s-operator/issues
+website:
+  - https://ubuntu.com/data/spark
+  - https://canonical.com/data/docs/spark/k8s
+  - https://charmhub.io/spark-integration-hub-k8s
+  - https://github.com/canonical/spark-integration-hub-k8s-operator
+  - https://matrix.to/#/%23charmhub-data-platform%3Aubuntu.com
+maintainers:
+  - Canonical Data Platform <data-platform@lists.launchpad.net>
+assumes:
+  - k8s-api
 
 containers:
   integration-hub:
