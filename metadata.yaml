@@ -2,9 +2,13 @@
 # See LICENSE file for licensing details.
 
 name: spark-integration-hub-k8s
-display-name: Spark Integration Hub
+display-name: Spark Integration Hub K8s
 summary: Kubernetes based charm for the Spark Integration Hub
-description: This is the Spark integration hub charm.
+description: | 
+  This is the Spark integration hub charm. It provide centralization for other
+  charmed components and allows simple configuration of Spark jobs and 
+  integration with client applications, abstracting low-level configuration 
+  option settings.
 source: https://github.com/canonical/spark-integration-hub-k8s-operator
 issues: https://github.com/canonical/spark-integration-hub-k8s-operator/issues
 website:
