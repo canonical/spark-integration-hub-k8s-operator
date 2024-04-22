@@ -1,0 +1,39 @@
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+name: spark-integration-hub-k8s
+display-name: Spark Integration Hub K8s
+summary: Kubernetes based charm for the Spark Integration Hub
+description: | 
+  This is the Spark integration hub charm. It provide centralization for other
+  charmed components and allows simple configuration of Spark jobs and 
+  integration with client applications, abstracting low-level configuration 
+  option settings.
+source: https://github.com/canonical/spark-integration-hub-k8s-operator
+issues: https://github.com/canonical/spark-integration-hub-k8s-operator/issues
+website:
+  - https://ubuntu.com/data/spark
+  - https://canonical.com/data/docs/spark/k8s
+  - https://charmhub.io/spark-integration-hub-k8s
+  - https://github.com/canonical/spark-integration-hub-k8s-operator
+  - https://matrix.to/#/%23charmhub-data-platform%3Aubuntu.com
+maintainers:
+  - Canonical Data Platform <data-platform@lists.launchpad.net>
+assumes:
+  - k8s-api
+
+containers:
+  integration-hub:
+    resource: integration-hub-image
+
+resources:
+  integration-hub-image:
+    type: oci-image
+    description: OCI image for the Spark Integration Hub Charm
+    upstream-source: ghcr.io/canonical/spark-integration-hub:3.4-22.04_edge
+
+requires:
+  s3-credentials:
+    interface: s3
+  cos:
+    interface: pushgateway
