@@ -42,12 +42,14 @@ class PushgatewayEvents(BaseEventHandler, WithLogging):
         self.logger.info("PushGateway relation changed")
         self.logger.info(f"PushGateway ready: {self.pushgateway.is_ready()}")
         if self.pushgateway.is_ready():
-            self.integration_hub.update(self.context.s3, self.context.pushgateway)
+            self.integration_hub.update(
+                self.context.s3, self.context.pushgateway, self.context.hub_configurations
+            )
 
     def _on_pushgateway_gone(self, _: RelationBrokenEvent):
         """Handle the `RelationBroken` event for PushGateway."""
         self.logger.info("PushGateway relation broken")
-        self.integration_hub.update(self.context.s3, None)
+        self.integration_hub.update(self.context.s3, None, self.context.hub_configurations)
 
         self.charm.unit.status = self.get_app_status(self.context.s3, None)
         if self.charm.unit.is_leader():

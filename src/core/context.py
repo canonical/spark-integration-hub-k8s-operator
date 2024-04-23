@@ -10,8 +10,8 @@ from charms.data_platform_libs.v0.data_interfaces import RequirerData
 from ops import ActiveStatus, BlockedStatus, CharmBase, MaintenanceStatus, Relation
 
 from common.utils import WithLogging
-from constants import PUSHGATEWAY, S3
-from core.domain import PushGatewayInfo, S3ConnectionInfo
+from constants import PEER, PUSHGATEWAY, S3
+from core.domain import HubConfiguration, PushGatewayInfo, S3ConnectionInfo
 
 
 class Context(WithLogging):
@@ -65,6 +65,16 @@ class Context(WithLogging):
     def pushgateway(self) -> PushGatewayInfo | None:
         """The server state of the current running Unit."""
         return PushGatewayInfo(rel, rel.app) if (rel := self._pushgateway_relation) else None
+
+    @property
+    def peer_relation(self) -> Relation | None:
+        """The cluster peer relation."""
+        return self.model.get_relation(PEER)
+
+    @property
+    def hub_configurations(self) -> HubConfiguration | None:
+        """The cluster state of the current running App."""
+        return HubConfiguration(relation=self.peer_relation, component=self.model.app)
 
 
 class Status(Enum):

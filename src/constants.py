@@ -8,6 +8,7 @@
 
 CONTAINER = "integration-hub"
 INTEGRATION_HUB_LABEL = "app.kubernetes.io/managed-by=integration-hub"
+PEER = "hub"
 
 PEBBLE_USER = ("_daemon_", "_daemon_")
 

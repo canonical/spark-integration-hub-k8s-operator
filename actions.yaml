@@ -1,0 +1,24 @@
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
+# In Juju 3 this will be easier to copy
+add-config:
+  description: Set a new configuration property to integration hub charm.
+  params:
+    conf:
+      type: string
+      description: The desired Spark configuration you want to add (e.g., spark.app.name=demo-spark-app-overrides).
+  required: [conf]
+
+remove-config:
+  description: Remove a Spark configuration option based on the specified key.
+  params:
+    key:
+      type: string
+      description: The key of the configuration option.
+  required: [key]
+
+clear-config:
+  description: Clear the specified user-specified Spark configurations.
+
+list-config:
+  description: List all specified user-specified Spark configuration options.

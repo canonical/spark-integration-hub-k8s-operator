@@ -7,7 +7,7 @@
 from ops.charm import CharmBase
 
 from common.utils import WithLogging
-from constants import INTEGRATION_HUB_LABEL
+from constants import INTEGRATION_HUB_LABEL, PEER
 from core.context import Context
 from core.workload import IntegrationHubWorkloadBase
 from events.base import BaseEventHandler, compute_status
@@ -32,6 +32,9 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
         self.framework.observe(self.charm.on.update_status, self._update_event)
         self.framework.observe(self.charm.on.install, self._update_event)
         self.framework.observe(self.charm.on.stop, self._remove_resources)
+        self.framework.observe(
+            self.charm.on[PEER].relation_changed, self._on_peer_relation_changed
+        )
 
     def _remove_resources(self, _):
         """Handle the stop event."""
@@ -42,7 +45,16 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
     @compute_status
     def _on_integration_hub_pebble_ready(self, _):
         """Handle on Pebble ready event."""
-        self.integration_hub.update(self.context.s3, self.context.pushgateway)
+        self.integration_hub.update(
+            self.context.s3, self.context.pushgateway, self.context.hub_configurations
+        )
+
+    @compute_status
+    def _on_peer_relation_changed(self, _):
+        """Handle on PEER relation changed event."""
+        self.integration_hub.update(
+            self.context.s3, self.context.pushgateway, self.context.hub_configurations
+        )
 
     @compute_status
     def _update_event(self, _):

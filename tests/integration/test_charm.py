@@ -11,6 +11,7 @@ import urllib.request
 import uuid
 from pathlib import Path
 from time import sleep
+from typing import Any, Dict
 
 import boto3
 import pytest
@@ -130,6 +131,17 @@ def setup_s3_bucket_for_sch_server(endpoint_url: str, aws_access_key: str, aws_s
     logger.debug(s3.list_buckets())
 
 
+async def run_action(
+    ops_test: OpsTest, action_name: str, params: Dict[str, str], num_unit=0
+) -> Any:
+    """Use the charm action to start a password rotation."""
+    action = await ops_test.model.units.get(f"{APP_NAME}/{num_unit}").run_action(
+        action_name, **params
+    )
+    password = await action.wait()
+    return password.results
+
+
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest, charm_versions):
     """Build the charm-under-test and deploy it together with related charms.
@@ -212,6 +224,103 @@ async def test_build_and_deploy(ops_test: OpsTest, charm_versions):
     await ops_test.model.applications[charm_versions.s3.application_name].set_config(
         configuration_parameters
     )
+
+
+@pytest.mark.abort_on_fail
+async def test_actions(ops_test: OpsTest, charm_versions, namespace, service_account):
+    logger.info("Testing actions")
+    service_account_name = service_account[0]
+    secret_data = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
+    assert len(secret_data) == 0
+
+    # list config
+    res = await run_action(ops_test, "list-config", {})
+    assert res["return-code"] == 0
+    # wait for active status
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME],
+        status="active",
+        timeout=1000,
+    )
+    logger.info(f"List config action result: {res}")
+    secret_data = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
+    assert len(secret_data) == 0
+
+    # add new configuration
+    res = await run_action(ops_test, "add-config", {"conf": "a=b"})
+    assert res["return-code"] == 0
+    # wait for active status
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME],
+        status="active",
+        timeout=1000,
+    )
+    logger.info(f"add-config action result: {res}")
+    sleep(5)
+    secret_data = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
+    # check data in secret
+    assert "a" in secret_data
+    assert len(secret_data) > 0
+
+    # check that previously set configuration option is present
+    res = await run_action(ops_test, "list-config", {})
+    assert res["return-code"] == 0
+    # wait for active status
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME],
+        status="active",
+        timeout=1000,
+    )
+    logger.info(f"List-config action result: {res}")
+    secret_data = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
+    assert len(secret_data) > 0
+    assert "a" in res
+
+    # Remove inserted config
+    res = await run_action(ops_test, "remove-config", {"key": "a"})
+    assert res["return-code"] == 0
+    # wait for active status
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME],
+        status="active",
+        timeout=1000,
+    )
+    logger.info(f"Remove-config action result: {res}")
+    sleep(5)
+    secret_data = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
+    assert len(secret_data) == 0
+
+    # clear config
+    res = await run_action(ops_test, "clear-config", {})
+    assert res["return-code"] == 0
+    # wait for active status
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME],
+        status="active",
+        timeout=1000,
+    )
+    sleep(5)
+    secret_data = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
+    logger.info(f"Clear-config action result: {res}")
+    assert len(secret_data) == 0
 
 
 @pytest.mark.abort_on_fail

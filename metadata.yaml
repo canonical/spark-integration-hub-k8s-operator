@@ -37,3 +37,7 @@ requires:
     interface: s3
   cos:
     interface: pushgateway
+
+peers:
+  hub:
+    interface: hub

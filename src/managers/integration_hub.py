@@ -8,7 +8,7 @@ import re
 
 from common.utils import WithLogging
 from core.context import S3ConnectionInfo
-from core.domain import PushGatewayInfo
+from core.domain import HubConfiguration, PushGatewayInfo
 from core.workload import IntegrationHubWorkloadBase
 from managers.s3 import S3Manager
 
@@ -20,9 +20,15 @@ class IntegrationHubConfig(WithLogging):
 
     _base_conf: dict[str, str] = {}
 
-    def __init__(self, s3: S3ConnectionInfo | None, pushgateway: PushGatewayInfo | None):
-        self.s3 = S3Manager(s3) if s3 else None
+    def __init__(
+        self,
+        s3: S3ConnectionInfo | None,
+        pushgateway: PushGatewayInfo | None,
+        hub_conf: HubConfiguration | None,
+    ):
+        self.s3 = s3
         self.pushgateway = pushgateway
+        self.hub_conf = hub_conf
 
     @staticmethod
     def _ssl_enabled(endpoint: str | None) -> str:
@@ -36,11 +42,13 @@ class IntegrationHubConfig(WithLogging):
     def _s3_conf(self) -> dict[str, str]:
         if (s3 := self.s3) and s3.verify():
             return {
-                "spark.hadoop.fs.s3a.endpoint": s3.config.endpoint or "https://s3.amazonaws.com",
-                "spark.hadoop.fs.s3a.access.key": s3.config.access_key,
-                "spark.hadoop.fs.s3a.secret.key": s3.config.secret_key,
-                "spark.eventLog.dir": s3.config.log_dir,
-                "spark.history.fs.logDirectory": s3.config.log_dir,
+                "spark.hadoop.fs.s3a.path.style.access": "true",
+                "spark.eventLog.enabled": "true",
+                "spark.hadoop.fs.s3a.endpoint": s3.endpoint or "https://s3.amazonaws.com",
+                "spark.hadoop.fs.s3a.access.key": s3.access_key,
+                "spark.hadoop.fs.s3a.secret.key": s3.secret_key,
+                "spark.eventLog.dir": s3.log_dir,
+                "spark.history.fs.logDirectory": s3.log_dir,
                 "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
                 "spark.hadoop.fs.s3a.connection.ssl.enabled": self._ssl_enabled(
                     s3.config.endpoint
@@ -61,9 +69,15 @@ class IntegrationHubConfig(WithLogging):
             }
         return {}
 
+    @property
+    def _action_conf(self) -> dict[str, str]:
+        if a_conf := self.hub_conf:
+            return a_conf.spark_configurations
+        return {}
+
     def to_dict(self) -> dict[str, str]:
         """Return the dict representation of the configuration file."""
-        return self._base_conf | self._s3_conf | self._pushgateway_conf
+        return self._base_conf | self._s3_conf | self._pushgateway_conf | self._action_conf
 
     @property
     def contents(self) -> str:
@@ -85,12 +99,17 @@ class IntegrationHubManager(WithLogging):
     def __init__(self, workload: IntegrationHubWorkloadBase):
         self.workload = workload
 
-    def update(self, s3: S3ConnectionInfo | None, pushgateway: PushGatewayInfo | None) -> None:
+    def update(
+        self,
+        s3: S3ConnectionInfo | None,
+        pushgateway: PushGatewayInfo | None,
+        hub_conf: HubConfiguration | None,
+    ) -> None:
         """Update the Integration Hub service if needed."""
         self.logger.debug("Update")
         self.workload.stop()
 
-        config = IntegrationHubConfig(s3, pushgateway)
+        config = IntegrationHubConfig(s3, pushgateway, hub_conf)
         self.workload.write(config.contents, str(self.workload.paths.spark_properties))
         self.workload.set_environment(
             {"SPARK_PROPERTIES_FILE": str(self.workload.paths.spark_properties)}
