@@ -12,6 +12,7 @@ from core.domain import PushGatewayInfo
 from core.workload import IntegrationHubWorkloadBase
 from managers.s3 import S3Manager
 
+
 class IntegrationHubConfig(WithLogging):
     """Class representing the Spark Properties configuration file."""
 
@@ -41,7 +42,9 @@ class IntegrationHubConfig(WithLogging):
                 "spark.eventLog.dir": s3.config.log_dir,
                 "spark.history.fs.logDirectory": s3.config.log_dir,
                 "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
-                "spark.hadoop.fs.s3a.connection.ssl.enabled": self._ssl_enabled(s3.config.endpoint),
+                "spark.hadoop.fs.s3a.connection.ssl.enabled": self._ssl_enabled(
+                    s3.config.endpoint
+                ),
             }
         return {}
 
