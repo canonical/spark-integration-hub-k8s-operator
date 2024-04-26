@@ -68,12 +68,12 @@ class Context(WithLogging):
 
     @property
     def peer_relation(self) -> Relation | None:
-        """The cluster peer relation."""
+        """The hub spark configuration peer relation."""
         return self.model.get_relation(PEER)
 
     @property
     def hub_configurations(self) -> HubConfiguration | None:
-        """The cluster state of the current running App."""
+        """The spark configuration of the current running Hub."""
         return HubConfiguration(relation=self.peer_relation, component=self.model.app)
 
 
