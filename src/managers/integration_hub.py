@@ -10,7 +10,7 @@ from common.utils import WithLogging
 from core.context import S3ConnectionInfo
 from core.domain import PushGatewayInfo
 from core.workload import IntegrationHubWorkloadBase
-
+from managers.s3 import S3Manager
 
 class IntegrationHubConfig(WithLogging):
     """Class representing the Spark Properties configuration file."""
@@ -20,7 +20,7 @@ class IntegrationHubConfig(WithLogging):
     _base_conf: dict[str, str] = {}
 
     def __init__(self, s3: S3ConnectionInfo | None, pushgateway: PushGatewayInfo | None):
-        self.s3 = s3
+        self.s3 = S3Manager(s3) if s3 else None
         self.pushgateway = pushgateway
 
     @staticmethod
@@ -33,15 +33,15 @@ class IntegrationHubConfig(WithLogging):
 
     @property
     def _s3_conf(self) -> dict[str, str]:
-        if s3 := self.s3:
+        if (s3 := self.s3) and s3.verify():
             return {
-                "spark.hadoop.fs.s3a.endpoint": s3.endpoint or "https://s3.amazonaws.com",
-                "spark.hadoop.fs.s3a.access.key": s3.access_key,
-                "spark.hadoop.fs.s3a.secret.key": s3.secret_key,
-                "spark.eventLog.dir": s3.log_dir,
-                "spark.history.fs.logDirectory": s3.log_dir,
+                "spark.hadoop.fs.s3a.endpoint": s3.config.endpoint or "https://s3.amazonaws.com",
+                "spark.hadoop.fs.s3a.access.key": s3.config.access_key,
+                "spark.hadoop.fs.s3a.secret.key": s3.config.secret_key,
+                "spark.eventLog.dir": s3.config.log_dir,
+                "spark.history.fs.logDirectory": s3.config.log_dir,
                 "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
-                "spark.hadoop.fs.s3a.connection.ssl.enabled": self._ssl_enabled(s3.endpoint),
+                "spark.hadoop.fs.s3a.connection.ssl.enabled": self._ssl_enabled(s3.config.endpoint),
             }
         return {}
 
