@@ -39,5 +39,5 @@ requires:
     interface: pushgateway
 
 peers:
-  hub:
-    interface: hub
+  spark-configurations:
+    interface: spark_configurations

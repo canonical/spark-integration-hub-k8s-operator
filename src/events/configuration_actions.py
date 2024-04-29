@@ -63,8 +63,7 @@ class ConfigurationActionEvents(Object):
         # parse config option
         if "=" in config:
             key, value = self._parse_property_line(config)
-            logger.info(self.context.hub_configurations.relation_data)
-            logger.info(f"type: {type(self.context.hub_configurations.relation_data)}")
+            logger.debug(self.context.hub_configurations.relation_data)
             self.context.hub_configurations.relation_data.update({key: value})
             event.set_results({"added-config": f"{key}:{value}"})
             return
