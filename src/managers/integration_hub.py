@@ -26,7 +26,7 @@ class IntegrationHubConfig(WithLogging):
         pushgateway: PushGatewayInfo | None,
         hub_conf: HubConfiguration | None,
     ):
-        self.s3 = s3
+        self.s3 = S3Manager(s3) if s3 else None
         self.pushgateway = pushgateway
         self.hub_conf = hub_conf
 
@@ -44,11 +44,11 @@ class IntegrationHubConfig(WithLogging):
             return {
                 "spark.hadoop.fs.s3a.path.style.access": "true",
                 "spark.eventLog.enabled": "true",
-                "spark.hadoop.fs.s3a.endpoint": s3.endpoint or "https://s3.amazonaws.com",
-                "spark.hadoop.fs.s3a.access.key": s3.access_key,
-                "spark.hadoop.fs.s3a.secret.key": s3.secret_key,
-                "spark.eventLog.dir": s3.log_dir,
-                "spark.history.fs.logDirectory": s3.log_dir,
+                "spark.hadoop.fs.s3a.endpoint": s3.config.endpoint or "https://s3.amazonaws.com",
+                "spark.hadoop.fs.s3a.access.key": s3.config.access_key,
+                "spark.hadoop.fs.s3a.secret.key": s3.config.secret_key,
+                "spark.eventLog.dir": s3.config.log_dir,
+                "spark.history.fs.logDirectory": s3.config.log_dir,
                 "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
                 "spark.hadoop.fs.s3a.connection.ssl.enabled": self._ssl_enabled(
                     s3.config.endpoint
