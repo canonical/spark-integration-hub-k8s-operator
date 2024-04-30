@@ -1,6 +1,6 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
-# In Juju 3 this will be easier to copy
+
 add-config:
   description: Set a new configuration property to integration hub charm.
   params:
