@@ -37,3 +37,7 @@ requires:
     interface: s3
   cos:
     interface: pushgateway
+
+peers:
+  spark-configurations:
+    interface: spark_configurations

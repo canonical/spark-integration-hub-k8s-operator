@@ -33,6 +33,12 @@ class StateBase:
 
         self.relation_data.update(items)
 
+    def clean(self) -> None:
+        """Clean the content of the relation data."""
+        if not self.relation:
+            return
+        self.relation.data[self.component] = {}
+
 
 @dataclass
 class User:
@@ -104,3 +110,16 @@ class PushGatewayInfo(StateBase):
                 url = data["url"]
                 return url.replace("https://", "").replace("http://", "")
         return None
+
+
+class HubConfiguration(StateBase):
+    """State collection metadata for the peer relation."""
+
+    def __init__(self, relation: Relation | None, component: Application):
+        super().__init__(relation, component)
+        self.app = component
+
+    @property
+    def spark_configurations(self) -> dict[str, str]:
+        """Get all Spark configuration options defined by the user."""
+        return dict(self.relation_data)
