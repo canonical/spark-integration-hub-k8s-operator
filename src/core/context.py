@@ -5,13 +5,14 @@
 """Charm Context definition and parsing logic."""
 
 from enum import Enum
+from typing import List
 
 from charms.data_platform_libs.v0.data_interfaces import RequirerData
 from ops import ActiveStatus, BlockedStatus, CharmBase, MaintenanceStatus, Relation
 
 from common.utils import WithLogging
-from constants import PEER, PUSHGATEWAY, S3
-from core.domain import HubConfiguration, PushGatewayInfo, S3ConnectionInfo
+from constants import INTEGRATION_HUB_REL, PEER, PUSHGATEWAY, S3
+from core.domain import HubConfiguration, PushGatewayInfo, S3ConnectionInfo, ServiceAccount
 
 
 class Context(WithLogging):
@@ -75,6 +76,24 @@ class Context(WithLogging):
     def hub_configurations(self) -> HubConfiguration | None:
         """The spark configuration of the current running Hub."""
         return HubConfiguration(relation=self.peer_relation, component=self.model.app)
+
+    @property
+    def client_relations(self) -> set[Relation]:
+        """The relations of all client applications."""
+        return set(self.model.relations[INTEGRATION_HUB_REL])
+
+    @property
+    def services_accounts(self) -> List[ServiceAccount]:
+        """Retrieve  service account managed by relations.
+
+        Returns:
+            List of service accounts/namespaces managed by the Integration Hub
+        """
+        return [
+            ServiceAccount(relation, relation.app)
+            for relation in self.client_relations
+            if not relation or not relation.app
+        ]
 
 
 class Status(Enum):
