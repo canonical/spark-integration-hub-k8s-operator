@@ -123,3 +123,20 @@ class HubConfiguration(StateBase):
     def spark_configurations(self) -> dict[str, str]:
         """Get all Spark configuration options defined by the user."""
         return dict(self.relation_data)
+
+
+class ServiceAccount(StateBase):
+    """Class representing the service account managed by the Spark Integration Hub charm."""
+
+    def __init__(self, relation: Relation, component: Application):
+        super().__init__(relation, component)
+
+    @property
+    def service_account(self) -> str | None:
+        """Return service account name."""
+        return self.relation_data.get("service-account", None)
+
+    @property
+    def namespace(self) -> str:
+        """Return the used namespace."""
+        return self.relation_data["namespace"]

@@ -38,6 +38,10 @@ requires:
   cos:
     interface: pushgateway
 
+provides:
+  spark-service-account:
+    interface: spark_service_account
+
 peers:
   spark-configurations:
     interface: spark_configurations
