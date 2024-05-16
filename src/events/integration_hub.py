@@ -52,6 +52,7 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
     @compute_status
     def _on_peer_relation_changed(self, _):
         """Handle on PEER relation changed event."""
+        self.logger.info("On peer relation changed.")
         self.integration_hub.update(
             self.context.s3, self.context.pushgateway, self.context.hub_configurations
         )

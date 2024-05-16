@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Tuple
 from ops.charm import ActionEvent
 from ops.framework import Object
 
+from common.utils import WithLogging
 from core.context import Context
 from core.workload import IntegrationHubWorkloadBase
 
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ConfigurationActionEvents(Object):
+class ConfigurationActionEvents(Object, WithLogging):
     """Event handlers for configuration-related Juju Actions."""
 
     def __init__(self, charm, context: Context, workload: IntegrationHubWorkloadBase):
@@ -46,6 +47,7 @@ class ConfigurationActionEvents(Object):
 
     def _add_config_action(self, event: ActionEvent) -> None:
         """Add configuration action."""
+        self.logger.info("On add configuration option")
         if not self.workload.ready():
             msg = "Charm is not ready"
             logger.error(msg)
@@ -75,6 +77,7 @@ class ConfigurationActionEvents(Object):
 
     def _remove_config_action(self, event: ActionEvent) -> None:
         """Remove configuration action."""
+        self.logger.info("On remove configuration option")
         if not self.workload.ready():
             msg = "Charm is not ready"
             logger.error(msg)
@@ -99,6 +102,7 @@ class ConfigurationActionEvents(Object):
 
     def _clear_config_action(self, event: ActionEvent) -> None:
         """Clear configuration action."""
+        self.logger.info("On clear configuration option")
         if not self.workload.ready():
             msg = "Charm is not ready"
             logger.error(msg)
@@ -117,6 +121,7 @@ class ConfigurationActionEvents(Object):
 
     def _list_config_action(self, event: ActionEvent) -> None:
         """List configuration action."""
+        self.logger.info("On list configuration option")
         if not self.workload.ready():
             msg = "Charm is not ready"
             logger.error(msg)
