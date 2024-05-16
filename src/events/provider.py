@@ -78,8 +78,8 @@ spec:
     - spark.blockManager.port=6060
     desc: Configure Canonical PySpark
     selector:
-    matchLabels:
-        canonical-pyspark: "true"
+        matchLabels:
+            canonical-pyspark: "true"
         """
 
         try:
