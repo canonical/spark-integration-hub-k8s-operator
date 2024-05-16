@@ -57,6 +57,38 @@ class IntegrationHubProviderEvents(BaseEventHandler, WithLogging):
                 f"Impossible to create service account: {service_account} in namespace: {namespace}"
             )
 
+        pod_template = f"""
+        apiVersion: kubeflow.org/v1alpha1
+        kind: PodDefault
+        metadata:
+        name: pyspark
+        namespace: {namespace}
+        spec:
+        annotations:
+            traffic.sidecar.istio.io/excludeInboundPorts: 37371,6060
+            traffic.sidecar.istio.io/excludeOutboundPorts: 37371,6060
+        args:
+        - --namespace
+        - {namespace}
+        - --username
+        - {service_account}
+        - --conf
+        - spark.driver.port=37371
+        - --conf
+        - spark.blockManager.port=6060
+        desc: Configure Canonical PySpark
+        selector:
+            matchLabels:
+            canonical-pyspark: "true"
+        """
+
+        try:
+            self.workload.write(pod_template, str(self.workload.paths.pod_template))
+            self.workload.exec(f"kubectl apply -f {self.workload.paths.pod_template}")
+
+        except Exception as e:
+            self.logger.error(e)
+            raise RuntimeError("Impossible to create pod template")
         self.sa.set_service_account(relation_id, service_account)  # type: ignore
         self.sa.set_namespace(relation_id, namespace)  # type: ignore
 

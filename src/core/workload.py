@@ -23,6 +23,11 @@ class IntegrationHubPaths:
         """Return the path of the spark-properties file."""
         return self.conf_path / "spark-properties.conf"
 
+    @property
+    def pod_template(self) -> Path:
+        """Return the path of the spark-properties file."""
+        return self.conf_path / "podTemplate.yaml"
+
 
 class IntegrationHubWorkloadBase(AbstractWorkload):
     """Base interface for common workload operations."""
