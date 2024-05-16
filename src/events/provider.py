@@ -75,6 +75,8 @@ spec:
     - --conf
     - spark.driver.port=37371
     - --conf
+    - spark.kubernetes.container.image=ghcr.io/canonical/charmed-spark@sha256:90a1f26a33d7524b00b5b0692f03ed96919ea89ded571943d2b5aa7802389f87
+    - --conf
     - spark.blockManager.port=6060
     desc: Configure Canonical PySpark
     selector:
