@@ -48,7 +48,7 @@ The Spark Integration Hub will take care of adding relevant configuration to the
 Charmed Spark properties, 
 
 ```shell
-spark-client.service-account-registry get-config --username <spark-user> --namespace <my-model>
+spark-client.service-account-registry get-config --username <spark-user> --namespace <namespace>
 ```
 
 ## Contributing
