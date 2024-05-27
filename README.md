@@ -65,7 +65,7 @@ would like to be part of the OSS revolution, please don't forget to check out
 the [open positions](https://canonical.com/careers/all) we have at [Canonical](https://canonical.com/). 
 
 ## License
-The Charmed Kafka Operator is free software, distributed under the 
+The Spark Integration Hub charm is free software, distributed under the 
 Apache Software License, version 2.0. See [LICENSE](https://github.com/canonical/spark-integration-hub-k8s-operator/blob/main/LICENSE) 
 for more information.
 
