@@ -41,7 +41,7 @@ juju relate spark-integration-hub-k8s s3-integrator
 When creating new Spark service account using the [`spark-client` snap](https://snapcraft.io/spark-client)
 
 ```shell
-spark-client.service-account-registry create --username <spark-user> --namespace <my-model>
+spark-client.service-account-registry create --username <spark-user> --namespace <namespace>
 ```
 
 The Spark Integration Hub will take care of adding relevant configuration to the 
