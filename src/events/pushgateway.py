@@ -11,7 +11,7 @@ from ops import CharmBase, RelationBrokenEvent, RelationChangedEvent
 from common.utils import WithLogging
 from core.context import PUSHGATEWAY, Context
 from core.workload import IntegrationHubWorkloadBase
-from events.base import BaseEventHandler, compute_status
+from events.base import BaseEventHandler, compute_status, defer_when_not_ready
 from managers.integration_hub import IntegrationHubManager
 
 
@@ -37,6 +37,7 @@ class PushgatewayEvents(BaseEventHandler, WithLogging):
         )
 
     @compute_status
+    @defer_when_not_ready
     def _on_pushgateway_changed(self, _: RelationChangedEvent):
         """Handle the `RelationChanged` event from the PushGateway."""
         self.logger.info("PushGateway relation changed")
@@ -46,6 +47,7 @@ class PushgatewayEvents(BaseEventHandler, WithLogging):
                 self.context.s3, self.context.pushgateway, self.context.hub_configurations
             )
 
+    @defer_when_not_ready
     def _on_pushgateway_gone(self, _: RelationBrokenEvent):
         """Handle the `RelationBroken` event for PushGateway."""
         self.logger.info("PushGateway relation broken")

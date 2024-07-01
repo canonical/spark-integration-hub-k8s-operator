@@ -10,7 +10,7 @@ from common.utils import WithLogging
 from constants import INTEGRATION_HUB_REL
 from core.context import Context
 from core.workload import IntegrationHubWorkloadBase
-from events.base import BaseEventHandler
+from events.base import BaseEventHandler, defer_when_not_ready
 from relations.spark_sa import (
     IntegrationHubProvider,
     ServiceAccountReleasedEvent,
@@ -32,6 +32,7 @@ class IntegrationHubProviderEvents(BaseEventHandler, WithLogging):
         self.framework.observe(self.sa.on.account_requested, self._on_service_account_requested)
         self.framework.observe(self.sa.on.account_released, self._on_service_account_released)
 
+    @defer_when_not_ready
     def _on_service_account_requested(self, event: ServiceAccountRequestedEvent):
         """Handle the `ServiceAccountRequested` event for the Spark Integration hub."""
         self.logger.info("Service account requested.")
@@ -60,6 +61,7 @@ class IntegrationHubProviderEvents(BaseEventHandler, WithLogging):
         self.sa.set_service_account(relation_id, service_account)  # type: ignore
         self.sa.set_namespace(relation_id, namespace)  # type: ignore
 
+    @defer_when_not_ready
     def _on_service_account_released(self, event: ServiceAccountReleasedEvent):
         """Handle the `ServiceAccountReleased` event for the Spark Integration hub."""
         self.logger.info("Service account released.")

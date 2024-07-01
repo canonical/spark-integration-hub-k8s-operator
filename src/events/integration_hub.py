@@ -10,7 +10,7 @@ from common.utils import WithLogging
 from constants import INTEGRATION_HUB_LABEL, PEER
 from core.context import Context
 from core.workload import IntegrationHubWorkloadBase
-from events.base import BaseEventHandler, compute_status
+from events.base import BaseEventHandler, compute_status, defer_when_not_ready
 from managers.integration_hub import IntegrationHubManager
 
 
@@ -36,6 +36,7 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
             self.charm.on[PEER].relation_changed, self._on_peer_relation_changed
         )
 
+    @defer_when_not_ready
     def _remove_resources(self, _):
         """Handle the stop event."""
         self.integration_hub.workload.exec(
@@ -43,6 +44,7 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
         )
 
     @compute_status
+    @defer_when_not_ready
     def _on_integration_hub_pebble_ready(self, _):
         """Handle on Pebble ready event."""
         self.integration_hub.update(
@@ -50,6 +52,7 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
         )
 
     @compute_status
+    @defer_when_not_ready
     def _on_peer_relation_changed(self, _):
         """Handle on PEER relation changed event."""
         self.integration_hub.update(
