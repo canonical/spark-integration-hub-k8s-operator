@@ -36,7 +36,6 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
             self.charm.on[PEER].relation_changed, self._on_peer_relation_changed
         )
 
-    @defer_when_not_ready
     def _remove_resources(self, _):
         """Handle the stop event."""
         self.integration_hub.workload.exec(
