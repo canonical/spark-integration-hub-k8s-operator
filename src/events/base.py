@@ -9,11 +9,12 @@ from typing import Callable
 
 from ops import CharmBase, EventBase, Object, StatusBase
 
-from core.context import Context, S3ConnectionInfo, Status
+from core.context import Context, S3ConnectionInfo, Status, AzureStorageConnectionInfo
 from core.domain import PushGatewayInfo
 from core.workload import IntegrationHubWorkloadBase
 from managers.k8s import KubernetesManager
 from managers.s3 import S3Manager
+from managers.azure_storage import AzureStorageManager
 
 
 class BaseEventHandler(Object):
@@ -26,6 +27,7 @@ class BaseEventHandler(Object):
     def get_app_status(
         self,
         s3: S3ConnectionInfo | None,
+        azure_storage: AzureStorageConnectionInfo | None,
         pushgateway: PushGatewayInfo | None,
     ) -> StatusBase:
         """Return the status of the charm."""
@@ -36,12 +38,16 @@ class BaseEventHandler(Object):
         if not k8s_manager.trusted():
             return Status.NOT_TRUSTED.value
 
-        s3 = s3
+        if s3 and azure_storage:
+            return Status.MULTIPLE_OBJECT_STORAGE_RELATIONS.value
 
         if s3:
             s3_manager = S3Manager(s3)
             if not s3_manager.verify():
-                return Status.INVALID_CREDENTIALS.value
+                return Status.INVALID_S3_CREDENTIALS.value
+        
+        if azure_storage:
+            azure_storage_manager = AzureStorageManager(azure_storage)
 
         if not self.workload.active():
             return Status.NOT_RUNNING.value
@@ -60,10 +66,10 @@ def compute_status(
         res = hook(event_handler, event)
         if event_handler.charm.unit.is_leader():
             event_handler.charm.app.status = event_handler.get_app_status(
-                event_handler.context.s3, event_handler.context.pushgateway
+                event_handler.context.s3, event_handler.context.azure_storage, event_handler.context.pushgateway
             )
         event_handler.charm.unit.status = event_handler.get_app_status(
-            event_handler.context.s3, event_handler.context.pushgateway
+            event_handler.context.s3, event_handler.context.azure_storage, event_handler.context.pushgateway
         )
         return res
 

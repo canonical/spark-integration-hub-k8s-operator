@@ -8,7 +8,7 @@ from scenario.state import next_relation_id
 
 from charm import SparkIntegrationHub
 from constants import CONTAINER
-from core.context import S3
+from core.context import S3_RELATION_NAME
 
 
 @pytest.fixture
@@ -67,7 +67,7 @@ def s3_relation():
     relation_id = next_relation_id(update=True)
 
     return Relation(
-        endpoint=S3,
+        endpoint=S3_RELATION_NAME,
         interface="s3",
         remote_app_name="s3-integrator",
         relation_id=relation_id,
@@ -89,7 +89,7 @@ def s3_relation_tls():
     relation_id = next_relation_id(update=True)
 
     return Relation(
-        endpoint=S3,
+        endpoint=S3_RELATION_NAME,
         interface="s3",
         remote_app_name="s3-integrator",
         relation_id=relation_id,

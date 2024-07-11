@@ -11,8 +11,8 @@ from charms.data_platform_libs.v0.data_interfaces import RequirerData
 from ops import ActiveStatus, BlockedStatus, CharmBase, MaintenanceStatus, Relation
 
 from common.utils import WithLogging
-from constants import INTEGRATION_HUB_REL, PEER, PUSHGATEWAY, S3
-from core.domain import HubConfiguration, PushGatewayInfo, S3ConnectionInfo, ServiceAccount
+from constants import INTEGRATION_HUB_REL, PEER, PUSHGATEWAY, S3_RELATION_NAME, AZURE_RELATION_NAME
+from core.domain import HubConfiguration, PushGatewayInfo, S3ConnectionInfo, ServiceAccount, AzureStorageConnectionInfo
 
 
 class Context(WithLogging):
@@ -23,8 +23,8 @@ class Context(WithLogging):
         self.charm = charm
         self.model = charm.model
 
-        self.s3_endpoint = RequirerData(self.charm.model, S3)
-
+        self.s3_endpoint = RequirerData(self.charm.model, S3_RELATION_NAME)
+        self.azure_storage_endpoint = RequirerData(self.charm.model, AZURE_RELATION_NAME)
     # --------------
     # --- CONFIG ---
     # --------------
@@ -38,12 +38,22 @@ class Context(WithLogging):
     @property
     def _s3_relation_id(self) -> int | None:
         """The S3 relation."""
-        return relation.id if (relation := self.charm.model.get_relation(S3)) else None
+        return relation.id if (relation := self.charm.model.get_relation(S3_RELATION_NAME)) else None
 
     @property
     def _s3_relation(self) -> Relation | None:
         """The S3 relation."""
-        return self.charm.model.get_relation(S3)
+        return self.charm.model.get_relation(S3_RELATION_NAME)
+
+    @property
+    def _azure_storage_relation_id(self) -> int | None:
+        """The S3 relation."""
+        return relation.id if (relation := self.charm.model.get_relation(AZURE_RELATION_NAME)) else None
+
+    @property
+    def _azure_storage_relation(self) -> Relation | None:
+        """The S3 relation."""
+        return self.charm.model.get_relation(AZURE_RELATION_NAME)
 
     @property
     def _pushgateway_relation_id(self) -> int | None:
@@ -61,6 +71,11 @@ class Context(WithLogging):
     def s3(self) -> S3ConnectionInfo | None:
         """The server state of the current running Unit."""
         return S3ConnectionInfo(rel, rel.app) if (rel := self._s3_relation) else None
+
+    @property
+    def azure_storage(self) -> AzureStorageConnectionInfo | None:
+        """The server state of the current running Unit."""
+        return AzureStorageConnectionInfo(rel, rel.app) if (rel := self._azure_storage_relation) else None
 
     @property
     def pushgateway(self) -> PushGatewayInfo | None:
@@ -100,7 +115,10 @@ class Status(Enum):
     """Class bundling all statuses that the charm may fall into."""
 
     WAITING_PEBBLE = MaintenanceStatus("Waiting for Pebble")
-    INVALID_CREDENTIALS = BlockedStatus("Invalid S3 credentials")
+    INVALID_S3_CREDENTIALS = BlockedStatus("Invalid S3 credentials")
     NOT_RUNNING = BlockedStatus("Integration Hub is not running. Please check logs.")
     NOT_TRUSTED = BlockedStatus("Integration Hub is not trusted! Please check logs.")
+    MULTIPLE_OBJECT_STORAGE_RELATIONS = BlockedStatus(
+        "Integration Hub can be related to only one storage backend at a time."
+    )
     ACTIVE = ActiveStatus("")

@@ -7,10 +7,11 @@
 import re
 
 from common.utils import WithLogging
-from core.context import S3ConnectionInfo
+from core.context import S3ConnectionInfo, AzureStorageConnectionInfo
 from core.domain import HubConfiguration, PushGatewayInfo
 from core.workload import IntegrationHubWorkloadBase
 from managers.s3 import S3Manager
+from managers.azure_storage import AzureStorageManager
 
 
 class IntegrationHubConfig(WithLogging):
@@ -23,10 +24,12 @@ class IntegrationHubConfig(WithLogging):
     def __init__(
         self,
         s3: S3ConnectionInfo | None,
+        azure_storage: AzureStorageConnectionInfo | None,
         pushgateway: PushGatewayInfo | None,
         hub_conf: HubConfiguration | None,
     ):
         self.s3 = S3Manager(s3) if s3 else None
+        self.azure_storage = AzureStorageManager(azure_storage) if azure_storage else None
         self.pushgateway = pushgateway
         self.hub_conf = hub_conf
 
@@ -57,6 +60,26 @@ class IntegrationHubConfig(WithLogging):
         return {}
 
     @property
+    def _azure_storage_conf(self) -> dict[str, str]:
+        if (azure_storage := self.azure_storage):
+            confs = {
+                "spark.eventLog.enabled": "true",
+                "spark.eventLog.dir": azure_storage.config.log_dir,
+                "spark.history.fs.logDirectory": azure_storage.config.log_dir,
+            }
+            connection_protocol = azure_storage.config.connection_protocol
+            if connection_protocol.lower() in ("abfss", "abfs"):
+                confs.update({
+                    f"spark.hadoop.fs.azure.account.key.{azure_storage.config.storage_account}.dfs.core.windows.net": azure_storage.config.secret_key
+                })
+            elif connection_protocol.lower() in ("wasb", "wasbs"):
+                confs.update({
+                    f"spark.hadoop.fs.azure.account.key.{azure_storage.config.storage_account}.blob.core.windows.net": azure_storage.config.secret_key
+                })
+            return confs
+        return {}
+
+    @property
     def _pushgateway_conf(self) -> dict[str, str]:
         if pg := self.pushgateway:
             return {
@@ -77,7 +100,7 @@ class IntegrationHubConfig(WithLogging):
 
     def to_dict(self) -> dict[str, str]:
         """Return the dict representation of the configuration file."""
-        return self._base_conf | self._s3_conf | self._pushgateway_conf | self._action_conf
+        return self._base_conf | self._s3_conf | self._azure_storage_conf | self._pushgateway_conf | self._action_conf
 
     @property
     def contents(self) -> str:
@@ -102,6 +125,7 @@ class IntegrationHubManager(WithLogging):
     def update(
         self,
         s3: S3ConnectionInfo | None,
+        azure_storage: AzureStorageConnectionInfo | None,
         pushgateway: PushGatewayInfo | None,
         hub_conf: HubConfiguration | None,
     ) -> None:
@@ -109,7 +133,7 @@ class IntegrationHubManager(WithLogging):
         self.logger.debug("Update")
         self.workload.stop()
 
-        config = IntegrationHubConfig(s3, pushgateway, hub_conf)
+        config = IntegrationHubConfig(s3, azure_storage, pushgateway, hub_conf)
         self.workload.write(config.contents, str(self.workload.paths.spark_properties))
         self.workload.set_environment(
             {"SPARK_PROPERTIES_FILE": str(self.workload.paths.spark_properties)}

@@ -94,6 +94,52 @@ class S3ConnectionInfo(StateBase):
         return f"s3a://{self.bucket}/{self.path}"
 
 
+
+class AzureStorageConnectionInfo(StateBase):
+    """Class representing credentials and endpoints to connect to S3."""
+
+    def __init__(self, relation: Relation, component: Application):
+        super().__init__(relation, component)
+
+    @property
+    def endpoint(self) -> str | None:
+        """Return endpoint of the Azure storage container."""
+        return self.relation_data.get("endpoint", None)
+
+    @property
+    def secret_key(self) -> str:
+        """Return the secret key."""
+        return self.relation_data.get("secret-key", "")
+
+    @property
+    def path(self) -> str:
+        """Return the path in the Azure Storage container."""
+        return self.relation_data["path"]
+
+    @property
+    def container(self) -> str:
+        """Return the name of the Azure Storage container."""
+        return self.relation_data["container"]
+
+    @property
+    def connection_protocol(self) -> str:
+        """Return the protocol to be used to access files."""
+        return self.relation_data["container"].lower()
+
+    @property
+    def storage_account(self) -> str:
+        """Return the name of the Azure Storage account."""
+        return self.relation_data["container"]
+
+    @property
+    def log_dir(self) -> str:
+        """Return the full path to the object."""
+        if self.connection_protocol in ("abfs", "abfss"):
+            return f"{self.connection_protocol}:/{self.container}@{self.storage_account}.dfs.core.windows.net/{self.path}"
+        elif self.connection_protocol in ("wasb", "wasbs"):
+            return f"{self.connection_protocol}:/{self.container}@{self.storage_account}.blob.core.windows.net/{self.path}"
+
+
 class PushGatewayInfo(StateBase):
     """Class representing thr endpoints to connect to the prometheus PushGateway."""
 
