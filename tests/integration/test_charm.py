@@ -478,258 +478,258 @@ async def test_add_removal_s3_relation(
     assert "spark.hadoop.fs.s3a.access.key" in secret_data
 
 
-# @pytest.mark.abort_on_fail
-# async def test_relation_to_both_s3_and_azure_storage_at_same_time(ops_test: OpsTest, charm_versions):
+@pytest.mark.abort_on_fail
+async def test_relation_to_both_s3_and_azure_storage_at_same_time(ops_test: OpsTest, charm_versions):
 
-#     logger.info("Relating spark integration hub charm with azure-storage-integrator along with existing relation with s3-integrator charm")
+    logger.info("Relating spark integration hub charm with azure-storage-integrator along with existing relation with s3-integrator charm")
 
-#     await ops_test.model.add_relation(charm_versions.azure_storage.application_name, APP_NAME)
+    await ops_test.model.add_relation(charm_versions.azure_storage.application_name, APP_NAME)
 
-#     await ops_test.model.wait_for_idle(
-#         apps=[APP_NAME, charm_versions.azure_storage.application_name], timeout=1000
-#     )
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME, charm_versions.azure_storage.application_name], timeout=1000
+    )
 
-#     # wait for blocked status
-#     await ops_test.model.wait_for_idle(
-#         apps=[APP_NAME],
-#         status="blocked",
-#         timeout=1000,
-#     )
+    # wait for blocked status
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME],
+        status="blocked",
+        timeout=1000,
+    )
 
-#     # Remove relation with both S3 and Azure Storage
-#     await ops_test.model.applications[APP_NAME].remove_relation(
-#         f"{APP_NAME}:s3-credentials", f"{charm_versions.s3.application_name}:s3-credentials"
-#     )
-#     await ops_test.model.applications[APP_NAME].remove_relation(
-#         f"{APP_NAME}:azure-credentials", f"{charm_versions.azure_storage.application_name}:azure-credentials"
-#     )
+    # Remove relation with both S3 and Azure Storage
+    await ops_test.model.applications[APP_NAME].remove_relation(
+        f"{APP_NAME}:s3-credentials", f"{charm_versions.s3.application_name}:s3-credentials"
+    )
+    await ops_test.model.applications[APP_NAME].remove_relation(
+        f"{APP_NAME}:azure-credentials", f"{charm_versions.azure_storage.application_name}:azure-credentials"
+    )
 
-#     # wait for active status
-#     await ops_test.model.wait_for_idle(
-#         apps=[APP_NAME, charm_versions.azure_storage.application_name, charm_versions.s3.application_name],
-#         status="active",
-#         timeout=1000,
-#     )
-
-
-# @pytest.mark.abort_on_fail
-# async def test_relation_to_azure_storage(ops_test: OpsTest, charm_versions, namespace, service_account, azure_credentials):
-
-#     logger.info("Relating spark integration hub charm with azure-storage-integrator charm")
-#     service_account_name = service_account[0]
-#     secret_data = get_secret_data(
-#         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-#     )
-#     logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
-#     assert len(secret_data) == 0
-
-#     await ops_test.model.add_relation(charm_versions.azure_storage.application_name, APP_NAME)
-
-#     # wait for active status
-#     await ops_test.model.wait_for_idle(
-#         apps=[APP_NAME, charm_versions.azure_storage.application_name],
-#         status="active",
-#         timeout=1000,
-#     )
-
-#     # wait for secret update
-#     logger.info("Wait for secret update.")
-#     sleep(15)
-
-#     secret_data = get_secret_data(
-#         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-#     )
-#     logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
-#     assert len(secret_data) > 0
-#     assert f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net" in secret_data
+    # wait for active status
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME, charm_versions.azure_storage.application_name, charm_versions.s3.application_name],
+        status="active",
+        timeout=1000,
+    )
 
 
-# @pytest.mark.abort_on_fail
-# async def test_add_new_service_account_with_azure_storage(ops_test: OpsTest, namespace, service_account, azure_credentials):
-#     service_account_name = service_account[0]
+@pytest.mark.abort_on_fail
+async def test_relation_to_azure_storage(ops_test: OpsTest, charm_versions, namespace, service_account, azure_credentials):
 
-#     # wait for the update of secrets
-#     sleep(15)
-#     # check secret
+    logger.info("Relating spark integration hub charm with azure-storage-integrator charm")
+    service_account_name = service_account[0]
+    secret_data = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
+    assert len(secret_data) == 0
 
-#     secret_data = get_secret_data(
-#         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-#     )
-#     assert len(secret_data) > 0
-#     assert f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net" in secret_data
+    await ops_test.model.add_relation(charm_versions.azure_storage.application_name, APP_NAME)
 
+    # wait for active status
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME, charm_versions.azure_storage.application_name],
+        status="active",
+        timeout=1000,
+    )
 
-# @pytest.mark.abort_on_fail
-# async def test_add_removal_azure_storage_relation(
-#     ops_test: OpsTest, namespace, service_account, charm_versions, azure_credentials
-# ):
-#     service_account_name = service_account[0]
-#     # wait for the update of secrets
-#     sleep(15)
-#     # check secret
+    # wait for secret update
+    logger.info("Wait for secret update.")
+    sleep(15)
 
-#     secret_data = get_secret_data(
-#         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-#     )
-#     assert len(secret_data) > 0
-#     assert f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net" in secret_data
-
-#     await ops_test.model.applications[APP_NAME].remove_relation(
-#         f"{APP_NAME}:azure-credentials", f"{charm_versions.azure_storage.application_name}:azure-credentials"
-#     )
-
-#     await ops_test.model.wait_for_idle(
-#         apps=[APP_NAME, charm_versions.azure_storage.application_name],
-#         status="active",
-#         timeout=300,
-#         idle_period=30,
-#     )
-
-#     secret_data = get_secret_data(
-#         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-#     )
-#     assert len(secret_data) == 0
-
-#     await ops_test.model.add_relation(charm_versions.azure_storage.application_name, APP_NAME)
-
-#     await ops_test.model.wait_for_idle(
-#         apps=[APP_NAME, charm_versions.azure_storage.application_name], timeout=1000
-#     )
-
-#     # wait for active status
-#     await ops_test.model.wait_for_idle(
-#         apps=[APP_NAME, charm_versions.azure_storage.application_name],
-#         status="active",
-#         timeout=1000,
-#     )
-
-#     # wait for secret update
-#     logger.info("Wait for secret update.")
-#     sleep(15)
-
-#     secret_data = get_secret_data(
-#         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-#     )
-#     logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
-#     assert len(secret_data) > 0
-#     assert f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net" in secret_data
+    secret_data = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
+    assert len(secret_data) > 0
+    assert f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net" in secret_data
 
 
-# @pytest.mark.abort_on_fail
-# async def test_relation_to_pushgateway(
-#     ops_test: OpsTest, charm_versions, namespace, service_account
-# ):
+@pytest.mark.abort_on_fail
+async def test_add_new_service_account_with_azure_storage(ops_test: OpsTest, namespace, service_account, azure_credentials):
+    service_account_name = service_account[0]
 
-#     logger.info("Relating spark integration hub charm with s3-integrator charm")
-#     service_account_name = service_account[0]
-#     # namespace= ops_test.model_name
-#     logger.info(f"Test with namespace: {namespace}")
-#     await ops_test.model.deploy(**charm_versions.pushgateway.deploy_dict())
+    # wait for the update of secrets
+    sleep(15)
+    # check secret
 
-#     await ops_test.model.wait_for_idle(
-#         apps=[charm_versions.pushgateway.application_name], timeout=1000, status="active"
-#     )
-
-#     await ops_test.model.add_relation(charm_versions.pushgateway.application_name, APP_NAME)
-
-#     await ops_test.model.wait_for_idle(
-#         apps=[APP_NAME, charm_versions.pushgateway.application_name],
-#         status="active",
-#         timeout=1000,
-#     )
-
-#     sleep(15)
-
-#     secret_data = get_secret_data(
-#         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-#     )
-#     logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
-
-#     conf_prop = False
-#     for key in secret_data.keys():
-#         if "spark.metrics.conf" in key:
-#             conf_prop = True
-#             break
-#     assert conf_prop
-
-#     status = await ops_test.model.get_status()
-#     address = status["applications"][charm_versions.pushgateway.application_name]["units"][
-#         f"{charm_versions.pushgateway.application_name}/0"
-#     ]["address"]
-
-#     metrics = json.loads(urllib.request.urlopen(f"http://{address}:9091/api/v1/metrics").read())
-
-#     assert len(metrics["data"]) == 0
-
-#     setup_spark_output = subprocess.check_output(
-#         f"./tests/integration/setup/setup_spark.sh {service_account_name} {namespace}",
-#         shell=True,
-#         stderr=None,
-#     ).decode("utf-8")
-
-#     logger.info(f"Setup spark output:\n{setup_spark_output}")
-
-#     logger.info("Executing Spark job")
-
-#     run_spark_output = subprocess.check_output(
-#         f"./tests/integration/setup/run_spark_job.sh {service_account_name} {namespace}",
-#         shell=True,
-#         stderr=None,
-#     ).decode("utf-8")
-
-#     logger.info(f"Run spark output:\n{run_spark_output}")
-
-#     logger.info("Verifying metrics is present in the pushgateway has")
-
-#     metrics = json.loads(urllib.request.urlopen(f"http://{address}:9091/api/v1/metrics").read())
-
-#     logger.info(f"Metrics: {metrics}")
-
-#     assert len(metrics["data"]) > 0
-
-#     await ops_test.model.applications[APP_NAME].remove_relation(
-#         f"{APP_NAME}:cos", f"{charm_versions.pushgateway.application_name}:push-endpoint"
-#     )
-
-#     await ops_test.model.wait_for_idle(
-#         apps=[APP_NAME, charm_versions.pushgateway.application_name],
-#         status="active",
-#         timeout=300,
-#         idle_period=30,
-#     )
-
-#     secret_data = get_secret_data(
-#         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-#     )
-
-#     for key in secret_data.keys():
-#         if "spark.metrics.conf" in key:
-#             assert False
+    secret_data = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+    assert len(secret_data) > 0
+    assert f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net" in secret_data
 
 
-# @pytest.mark.abort_on_fail
-# async def test_remove_application(ops_test: OpsTest, namespace, service_account, charm_versions):
-#     service_account_name = service_account[0]
+@pytest.mark.abort_on_fail
+async def test_add_removal_azure_storage_relation(
+    ops_test: OpsTest, namespace, service_account, charm_versions, azure_credentials
+):
+    service_account_name = service_account[0]
+    # wait for the update of secrets
+    sleep(15)
+    # check secret
 
-#     # wait for the update of secres
-#     sleep(15)
-#     # check secret
+    secret_data = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+    assert len(secret_data) > 0
+    assert f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net" in secret_data
 
-#     secret_data = get_secret_data(
-#         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-#     )
-#     assert len(secret_data) > 0
-#     assert "spark.hadoop.fs.s3a.access.key" in secret_data
+    await ops_test.model.applications[APP_NAME].remove_relation(
+        f"{APP_NAME}:azure-credentials", f"{charm_versions.azure_storage.application_name}:azure-credentials"
+    )
 
-#     logger.info(f"Remove {APP_NAME}")
-#     await ops_test.model.remove_application(APP_NAME, block_until_done=True, timeout=600)
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME, charm_versions.azure_storage.application_name],
+        status="active",
+        timeout=300,
+        idle_period=30,
+    )
 
-#     await ops_test.model.wait_for_idle(
-#         apps=[charm_versions.s3.application_name], status="active", timeout=300
-#     )
+    secret_data = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+    assert len(secret_data) == 0
 
-#     secret_data = get_secret_data(
-#         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-#     )
-#     logger.info(f"secret data: {secret_data}")
-#     assert len(secret_data) == 0
+    await ops_test.model.add_relation(charm_versions.azure_storage.application_name, APP_NAME)
+
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME, charm_versions.azure_storage.application_name], timeout=1000
+    )
+
+    # wait for active status
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME, charm_versions.azure_storage.application_name],
+        status="active",
+        timeout=1000,
+    )
+
+    # wait for secret update
+    logger.info("Wait for secret update.")
+    sleep(15)
+
+    secret_data = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
+    assert len(secret_data) > 0
+    assert f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net" in secret_data
+
+
+@pytest.mark.abort_on_fail
+async def test_relation_to_pushgateway(
+    ops_test: OpsTest, charm_versions, namespace, service_account
+):
+
+    logger.info("Relating spark integration hub charm with s3-integrator charm")
+    service_account_name = service_account[0]
+    # namespace= ops_test.model_name
+    logger.info(f"Test with namespace: {namespace}")
+    await ops_test.model.deploy(**charm_versions.pushgateway.deploy_dict())
+
+    await ops_test.model.wait_for_idle(
+        apps=[charm_versions.pushgateway.application_name], timeout=1000, status="active"
+    )
+
+    await ops_test.model.add_relation(charm_versions.pushgateway.application_name, APP_NAME)
+
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME, charm_versions.pushgateway.application_name],
+        status="active",
+        timeout=1000,
+    )
+
+    sleep(15)
+
+    secret_data = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
+
+    conf_prop = False
+    for key in secret_data.keys():
+        if "spark.metrics.conf" in key:
+            conf_prop = True
+            break
+    assert conf_prop
+
+    status = await ops_test.model.get_status()
+    address = status["applications"][charm_versions.pushgateway.application_name]["units"][
+        f"{charm_versions.pushgateway.application_name}/0"
+    ]["address"]
+
+    metrics = json.loads(urllib.request.urlopen(f"http://{address}:9091/api/v1/metrics").read())
+
+    assert len(metrics["data"]) == 0
+
+    setup_spark_output = subprocess.check_output(
+        f"./tests/integration/setup/setup_spark.sh {service_account_name} {namespace}",
+        shell=True,
+        stderr=None,
+    ).decode("utf-8")
+
+    logger.info(f"Setup spark output:\n{setup_spark_output}")
+
+    logger.info("Executing Spark job")
+
+    run_spark_output = subprocess.check_output(
+        f"./tests/integration/setup/run_spark_job.sh {service_account_name} {namespace}",
+        shell=True,
+        stderr=None,
+    ).decode("utf-8")
+
+    logger.info(f"Run spark output:\n{run_spark_output}")
+
+    logger.info("Verifying metrics is present in the pushgateway has")
+
+    metrics = json.loads(urllib.request.urlopen(f"http://{address}:9091/api/v1/metrics").read())
+
+    logger.info(f"Metrics: {metrics}")
+
+    assert len(metrics["data"]) > 0
+
+    await ops_test.model.applications[APP_NAME].remove_relation(
+        f"{APP_NAME}:cos", f"{charm_versions.pushgateway.application_name}:push-endpoint"
+    )
+
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME, charm_versions.pushgateway.application_name],
+        status="active",
+        timeout=300,
+        idle_period=30,
+    )
+
+    secret_data = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+
+    for key in secret_data.keys():
+        if "spark.metrics.conf" in key:
+            assert False
+
+
+@pytest.mark.abort_on_fail
+async def test_remove_application(ops_test: OpsTest, namespace, service_account, charm_versions):
+    service_account_name = service_account[0]
+
+    # wait for the update of secres
+    sleep(15)
+    # check secret
+
+    secret_data = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+    assert len(secret_data) > 0
+    assert "spark.hadoop.fs.s3a.access.key" in secret_data
+
+    logger.info(f"Remove {APP_NAME}")
+    await ops_test.model.remove_application(APP_NAME, block_until_done=True, timeout=600)
+
+    await ops_test.model.wait_for_idle(
+        apps=[charm_versions.s3.application_name], status="active", timeout=300
+    )
+
+    secret_data = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+    logger.info(f"secret data: {secret_data}")
+    assert len(secret_data) == 0
