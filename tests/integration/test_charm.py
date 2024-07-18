@@ -7,6 +7,7 @@ import asyncio
 import json
 import logging
 import subprocess
+import urllib.request
 import uuid
 from pathlib import Path
 from time import sleep
@@ -479,9 +480,13 @@ async def test_add_removal_s3_relation(
 
 
 @pytest.mark.abort_on_fail
-async def test_relation_to_both_s3_and_azure_storage_at_same_time(ops_test: OpsTest, charm_versions):
+async def test_relation_to_both_s3_and_azure_storage_at_same_time(
+    ops_test: OpsTest, charm_versions
+):
 
-    logger.info("Relating spark integration hub charm with azure-storage-integrator along with existing relation with s3-integrator charm")
+    logger.info(
+        "Relating spark integration hub charm with azure-storage-integrator along with existing relation with s3-integrator charm"
+    )
 
     await ops_test.model.add_relation(charm_versions.azure_storage.application_name, APP_NAME)
 
@@ -501,19 +506,26 @@ async def test_relation_to_both_s3_and_azure_storage_at_same_time(ops_test: OpsT
         f"{APP_NAME}:s3-credentials", f"{charm_versions.s3.application_name}:s3-credentials"
     )
     await ops_test.model.applications[APP_NAME].remove_relation(
-        f"{APP_NAME}:azure-credentials", f"{charm_versions.azure_storage.application_name}:azure-credentials"
+        f"{APP_NAME}:azure-credentials",
+        f"{charm_versions.azure_storage.application_name}:azure-credentials",
     )
 
     # wait for active status
     await ops_test.model.wait_for_idle(
-        apps=[APP_NAME, charm_versions.azure_storage.application_name, charm_versions.s3.application_name],
+        apps=[
+            APP_NAME,
+            charm_versions.azure_storage.application_name,
+            charm_versions.s3.application_name,
+        ],
         status="active",
         timeout=1000,
     )
 
 
 @pytest.mark.abort_on_fail
-async def test_relation_to_azure_storage(ops_test: OpsTest, charm_versions, namespace, service_account, azure_credentials):
+async def test_relation_to_azure_storage(
+    ops_test: OpsTest, charm_versions, namespace, service_account, azure_credentials
+):
 
     logger.info("Relating spark integration hub charm with azure-storage-integrator charm")
     service_account_name = service_account[0]
@@ -541,11 +553,16 @@ async def test_relation_to_azure_storage(ops_test: OpsTest, charm_versions, name
     )
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
     assert len(secret_data) > 0
-    assert f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net" in secret_data
+    assert (
+        f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net"
+        in secret_data
+    )
 
 
 @pytest.mark.abort_on_fail
-async def test_add_new_service_account_with_azure_storage(ops_test: OpsTest, namespace, service_account, azure_credentials):
+async def test_add_new_service_account_with_azure_storage(
+    ops_test: OpsTest, namespace, service_account, azure_credentials
+):
     service_account_name = service_account[0]
 
     # wait for the update of secrets
@@ -556,7 +573,10 @@ async def test_add_new_service_account_with_azure_storage(ops_test: OpsTest, nam
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
     assert len(secret_data) > 0
-    assert f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net" in secret_data
+    assert (
+        f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net"
+        in secret_data
+    )
 
 
 @pytest.mark.abort_on_fail
@@ -572,10 +592,14 @@ async def test_add_removal_azure_storage_relation(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
     assert len(secret_data) > 0
-    assert f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net" in secret_data
+    assert (
+        f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net"
+        in secret_data
+    )
 
     await ops_test.model.applications[APP_NAME].remove_relation(
-        f"{APP_NAME}:azure-credentials", f"{charm_versions.azure_storage.application_name}:azure-credentials"
+        f"{APP_NAME}:azure-credentials",
+        f"{charm_versions.azure_storage.application_name}:azure-credentials",
     )
 
     await ops_test.model.wait_for_idle(
@@ -612,7 +636,10 @@ async def test_add_removal_azure_storage_relation(
     )
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
     assert len(secret_data) > 0
-    assert f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net" in secret_data
+    assert (
+        f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net"
+        in secret_data
+    )
 
 
 @pytest.mark.abort_on_fail
