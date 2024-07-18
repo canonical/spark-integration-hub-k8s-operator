@@ -11,12 +11,12 @@ from common.utils import WithLogging
 from constants import CONTAINER, PEBBLE_USER
 from core.context import Context
 from core.domain import User
+from events.azure_storage import AzureStorageEvents
 from events.configuration_actions import ConfigurationActionEvents
 from events.integration_hub import IntegrationHubEvents
 from events.provider import IntegrationHubProviderEvents
 from events.pushgateway import PushgatewayEvents
 from events.s3 import S3Events
-from events.azure_storage import AzureStorageEvents
 from workload import IntegrationHub
 
 

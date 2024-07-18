@@ -94,27 +94,30 @@ class S3ConnectionInfo(StateBase):
         return f"s3a://{self.bucket}/{self.path}"
 
 
-
-class AzureStorageConnectionInfo(StateBase):
+class AzureStorageConnectionInfo:
     """Class representing credentials and endpoints to connect to S3."""
 
-    def __init__(self, relation: Relation, component: Application):
-        super().__init__(relation, component)
+    def __init__(self, relation_data):
+        self.relation_data = relation_data
 
     @property
     def endpoint(self) -> str | None:
         """Return endpoint of the Azure storage container."""
-        return self.relation_data.get("endpoint", None)
+        if self.connection_protocol in ("abfs", "abfss"):
+            return f"{self.connection_protocol}:/{self.container}@{self.storage_account}.dfs.core.windows.net"
+        elif self.connection_protocol in ("wasb", "wasbs"):
+            return f"{self.connection_protocol}:/{self.container}@{self.storage_account}.blob.core.windows.net"
+        return ""
 
     @property
     def secret_key(self) -> str:
         """Return the secret key."""
-        return self.relation_data.get("secret-key", "")
+        return self.relation_data["secret-key"]
 
     @property
     def path(self) -> str:
         """Return the path in the Azure Storage container."""
-        return self.relation_data["path"]
+        return self.relation_data.get("path", "")
 
     @property
     def container(self) -> str:
@@ -124,20 +127,19 @@ class AzureStorageConnectionInfo(StateBase):
     @property
     def connection_protocol(self) -> str:
         """Return the protocol to be used to access files."""
-        return self.relation_data["container"].lower()
+        return self.relation_data["connection-protocol"].lower()
 
     @property
     def storage_account(self) -> str:
         """Return the name of the Azure Storage account."""
-        return self.relation_data["container"]
+        return self.relation_data["storage-account"]
 
     @property
     def log_dir(self) -> str:
         """Return the full path to the object."""
-        if self.connection_protocol in ("abfs", "abfss"):
-            return f"{self.connection_protocol}:/{self.container}@{self.storage_account}.dfs.core.windows.net/{self.path}"
-        elif self.connection_protocol in ("wasb", "wasbs"):
-            return f"{self.connection_protocol}:/{self.container}@{self.storage_account}.blob.core.windows.net/{self.path}"
+        if self.endpoint:
+            return f"{self.endpoint}/{self.path}"
+        return ""
 
 
 class PushGatewayInfo(StateBase):

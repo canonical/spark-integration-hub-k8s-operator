@@ -35,6 +35,8 @@ resources:
 requires:
   s3-credentials:
     interface: s3
+  azure-credentials:
+    interface: azure
   cos:
     interface: pushgateway
 
@@ -45,3 +47,7 @@ provides:
 peers:
   spark-configurations:
     interface: spark_configurations
+
+
+
+# juju deploy ./spark-integration-hub-k8s_ubuntu-22.04-amd64.charm --resource integration-hub-image=ghcr.io/canonical/spark-integration-hub:3.4-22.04_edge --trust

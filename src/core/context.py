@@ -11,8 +11,14 @@ from charms.data_platform_libs.v0.data_interfaces import RequirerData
 from ops import ActiveStatus, BlockedStatus, CharmBase, MaintenanceStatus, Relation
 
 from common.utils import WithLogging
-from constants import INTEGRATION_HUB_REL, PEER, PUSHGATEWAY, S3_RELATION_NAME, AZURE_RELATION_NAME
-from core.domain import HubConfiguration, PushGatewayInfo, S3ConnectionInfo, ServiceAccount, AzureStorageConnectionInfo
+from constants import AZURE_RELATION_NAME, INTEGRATION_HUB_REL, PEER, PUSHGATEWAY, S3_RELATION_NAME
+from core.domain import (
+    AzureStorageConnectionInfo,
+    HubConfiguration,
+    PushGatewayInfo,
+    S3ConnectionInfo,
+    ServiceAccount,
+)
 
 
 class Context(WithLogging):
@@ -24,7 +30,10 @@ class Context(WithLogging):
         self.model = charm.model
 
         self.s3_endpoint = RequirerData(self.charm.model, S3_RELATION_NAME)
-        self.azure_storage_endpoint = RequirerData(self.charm.model, AZURE_RELATION_NAME)
+        self.azure_storage_endpoint = RequirerData(
+            self.charm.model, AZURE_RELATION_NAME, additional_secret_fields=["secret-key"]
+        )
+
     # --------------
     # --- CONFIG ---
     # --------------
@@ -38,7 +47,9 @@ class Context(WithLogging):
     @property
     def _s3_relation_id(self) -> int | None:
         """The S3 relation."""
-        return relation.id if (relation := self.charm.model.get_relation(S3_RELATION_NAME)) else None
+        return (
+            relation.id if (relation := self.charm.model.get_relation(S3_RELATION_NAME)) else None
+        )
 
     @property
     def _s3_relation(self) -> Relation | None:
@@ -48,7 +59,11 @@ class Context(WithLogging):
     @property
     def _azure_storage_relation_id(self) -> int | None:
         """The S3 relation."""
-        return relation.id if (relation := self.charm.model.get_relation(AZURE_RELATION_NAME)) else None
+        return (
+            relation.id
+            if (relation := self.charm.model.get_relation(AZURE_RELATION_NAME))
+            else None
+        )
 
     @property
     def _azure_storage_relation(self) -> Relation | None:
@@ -75,7 +90,12 @@ class Context(WithLogging):
     @property
     def azure_storage(self) -> AzureStorageConnectionInfo | None:
         """The server state of the current running Unit."""
-        return AzureStorageConnectionInfo(rel, rel.app) if (rel := self._azure_storage_relation) else None
+        relation_data = (
+            self.azure_storage_endpoint.fetch_relation_data()[self._azure_storage_relation_id]
+            if self._azure_storage_relation
+            else None
+        )
+        return AzureStorageConnectionInfo(relation_data) if relation_data else None
 
     @property
     def pushgateway(self) -> PushGatewayInfo | None:

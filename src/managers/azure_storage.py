@@ -4,11 +4,6 @@
 
 """S3 manager."""
 
-import tempfile
-from functools import cached_property
-
-import boto3
-from botocore.exceptions import ClientError, SSLError
 
 from common.utils import WithLogging
 from core.domain import AzureStorageConnectionInfo

@@ -47,7 +47,10 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
     def _on_integration_hub_pebble_ready(self, _):
         """Handle on Pebble ready event."""
         self.integration_hub.update(
-            self.context.s3, self.context.azure_storage, self.context.pushgateway, self.context.hub_configurations
+            self.context.s3,
+            self.context.azure_storage,
+            self.context.pushgateway,
+            self.context.hub_configurations,
         )
 
     @compute_status
@@ -55,7 +58,10 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
     def _on_peer_relation_changed(self, _):
         """Handle on PEER relation changed event."""
         self.integration_hub.update(
-            self.context.s3, self.context.azure_storage, self.context.pushgateway, self.context.hub_configurations
+            self.context.s3,
+            self.context.azure_storage,
+            self.context.pushgateway,
+            self.context.hub_configurations,
         )
 
     @compute_status

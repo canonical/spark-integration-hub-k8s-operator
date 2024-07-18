@@ -45,6 +45,7 @@ class CharmVersion(BaseModel):
 class IntegrationTestsCharms(BaseModel):
     s3: CharmVersion
     pushgateway: CharmVersion
+    azure_storage: CharmVersion
 
 
 @pytest.fixture
@@ -52,6 +53,14 @@ def charm_versions() -> IntegrationTestsCharms:
     return IntegrationTestsCharms(
         s3=CharmVersion(
             **{"name": "s3-integrator", "channel": "edge", "series": "jammy", "alias": "s3"}
+        ),
+        azure_storage=CharmVersion(
+            **{
+                "name": "azure-storage-integrator",
+                "channel": "edge",
+                "series": "jammy",
+                "alias": "azure-storage",
+            }
         ),
         pushgateway=CharmVersion(
             **{
@@ -89,3 +98,14 @@ def copy_data_interfaces_library_into_charm(ops_test: OpsTest):
     library_path = "lib/charms/data_platform_libs/v0/data_interfaces.py"
     install_path = "tests/integration/app-charm/" + library_path
     shutil.copyfile(f"{library_path}", install_path)
+
+
+@pytest.fixture(scope="module")
+def azure_credentials(ops_test: OpsTest):
+    return {
+        "container": "test-container",
+        "path": "spark-events",
+        "storage-account": "test-storage-account",
+        "connection-protocol": "abfss",
+        "secret-key": "i-am-secret",
+    }
