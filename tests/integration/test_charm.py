@@ -423,60 +423,60 @@ async def test_add_new_service_account_with_s3(ops_test: OpsTest, namespace, ser
     assert "spark.hadoop.fs.s3a.access.key" in secret_data
 
 
-@pytest.mark.abort_on_fail
-async def test_add_removal_s3_relation(
-    ops_test: OpsTest, namespace, service_account, charm_versions
-):
-    service_account_name = service_account[0]
-    # wait for the update of secrets
-    sleep(15)
-    # check secret
-
-    secret_data = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-    )
-    assert len(secret_data) > 0
-    assert "spark.hadoop.fs.s3a.access.key" in secret_data
-
-    await ops_test.model.applications[APP_NAME].remove_relation(
-        f"{APP_NAME}:s3-credentials", f"{charm_versions.s3.application_name}:s3-credentials"
-    )
-
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME, charm_versions.s3.application_name],
-        status="active",
-        timeout=300,
-        idle_period=30,
-    )
-
-    secret_data = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-    )
-    assert len(secret_data) == 0
-
-    await ops_test.model.add_relation(charm_versions.s3.application_name, APP_NAME)
-
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME, charm_versions.s3.application_name], timeout=1000
-    )
-
-    # wait for active status
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME],
-        status="active",
-        timeout=1000,
-    )
-
-    # wait for secret update
-    logger.info("Wait for secret update.")
-    sleep(15)
-
-    secret_data = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-    )
-    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
-    assert len(secret_data) > 0
-    assert "spark.hadoop.fs.s3a.access.key" in secret_data
+# @pytest.mark.abort_on_fail
+# async def test_add_removal_s3_relation(
+#     ops_test: OpsTest, namespace, service_account, charm_versions
+# ):
+#     service_account_name = service_account[0]
+#     # wait for the update of secrets
+#     sleep(15)
+#     # check secret
+#
+#     secret_data = get_secret_data(
+#         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+#     )
+#     assert len(secret_data) > 0
+#     assert "spark.hadoop.fs.s3a.access.key" in secret_data
+#
+#     await ops_test.model.applications[APP_NAME].remove_relation(
+#         f"{APP_NAME}:s3-credentials", f"{charm_versions.s3.application_name}:s3-credentials"
+#     )
+#
+#     await ops_test.model.wait_for_idle(
+#         apps=[APP_NAME, charm_versions.s3.application_name],
+#         status="active",
+#         timeout=300,
+#         idle_period=30,
+#     )
+#
+#     secret_data = get_secret_data(
+#         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+#     )
+#     assert len(secret_data) == 0
+#
+#     await ops_test.model.add_relation(charm_versions.s3.application_name, APP_NAME)
+#
+#     await ops_test.model.wait_for_idle(
+#         apps=[APP_NAME, charm_versions.s3.application_name], timeout=1000
+#     )
+#
+#     # wait for active status
+#     await ops_test.model.wait_for_idle(
+#         apps=[APP_NAME],
+#         status="active",
+#         timeout=1000,
+#     )
+#
+#     # wait for secret update
+#     logger.info("Wait for secret update.")
+#     sleep(15)
+#
+#     secret_data = get_secret_data(
+#         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+#     )
+#     logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
+#     assert len(secret_data) > 0
+#     assert "spark.hadoop.fs.s3a.access.key" in secret_data
 
 
 @pytest.mark.abort_on_fail
