@@ -81,6 +81,16 @@ def get_secret_data(namespace: str, secret_name: str):
         return e.stdout.decode(), e.stderr.decode(), e.returncode
 
 
+async def juju_sleep(ops: OpsTest, time: int):
+    await ops.model.wait_for_idle(
+        apps=[
+            APP_NAME,
+        ],
+        idle_period=time,
+        timeout=300,
+    )
+
+
 @pytest.fixture()
 def service_account(namespace):
     """A temporary service account that gets cleaned up automatically."""
@@ -311,7 +321,7 @@ async def test_actions(ops_test: OpsTest, charm_versions, namespace, service_acc
         timeout=1000,
     )
     logger.info(f"add-config action result: {res}")
-    sleep(15)
+    await juju_sleep(ops_test, 15)
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
@@ -347,7 +357,7 @@ async def test_actions(ops_test: OpsTest, charm_versions, namespace, service_acc
         timeout=1000,
     )
     logger.info(f"Remove-config action result: {res}")
-    sleep(15)
+    await juju_sleep(ops_test, 15)
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
@@ -363,7 +373,7 @@ async def test_actions(ops_test: OpsTest, charm_versions, namespace, service_acc
         status="active",
         timeout=1000,
     )
-    sleep(15)
+    await juju_sleep(ops_test, 15)
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
@@ -398,7 +408,7 @@ async def test_relation_to_s3(ops_test: OpsTest, charm_versions, namespace, serv
 
     # wait for secret update
     logger.info("Wait for secret update.")
-    sleep(15)
+    await juju_sleep(ops_test, 15)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -413,7 +423,7 @@ async def test_add_new_service_account_with_s3(ops_test: OpsTest, namespace, ser
     service_account_name = service_account[0]
 
     # wait for the update of secrets
-    sleep(20)
+    await juju_sleep(ops_test, 20)
     # check secret
 
     secret_data = get_secret_data(
@@ -429,7 +439,7 @@ async def test_add_removal_s3_relation(
 ):
     service_account_name = service_account[0]
     # wait for the update of secrets
-    sleep(15)
+    await juju_sleep(ops_test, 15)
     # check secret
 
     secret_data = get_secret_data(
@@ -469,7 +479,7 @@ async def test_add_removal_s3_relation(
 
     # wait for secret update
     logger.info("Wait for secret update.")
-    sleep(15)
+    await juju_sleep(ops_test, 15)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -546,7 +556,7 @@ async def test_relation_to_azure_storage(
 
     # wait for secret update
     logger.info("Wait for secret update.")
-    sleep(15)
+    await juju_sleep(ops_test, 15)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -566,7 +576,7 @@ async def test_add_new_service_account_with_azure_storage(
     service_account_name = service_account[0]
 
     # wait for the update of secrets
-    sleep(15)
+    await juju_sleep(ops_test, 15)
     # check secret
 
     secret_data = get_secret_data(
@@ -585,7 +595,7 @@ async def test_add_removal_azure_storage_relation(
 ):
     service_account_name = service_account[0]
     # wait for the update of secrets
-    sleep(15)
+    await juju_sleep(ops_test, 15)
     # check secret
 
     secret_data = get_secret_data(
@@ -629,7 +639,7 @@ async def test_add_removal_azure_storage_relation(
 
     # wait for secret update
     logger.info("Wait for secret update.")
-    sleep(15)
+    await juju_sleep(ops_test, 15)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -665,7 +675,7 @@ async def test_relation_to_pushgateway(
         timeout=1000,
     )
 
-    sleep(15)
+    await juju_sleep(ops_test, 15)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -739,7 +749,7 @@ async def test_remove_application(ops_test: OpsTest, namespace, service_account,
     service_account_name = service_account[0]
 
     # wait for the update of secres
-    sleep(15)
+    await juju_sleep(ops_test, 15)
     # check secret
 
     secret_data = get_secret_data(
