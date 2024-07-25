@@ -106,6 +106,7 @@ async def juju_sleep(ops: OpsTest, time: int):
         timeout=300,
     )
 
+
 def setup_s3_bucket_for_sch_server(endpoint_url: str, aws_access_key: str, aws_secret_key: str):
     config = Config(connect_timeout=60, retries={"max_attempts": 0})
     session = boto3.session.Session(
@@ -755,7 +756,9 @@ async def test_relation_to_pushgateway(
 
 
 @pytest.mark.abort_on_fail
-async def test_remove_application(ops_test: OpsTest, namespace, service_account, azure_credentials, charm_versions):
+async def test_remove_application(
+    ops_test: OpsTest, namespace, service_account, azure_credentials, charm_versions
+):
     service_account_name = service_account[0]
 
     # wait for the update of secres

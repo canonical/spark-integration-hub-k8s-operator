@@ -8,7 +8,7 @@ from scenario.state import next_relation_id
 
 from charm import SparkIntegrationHub
 from constants import CONTAINER
-from core.context import S3_RELATION_NAME, AZURE_RELATION_NAME
+from core.context import AZURE_RELATION_NAME, S3_RELATION_NAME
 
 
 @pytest.fixture
@@ -101,7 +101,7 @@ def azure_storage_relation():
             "storage-account": "test-storage-account",
             "connection-protocol": "abfss",
             "secret-key": "some-secret",
-        }
+        },
     )
 
 
