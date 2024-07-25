@@ -45,9 +45,6 @@ class BaseEventHandler(Object):
             if not s3_manager.verify():
                 return Status.INVALID_S3_CREDENTIALS.value
 
-        # if azure_storage:
-        #     azure_storage_manager = AzureStorageManager(azure_storage)
-
         if not self.workload.active():
             return Status.NOT_RUNNING.value
 

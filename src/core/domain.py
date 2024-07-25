@@ -141,6 +141,17 @@ class AzureStorageConnectionInfo:
             return f"{self.endpoint}/{self.path}"
         return ""
 
+    @property
+    def connection_string(self) -> str:
+        """Return the connection string that can be used to connect to storage account."""
+        protocol = "http" if self.connection_protocol in ("wasb", "abfs") else "https"
+        return (
+            f"DefaultEndpointsProtocol={protocol};"
+            f"AccountName={self.storage_account};"
+            f"AccountKey={self.secret_key};"
+            "EndpointSuffix=core.windows.net"
+        )
+
 
 class PushGatewayInfo(StateBase):
     """Class representing thr endpoints to connect to the prometheus PushGateway."""
