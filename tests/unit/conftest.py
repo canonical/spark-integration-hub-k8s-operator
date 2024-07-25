@@ -8,7 +8,7 @@ from scenario.state import next_relation_id
 
 from charm import SparkIntegrationHub
 from constants import CONTAINER
-from core.context import S3_RELATION_NAME
+from core.context import S3_RELATION_NAME, AZURE_RELATION_NAME
 
 
 @pytest.fixture
@@ -80,6 +80,28 @@ def s3_relation():
             "path": "spark-events",
             "secret-key": "secret-key",
         },
+    )
+
+
+@pytest.fixture
+def azure_storage_relation():
+    """Provide fixture for the Azure storage relation."""
+    relation_id = next_relation_id(update=True)
+
+    return Relation(
+        endpoint=AZURE_RELATION_NAME,
+        interface="azure",
+        remote_app_name="azure-storage-integrator",
+        relation_id=relation_id,
+        local_app_data={"container": f"relation-{relation_id}"},
+        remote_app_data={
+            "container": "my-bucket",
+            "data": f'{{"container": "relation-{relation_id}"}}',
+            "path": "spark-events",
+            "storage-account": "test-storage-account",
+            "connection-protocol": "abfss",
+            "secret-key": "some-secret",
+        }
     )
 
 

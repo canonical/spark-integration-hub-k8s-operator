@@ -97,6 +97,15 @@ def service_account(namespace):
     return username, namespace
 
 
+async def juju_sleep(ops: OpsTest, time: int):
+    await ops.model.wait_for_idle(
+        apps=[
+            APP_NAME,
+        ],
+        idle_period=time,
+        timeout=300,
+    )
+
 def setup_s3_bucket_for_sch_server(endpoint_url: str, aws_access_key: str, aws_secret_key: str):
     config = Config(connect_timeout=60, retries={"max_attempts": 0})
     session = boto3.session.Session(
@@ -311,7 +320,9 @@ async def test_actions(ops_test: OpsTest, charm_versions, namespace, service_acc
         timeout=1000,
     )
     logger.info(f"add-config action result: {res}")
-    sleep(15)
+
+    await juju_sleep(ops_test, 15)
+
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
@@ -347,7 +358,9 @@ async def test_actions(ops_test: OpsTest, charm_versions, namespace, service_acc
         timeout=1000,
     )
     logger.info(f"Remove-config action result: {res}")
-    sleep(15)
+
+    await juju_sleep(ops_test, 15)
+
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
@@ -363,7 +376,9 @@ async def test_actions(ops_test: OpsTest, charm_versions, namespace, service_acc
         status="active",
         timeout=1000,
     )
-    sleep(15)
+
+    await juju_sleep(ops_test, 15)
+
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
@@ -398,7 +413,8 @@ async def test_relation_to_s3(ops_test: OpsTest, charm_versions, namespace, serv
 
     # wait for secret update
     logger.info("Wait for secret update.")
-    sleep(15)
+
+    await juju_sleep(ops_test, 15)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -413,9 +429,9 @@ async def test_add_new_service_account_with_s3(ops_test: OpsTest, namespace, ser
     service_account_name = service_account[0]
 
     # wait for the update of secrets
-    sleep(20)
-    # check secret
+    await juju_sleep(ops_test, 15)
 
+    # check secret
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
@@ -427,14 +443,17 @@ async def test_add_new_service_account_with_s3(ops_test: OpsTest, namespace, ser
 async def test_add_removal_s3_relation(
     ops_test: OpsTest, namespace, service_account, charm_versions
 ):
-    service_account_name = service_account[0]
-    # wait for the update of secrets
-    sleep(15)
-    # check secret
 
+    service_account_name = service_account[0]
+
+    # wait for the update of secrets
+    await juju_sleep(ops_test, 15)
+
+    # check secret
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
+
     assert len(secret_data) > 0
     assert "spark.hadoop.fs.s3a.access.key" in secret_data
 
@@ -469,7 +488,7 @@ async def test_add_removal_s3_relation(
 
     # wait for secret update
     logger.info("Wait for secret update.")
-    sleep(15)
+    await juju_sleep(ops_test, 15)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -546,7 +565,7 @@ async def test_relation_to_azure_storage(
 
     # wait for secret update
     logger.info("Wait for secret update.")
-    sleep(15)
+    await juju_sleep(ops_test, 15)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -566,9 +585,9 @@ async def test_add_new_service_account_with_azure_storage(
     service_account_name = service_account[0]
 
     # wait for the update of secrets
-    sleep(15)
-    # check secret
+    await juju_sleep(ops_test, 15)
 
+    # check secret
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
@@ -584,10 +603,11 @@ async def test_add_removal_azure_storage_relation(
     ops_test: OpsTest, namespace, service_account, charm_versions, azure_credentials
 ):
     service_account_name = service_account[0]
-    # wait for the update of secrets
-    sleep(15)
-    # check secret
 
+    # wait for the update of secrets
+    await juju_sleep(ops_test, 15)
+
+    # check secret
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
@@ -629,7 +649,7 @@ async def test_add_removal_azure_storage_relation(
 
     # wait for secret update
     logger.info("Wait for secret update.")
-    sleep(15)
+    await juju_sleep(ops_test, 15)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -665,7 +685,7 @@ async def test_relation_to_pushgateway(
         timeout=1000,
     )
 
-    sleep(15)
+    await juju_sleep(ops_test, 15)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -735,18 +755,21 @@ async def test_relation_to_pushgateway(
 
 
 @pytest.mark.abort_on_fail
-async def test_remove_application(ops_test: OpsTest, namespace, service_account, charm_versions):
+async def test_remove_application(ops_test: OpsTest, namespace, service_account, azure_credentials, charm_versions):
     service_account_name = service_account[0]
 
     # wait for the update of secres
-    sleep(15)
-    # check secret
+    await juju_sleep(ops_test, 15)
 
+    # check secret
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
     assert len(secret_data) > 0
-    assert "spark.hadoop.fs.s3a.access.key" in secret_data
+    assert (
+        f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net"
+        in secret_data
+    )
 
     logger.info(f"Remove {APP_NAME}")
     await ops_test.model.remove_application(APP_NAME, block_until_done=True, timeout=600)
