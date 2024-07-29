@@ -44,15 +44,24 @@ class PushgatewayEvents(BaseEventHandler, WithLogging):
         self.logger.info(f"PushGateway ready: {self.pushgateway.is_ready()}")
         if self.pushgateway.is_ready():
             self.integration_hub.update(
-                self.context.s3, self.context.pushgateway, self.context.hub_configurations
+                self.context.s3,
+                self.context.azure_storage,
+                self.context.pushgateway,
+                self.context.hub_configurations,
             )
 
     @defer_when_not_ready
     def _on_pushgateway_gone(self, _: RelationBrokenEvent):
         """Handle the `RelationBroken` event for PushGateway."""
         self.logger.info("PushGateway relation broken")
-        self.integration_hub.update(self.context.s3, None, self.context.hub_configurations)
+        self.integration_hub.update(
+            self.context.s3, self.context.azure_storage, None, self.context.hub_configurations
+        )
 
-        self.charm.unit.status = self.get_app_status(self.context.s3, None)
+        self.charm.unit.status = self.get_app_status(
+            self.context.s3, self.context.azure_storage, None
+        )
         if self.charm.unit.is_leader():
-            self.charm.app.status = self.get_app_status(self.context.s3, None)
+            self.charm.app.status = self.get_app_status(
+                self.context.s3, self.context.azure_storage, None
+            )
