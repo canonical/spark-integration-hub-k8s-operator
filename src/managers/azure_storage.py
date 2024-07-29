@@ -2,7 +2,7 @@
 # Copyright 2024 Canonical Limited
 # See LICENSE file for licensing details.
 
-"""S3 manager."""
+"""Azure Storage manager."""
 
 
 from common.utils import WithLogging

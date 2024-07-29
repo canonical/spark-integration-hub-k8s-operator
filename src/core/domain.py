@@ -95,7 +95,7 @@ class S3ConnectionInfo(StateBase):
 
 
 class AzureStorageConnectionInfo:
-    """Class representing credentials and endpoints to connect to S3."""
+    """Class representing credentials and endpoints to connect to Azure Storage."""
 
     def __init__(self, relation_data):
         self.relation_data = relation_data
@@ -140,17 +140,6 @@ class AzureStorageConnectionInfo:
         if self.endpoint:
             return f"{self.endpoint}/{self.path}"
         return ""
-
-    @property
-    def connection_string(self) -> str:
-        """Return the connection string that can be used to connect to storage account."""
-        protocol = "http" if self.connection_protocol in ("wasb", "abfs") else "https"
-        return (
-            f"DefaultEndpointsProtocol={protocol};"
-            f"AccountName={self.storage_account};"
-            f"AccountKey={self.secret_key};"
-            "EndpointSuffix=core.windows.net"
-        )
 
 
 class PushGatewayInfo(StateBase):

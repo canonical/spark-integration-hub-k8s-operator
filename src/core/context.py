@@ -58,7 +58,7 @@ class Context(WithLogging):
 
     @property
     def _azure_storage_relation_id(self) -> int | None:
-        """The S3 relation."""
+        """The Azure Storage relation ID."""
         return (
             relation.id
             if (relation := self.charm.model.get_relation(AZURE_RELATION_NAME))
@@ -67,7 +67,7 @@ class Context(WithLogging):
 
     @property
     def _azure_storage_relation(self) -> Relation | None:
-        """The S3 relation."""
+        """The Azure Storage relation."""
         return self.charm.model.get_relation(AZURE_RELATION_NAME)
 
     @property

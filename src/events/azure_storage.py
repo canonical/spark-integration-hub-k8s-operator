@@ -2,7 +2,7 @@
 # Copyright 2024 Canonical Limited
 # See LICENSE file for licensing details.
 
-"""S3 Integration related event handlers."""
+"""Azure Storage Integration related event handlers."""
 
 from charms.data_platform_libs.v0.object_storage import (
     AzureStorageRequires,
@@ -19,7 +19,7 @@ from managers.integration_hub import IntegrationHubManager
 
 
 class AzureStorageEvents(BaseEventHandler, WithLogging):
-    """Class implementing S3 Integration event hooks."""
+    """Class implementing Azure Storage Integration event hooks."""
 
     def __init__(self, charm: CharmBase, context: Context, workload: IntegrationHubWorkloadBase):
         super().__init__(charm, "azure-storage")
