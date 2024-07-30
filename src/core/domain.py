@@ -104,9 +104,9 @@ class AzureStorageConnectionInfo:
     def endpoint(self) -> str | None:
         """Return endpoint of the Azure storage container."""
         if self.connection_protocol in ("abfs", "abfss"):
-            return f"{self.connection_protocol}:/{self.container}@{self.storage_account}.dfs.core.windows.net"
+            return f"{self.connection_protocol}://{self.container}@{self.storage_account}.dfs.core.windows.net"
         elif self.connection_protocol in ("wasb", "wasbs"):
-            return f"{self.connection_protocol}:/{self.container}@{self.storage_account}.blob.core.windows.net"
+            return f"{self.connection_protocol}://{self.container}@{self.storage_account}.blob.core.windows.net"
         return ""
 
     @property
