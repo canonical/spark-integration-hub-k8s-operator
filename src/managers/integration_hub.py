@@ -111,7 +111,6 @@ class IntegrationHubConfig(WithLogging):
             | self._pushgateway_conf
             | self._action_conf
         )
-        self.logger.warning(to_return)
         return to_return
 
     @property
@@ -146,7 +145,7 @@ class IntegrationHubManager(WithLogging):
         self.workload.stop()
 
         config = IntegrationHubConfig(s3, azure_storage, pushgateway, hub_conf)
-        self.logger.warning(f"Updating integration hub config with contents: {config.contents}")
+        self.logger.info("Updating integration hub config...")
         self.workload.write(config.contents, str(self.workload.paths.spark_properties))
         self.workload.set_environment(
             {"SPARK_PROPERTIES_FILE": str(self.workload.paths.spark_properties)}
