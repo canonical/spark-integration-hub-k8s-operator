@@ -145,7 +145,7 @@ class IntegrationHubManager(WithLogging):
         self.workload.stop()
 
         config = IntegrationHubConfig(s3, azure_storage, pushgateway, hub_conf)
-        self.logger.info(f"Updating integration hub config...")
+        self.logger.info("Updating integration hub config...")
         self.workload.write(config.contents, str(self.workload.paths.spark_properties))
         self.workload.set_environment(
             {"SPARK_PROPERTIES_FILE": str(self.workload.paths.spark_properties)}
