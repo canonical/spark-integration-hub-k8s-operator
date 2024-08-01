@@ -4,6 +4,7 @@
 
 
 import asyncio
+import base64
 import json
 import logging
 import subprocess
@@ -617,6 +618,13 @@ async def test_add_removal_azure_storage_relation(
         f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net"
         in secret_data
     )
+
+    encoded_secret_key = secret_data[
+        f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net"
+    ]
+    decoded_secret_key = base64.b64decode(encoded_secret_key)
+
+    assert azure_credentials["secret-key"] == decoded_secret_key
 
     await ops_test.model.applications[APP_NAME].remove_relation(
         f"{APP_NAME}:azure-credentials",

@@ -107,5 +107,5 @@ def azure_credentials(ops_test: OpsTest):
         "path": "spark-events",
         "storage-account": "test-storage-account",
         "connection-protocol": "abfss",
-        "secret-key": "i-am-secret",
+        "secret-key": "i-am-secret==",
     }
