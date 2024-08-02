@@ -4,6 +4,7 @@
 
 
 import asyncio
+import base64
 import json
 import logging
 import subprocess
@@ -312,7 +313,7 @@ async def test_actions(ops_test: OpsTest, charm_versions, namespace, service_acc
     assert len(secret_data) == 0
 
     # add new configuration
-    res = await run_action(ops_test, "add-config", {"conf": "a=b"})
+    res = await run_action(ops_test, "add-config", {"conf": "a=b"}) 
     assert res["return-code"] == 0
     # wait for active status
     await ops_test.model.wait_for_idle(
@@ -367,6 +368,30 @@ async def test_actions(ops_test: OpsTest, charm_versions, namespace, service_acc
     )
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
     assert len(secret_data) == 0
+
+
+    # add new configuration whose value contains '=' characters
+    res = await run_action(ops_test, "add-config", {"conf": "key=iam=secret=="}) 
+    assert res["return-code"] == 0
+    # wait for active status
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME],
+        status="active",
+        timeout=1000,
+    )
+    logger.info(f"add-config action result: {res}")
+
+    await juju_sleep(ops_test, 15)
+
+    secret_data = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
+    # check data in secret
+    assert "key" in secret_data
+    assert len(secret_data) > 0
+    value = base64.b64decode(secret_data["key"]).decode()
+    assert value == "iam=secret=="
 
     # clear config
     res = await run_action(ops_test, "clear-config", {})
