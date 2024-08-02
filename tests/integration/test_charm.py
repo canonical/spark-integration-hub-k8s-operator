@@ -313,7 +313,7 @@ async def test_actions(ops_test: OpsTest, charm_versions, namespace, service_acc
     assert len(secret_data) == 0
 
     # add new configuration
-    res = await run_action(ops_test, "add-config", {"conf": "a=b"}) 
+    res = await run_action(ops_test, "add-config", {"conf": "a=b"})
     assert res["return-code"] == 0
     # wait for active status
     await ops_test.model.wait_for_idle(
@@ -370,8 +370,12 @@ async def test_actions(ops_test: OpsTest, charm_versions, namespace, service_acc
     assert len(secret_data) == 0
 
 
+@pytest.mark.abort_on_fail
+async def test_add_config_with_equal_sign(ops_test: OpsTest, namespace, service_account):
+    service_account_name = service_account[0]
+
     # add new configuration whose value contains '=' characters
-    res = await run_action(ops_test, "add-config", {"conf": "key=iam=secret=="}) 
+    res = await run_action(ops_test, "add-config", {"conf": "key=iam=secret=="})
     assert res["return-code"] == 0
     # wait for active status
     await ops_test.model.wait_for_idle(
@@ -387,6 +391,27 @@ async def test_actions(ops_test: OpsTest, charm_versions, namespace, service_acc
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
+    # check data in secret
+    assert "key" in secret_data
+    assert len(secret_data) > 0
+    value = base64.b64decode(secret_data["key"]).decode()
+    assert value == "iam=secret=="
+
+
+@pytest.mark.abort_on_fail
+async def test_add_new_service_account_with_config_value_containing_equals_sign(
+    ops_test: OpsTest, namespace, service_account
+):
+    service_account_name = service_account[0]
+
+    # wait for the update of secrets
+    await juju_sleep(ops_test, 15)
+
+    # check secret
+    secret_data = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+
     # check data in secret
     assert "key" in secret_data
     assert len(secret_data) > 0
