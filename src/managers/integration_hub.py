@@ -57,6 +57,7 @@ class IntegrationHubConfig(WithLogging):
                     s3.config.endpoint
                 ),
                 "spark.kubernetes.file.upload.path": s3.config.file_upload_path,
+                "spark.sql.warehouse.dir": s3.config.warehouse_path,
             }
         return {}
 
@@ -68,6 +69,7 @@ class IntegrationHubConfig(WithLogging):
                 "spark.eventLog.dir": azure_storage.config.log_dir,
                 "spark.history.fs.logDirectory": azure_storage.config.log_dir,
                 "spark.kubernetes.file.upload.path": azure_storage.config.file_upload_path,
+                "spark.sql.warehouse.dir": azure_storage.config.warehouse_path,
             }
             connection_protocol = azure_storage.config.connection_protocol
             if connection_protocol.lower() in ("abfss", "abfs"):

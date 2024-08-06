@@ -98,6 +98,11 @@ class S3ConnectionInfo(StateBase):
         """Return the path to be used to upload file (eg, by Kyuubi)."""
         return f"s3a://{self.bucket}/"
 
+    @property
+    def warehouse_path(self) -> str:
+        """Return the path to be used as warehouse."""
+        return f"s3a://{self.bucket}/warehouse"
+
 
 class AzureStorageConnectionInfo:
     """Class representing credentials and endpoints to connect to Azure Storage."""
@@ -153,6 +158,12 @@ class AzureStorageConnectionInfo:
             return f"{self.endpoint}/"
         return ""
 
+    @property
+    def warehouse_path(self) -> str:
+        """Return the path to be used as warehouse."""
+        if self.endpoint:
+            return f"{self.endpoint}/warehouse"
+        return ""
 
 class PushGatewayInfo(StateBase):
     """Class representing thr endpoints to connect to the prometheus PushGateway."""
