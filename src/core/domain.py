@@ -165,6 +165,7 @@ class AzureStorageConnectionInfo:
             return f"{self.endpoint}/warehouse"
         return ""
 
+
 class PushGatewayInfo(StateBase):
     """Class representing thr endpoints to connect to the prometheus PushGateway."""
 
