@@ -56,6 +56,7 @@ class IntegrationHubConfig(WithLogging):
                 "spark.hadoop.fs.s3a.connection.ssl.enabled": self._ssl_enabled(
                     s3.config.endpoint
                 ),
+                "spark.kubernetes.file.upload.path": s3.config.file_upload_path,
             }
         return {}
 
@@ -66,6 +67,7 @@ class IntegrationHubConfig(WithLogging):
                 "spark.eventLog.enabled": "true",
                 "spark.eventLog.dir": azure_storage.config.log_dir,
                 "spark.history.fs.logDirectory": azure_storage.config.log_dir,
+                "spark.kubernetes.file.upload.path": azure_storage.config.file_upload_path,
             }
             connection_protocol = azure_storage.config.connection_protocol
             if connection_protocol.lower() in ("abfss", "abfs"):

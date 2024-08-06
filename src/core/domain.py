@@ -93,6 +93,11 @@ class S3ConnectionInfo(StateBase):
         """Return the full path to the object."""
         return f"s3a://{self.bucket}/{self.path}"
 
+    @property
+    def file_upload_path(self) -> str:
+        """Return the path to be used to upload file (eg, by Kyuubi)."""
+        return f"s3a://{self.bucket}/"
+
 
 class AzureStorageConnectionInfo:
     """Class representing credentials and endpoints to connect to Azure Storage."""
@@ -139,6 +144,13 @@ class AzureStorageConnectionInfo:
         """Return the full path to the object."""
         if self.endpoint:
             return f"{self.endpoint}/{self.path}"
+        return ""
+
+    @property
+    def file_upload_path(self) -> str:
+        """Return the path to be used to upload file (eg, by Kyuubi)."""
+        if self.endpoint:
+            return f"{self.endpoint}/"
         return ""
 
 
