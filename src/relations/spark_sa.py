@@ -25,7 +25,7 @@ from charms.data_platform_libs.v0.data_interfaces import (
     RequirerData,
     RequirerEventHandlers,
 )
-from ops import Model, RelationCreatedEvent, RelationDepartedEvent, SecretChangedEvent
+from ops import Model, RelationCreatedEvent, SecretChangedEvent
 from ops.charm import (
     CharmBase,
     CharmEvents,
@@ -183,8 +183,8 @@ class IntegrationHubProviderEventHandlers(EventHandlers):
         # Just to keep lint quiet, can't resolve inheritance. The same happened in super().__init__() above
         self.relation_data = relation_data
         self.framework.observe(
-            charm.on[self.relation_data.relation_name].relation_departed,
-            self._on_relation_departed,
+            charm.on[self.relation_data.relation_name].relation_broken,
+            self._on_relation_broken,
         )
 
     def _on_relation_changed_event(self, event: RelationChangedEvent) -> None:
@@ -200,8 +200,8 @@ class IntegrationHubProviderEventHandlers(EventHandlers):
                 event.relation, app=event.app, unit=event.unit
             )
 
-    def _on_relation_departed(self, event: RelationDepartedEvent) -> None:
-        """React to the relation changed event by consuming data."""
+    def _on_relation_broken(self, event: RelationBrokenEvent) -> None:
+        """React to the relation broken event by releasing the service account."""
         # Leader only
         if not self.relation_data.local_unit.is_leader():
             return
