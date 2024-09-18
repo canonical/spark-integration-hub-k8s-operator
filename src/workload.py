@@ -67,6 +67,9 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
             | self._spark_integration_hub_layer["services"][self.INTEGRATION_HUB_SERVICE]
         )
 
+        # Temporal fix to restart the container when the watch process fails
+        layer["services"][self.INTEGRATION_HUB_SERVICE]["on-failure"] = "restart"
+
         self.container.add_layer(self.CONTAINER_LAYER, layer, combine=True)
 
         if not self.exists(str(self.paths.spark_properties)):
