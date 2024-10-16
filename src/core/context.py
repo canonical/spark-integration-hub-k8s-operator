@@ -11,10 +11,18 @@ from charms.data_platform_libs.v0.data_interfaces import RequirerData
 from ops import ActiveStatus, BlockedStatus, CharmBase, MaintenanceStatus, Relation
 
 from common.utils import WithLogging
-from constants import AZURE_RELATION_NAME, INTEGRATION_HUB_REL, PEER, PUSHGATEWAY, S3_RELATION_NAME
+from constants import (
+    AZURE_RELATION_NAME,
+    INTEGRATION_HUB_REL,
+    LOGGING,
+    PEER,
+    PUSHGATEWAY,
+    S3_RELATION_NAME,
+)
 from core.domain import (
     AzureStorageConnectionInfo,
     HubConfiguration,
+    LokiURL,
     PushGatewayInfo,
     S3ConnectionInfo,
     ServiceAccount,
@@ -129,6 +137,15 @@ class Context(WithLogging):
             for relation in self.client_relations
             if not relation or not relation.app
         ]
+
+    @property
+    def loki_url(self) -> str | None:
+        """Retrieve Loki URL form logging relations."""
+        if relation := self.charm.model.get_relation(LOGGING):
+            if len(relation.units) >= 0:
+                # select the first unit, because we don't care which unit we get the URL from
+                unit = list(relation.units)[0]
+                return LokiURL(relation, unit)
 
 
 class Status(Enum):

@@ -51,6 +51,7 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
             self.context.azure_storage,
             self.context.pushgateway,
             self.context.hub_configurations,
+            self.context.loki_url,
         )
 
     @compute_status
@@ -62,6 +63,7 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
             self.context.azure_storage,
             self.context.pushgateway,
             self.context.hub_configurations,
+            self.context.loki_url,
         )
 
     @compute_status

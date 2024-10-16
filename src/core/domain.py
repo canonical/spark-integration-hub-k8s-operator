@@ -3,7 +3,6 @@
 # See LICENSE file for licensing details.
 
 """Domain object of the Spark Integration Hub charm."""
-
 import json
 from dataclasses import dataclass
 from typing import List, MutableMapping
@@ -212,3 +211,16 @@ class ServiceAccount(StateBase):
     def namespace(self) -> str:
         """Return the used namespace."""
         return self.relation_data["namespace"]
+
+
+class LokiURL(StateBase):
+    """Class representing the Loki URL managed by the Spark Integration Hub charm."""
+
+    def __init__(self, relation: Relation, component: Unit):
+        super().__init__(relation, component)
+
+    @property
+    def url(self) -> str | None:
+        """Return the Loki URL."""
+        endpoint = json.loads(self.relation_data.get("endpoint", "{}"))
+        return endpoint.get("url")

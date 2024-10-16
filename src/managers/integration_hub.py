@@ -7,8 +7,13 @@
 import re
 
 from common.utils import WithLogging
-from core.context import AzureStorageConnectionInfo, S3ConnectionInfo
-from core.domain import HubConfiguration, PushGatewayInfo
+from core.domain import (
+    AzureStorageConnectionInfo,
+    HubConfiguration,
+    LokiURL,
+    PushGatewayInfo,
+    S3ConnectionInfo,
+)
 from core.workload import IntegrationHubWorkloadBase
 from managers.azure_storage import AzureStorageManager
 from managers.s3 import S3Manager
@@ -27,11 +32,13 @@ class IntegrationHubConfig(WithLogging):
         azure_storage: AzureStorageConnectionInfo | None,
         pushgateway: PushGatewayInfo | None,
         hub_conf: HubConfiguration | None,
+        loki_url: LokiURL | None,
     ):
         self.s3 = S3Manager(s3) if s3 else None
         self.azure_storage = AzureStorageManager(azure_storage) if azure_storage else None
         self.pushgateway = pushgateway
         self.hub_conf = hub_conf
+        self.loki_url = loki_url
 
     @staticmethod
     def _ssl_enabled(endpoint: str | None) -> str:
@@ -40,6 +47,19 @@ class IntegrationHubConfig(WithLogging):
             return "true"
 
         return "false"
+
+    @property
+    def _log_forwarding_conf(self) -> dict[str, str]:
+        """Get log forwarding configuration."""
+        if not self.loki_url:
+            self.logger.debug("Log forwarding is disabled.")
+            return {}
+
+        self.logger.debug("Log forwarding is enabled to %s.", self.loki_url.url)
+        return {
+            "spark.executorEnv.LOKI_URL": self.loki_url.url,
+            "spark.kubernetes.driverEnv.LOKI_URL": self.loki_url.url,
+        }
 
     @property
     def _s3_conf(self) -> dict[str, str]:
@@ -114,6 +134,7 @@ class IntegrationHubConfig(WithLogging):
             | self._azure_storage_conf
             | self._pushgateway_conf
             | self._action_conf
+            | self._log_forwarding_conf
         )
         return to_return
 
@@ -143,13 +164,18 @@ class IntegrationHubManager(WithLogging):
         azure_storage: AzureStorageConnectionInfo | None,
         pushgateway: PushGatewayInfo | None,
         hub_conf: HubConfiguration | None,
+        loki_url: LokiURL | None,
     ) -> None:
         """Update the Integration Hub service if needed."""
         self.logger.debug("Update")
         self.workload.stop()
 
-        config = IntegrationHubConfig(s3, azure_storage, pushgateway, hub_conf)
+        config = IntegrationHubConfig(s3, azure_storage, pushgateway, hub_conf, loki_url)
         self.logger.info("Updating integration hub config...")
+        self.logger.error("test:\n%s", config.contents)
+        self.logger.error("loki_url:\n%s", loki_url)
+        if loki_url:
+            self.logger.error("loki_url.url:\n%s", loki_url.url)
         self.workload.write(config.contents, str(self.workload.paths.spark_properties))
         self.workload.set_environment(
             {"SPARK_PROPERTIES_FILE": str(self.workload.paths.spark_properties)}

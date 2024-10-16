@@ -39,6 +39,9 @@ requires:
     interface: azure
   cos:
     interface: pushgateway
+  logging:
+    interface: loki_push_api
+    optional: true
 
 provides:
   spark-service-account:
