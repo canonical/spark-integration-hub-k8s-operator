@@ -37,6 +37,7 @@ jsonschema = "^4.19.1"
 lightkube = "0.15.2"
 rpds-py = "<0.19" # Newer versions of this rpds-py requires rustc 1.76 at the build time
                   # TODO: Unpin this once rustc 1.76 is available at build time
+cosl = "^0.0.42"
 
 
 [tool.poetry.group.format]
