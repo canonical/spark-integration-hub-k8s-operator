@@ -142,10 +142,9 @@ class Context(WithLogging):
     def loki_url(self) -> str | None:
         """Retrieve Loki URL form logging relations."""
         if relation := self.charm.model.get_relation(LOGGING):
-            if len(relation.units) >= 0:
+            if units := list(relation.units):
                 # select the first unit, because we don't care which unit we get the URL from
-                unit = list(relation.units)[0]
-                return LokiURL(relation, unit)
+                return LokiURL(relation, units[0])
 
 
 class Status(Enum):

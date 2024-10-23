@@ -172,10 +172,6 @@ class IntegrationHubManager(WithLogging):
 
         config = IntegrationHubConfig(s3, azure_storage, pushgateway, hub_conf, loki_url)
         self.logger.info("Updating integration hub config...")
-        self.logger.error("test:\n%s", config.contents)
-        self.logger.error("loki_url:\n%s", loki_url)
-        if loki_url:
-            self.logger.error("loki_url.url:\n%s", loki_url.url)
         self.workload.write(config.contents, str(self.workload.paths.spark_properties))
         self.workload.set_environment(
             {"SPARK_PROPERTIES_FILE": str(self.workload.paths.spark_properties)}

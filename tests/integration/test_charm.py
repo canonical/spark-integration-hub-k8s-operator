@@ -29,17 +29,7 @@ APP_NAME = METADATA["name"]
 BUCKET_NAME = "test-bucket"
 CONTAINER_NAME = "test-container"
 SECRET_NAME_PREFIX = "integrator-hub-conf-"
-
-
-@pytest.fixture
-def namespace():
-    """A temporary K8S namespace gets cleaned up automatically."""
-    namespace_name = str(uuid.uuid4())
-    create_command = ["kubectl", "create", "namespace", namespace_name]
-    subprocess.run(create_command, check=True)
-    yield namespace_name
-    destroy_command = ["kubectl", "delete", "namespace", namespace_name]
-    subprocess.run(destroy_command, check=True)
+GRAFANA_AGENT_APP = "grafana-agent-k8s"
 
 
 def run_service_account_registry(*args):
@@ -283,6 +273,12 @@ async def test_build_and_deploy(ops_test: OpsTest, charm_versions, azure_credent
             ],
             status="active",
         )
+
+    logger.info("Deploying the grafana-agent-k8s charm")
+    await ops_test.model.deploy(GRAFANA_AGENT_APP, channel="latest/stable")
+    logger.debug("Waiting for %s to by in blocked state", GRAFANA_AGENT_APP)
+    # Note(rgildein): The grafana-agent-k8s charm is in blocked state, since we are not deploying whole cos.
+    await ops_test.model.wait_for_idle(apps=[GRAFANA_AGENT_APP], status="blocked")
 
 
 @pytest.mark.abort_on_fail
@@ -803,6 +799,59 @@ async def test_relation_to_pushgateway(
     for key in secret_data.keys():
         if "spark.metrics.conf" in key:
             assert False
+
+
+@pytest.mark.abort_on_fail
+async def test_integrate_logging_relation(ops_test: OpsTest, service_account):
+    """Test integrate logging relation."""
+    service_account_name, namespace = service_account
+    setup_spark_output = subprocess.check_output(
+        f"./tests/integration/setup/setup_spark.sh {service_account_name} {namespace}",
+        shell=True,
+        stderr=None,
+    ).decode("utf-8")
+    logger.info(f"Setup spark output:\n{setup_spark_output}")
+
+    logger.info("Integrate %s with %s through logging relation", APP_NAME, GRAFANA_AGENT_APP)
+    await ops_test.model.integrate(f"{GRAFANA_AGENT_APP}:logging-provider", f"{APP_NAME}:logging")
+
+    # wait for the update of secrets
+    await juju_sleep(ops_test, 15)
+
+    # check secret
+    secret_data = get_secret_data(
+        namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+    assert len(secret_data) > 0
+    # Note(rgildein): Double underscores are used in secrets, but only one will be present in POD.
+    assert "spark.executorEnv.LOKI__URL" in secret_data
+    assert "spark.kubernetes.driverEnv.LOKI__URL" in secret_data
+
+
+@pytest.mark.abort_on_fail
+async def test_remove_logging_relation(ops_test: OpsTest, service_account):
+    """Test remove logging relation."""
+    service_account_name, namespace = service_account
+    setup_spark_output = subprocess.check_output(
+        f"./tests/integration/setup/setup_spark.sh {service_account_name} {namespace}",
+        shell=True,
+        stderr=None,
+    ).decode("utf-8")
+    logger.info(f"Setup spark output:\n{setup_spark_output}")
+
+    logger.info("Remove relation between %s and %s", APP_NAME, GRAFANA_AGENT_APP)
+    await ops_test.model.remove_relation(
+        f"{GRAFANA_AGENT_APP}:logging-provider", f"{APP_NAME}:logging"
+    )
+
+    # wait for the update of secrets
+    await juju_sleep(ops_test, 15)
+
+    # check secret
+    secret_data = get_secret_data(
+        namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
+    )
+    assert len(secret_data) == 0
 
 
 @pytest.mark.abort_on_fail

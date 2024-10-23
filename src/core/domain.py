@@ -4,10 +4,13 @@
 
 """Domain object of the Spark Integration Hub charm."""
 import json
+import logging
 from dataclasses import dataclass
 from typing import List, MutableMapping
 
 from ops import Application, Relation, Unit
+
+logger = logging.getLogger(__name__)
 
 
 class StateBase:
@@ -223,4 +226,9 @@ class LokiURL(StateBase):
     def url(self) -> str | None:
         """Return the Loki URL."""
         endpoint = json.loads(self.relation_data.get("endpoint", "{}"))
-        return endpoint.get("url")
+        if url := endpoint.get("url"):
+            logger.debug("found Loki URL %s in relation data", url)
+            return url
+
+        logger.warning("Loki URL was not found in relation data")
+        return None
