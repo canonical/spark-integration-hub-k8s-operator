@@ -1552,8 +1552,8 @@ pyyaml = "*"
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v13.1.2"
-resolved_reference = "f86cfdfbc92c929928c0722e7542867db0b092cd"
+reference = "v23.0.4"
+resolved_reference = "60f088b7f0f967a8e35d45339f5123a6e74786f7"
 subdirectory = "python/pytest_plugins/pytest_operator_cache"
 
 [[package]]
@@ -2179,4 +2179,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = ">3.8,<4.0"
-content-hash = "53f709a33749dcca7c6f049b8b16f843c839d10b4b00f5f29be819c4d9921b05"
+content-hash = "7638b65801a9018faff984340130ab3d5c277cf94db6537129dd160815e72a8e"
