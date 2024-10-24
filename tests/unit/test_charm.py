@@ -307,3 +307,73 @@ def test_both_azure_storage_and_s3_relation_together(
         assert out.unit_status == BlockedStatus(
             "Integration Hub can be related to only one storage backend at a time."
         )
+
+
+@patch("workload.IntegrationHub.exec")
+def test_logging_relation_changed(
+    exec_calls, integration_hub_ctx, integration_hub_container, logging_relation, tmp_path
+):
+    """Test logging relation changed."""
+    exp_url = "http://grafana-agent-k8s-0.grafana-agent-k8s-endpoints.spark.svc.cluster.local:3500/loki/api/v1/push"
+    state = State(relations=[logging_relation], containers=[integration_hub_container])
+
+    with (
+        patch("managers.k8s.KubernetesManager.__init__", return_value=None),
+        patch("managers.k8s.KubernetesManager.trusted", return_value=True),
+    ):
+        out = integration_hub_ctx.run(logging_relation.changed_event, state)
+
+    assert out.unit_status == ActiveStatus("")
+
+    # Check containers modifications
+    assert len(out.get_container(CONTAINER).layers) == 3
+
+    envs = (
+        out.get_container(CONTAINER)
+        .layers["integration-hub"]
+        .services["integration-hub"]
+        .environment
+    )
+
+    assert "SPARK_PROPERTIES_FILE" in envs
+
+    spark_properties = parse_spark_properties(out, tmp_path)
+    assert spark_properties.get("spark.executorEnv.LOKI_URL") == exp_url
+    assert spark_properties.get("spark.kubernetes.driverEnv.LOKI_URL") == exp_url
+
+
+@patch("workload.IntegrationHub.exec")
+def test_logging_relation_broken(
+    exec_calls, integration_hub_ctx, integration_hub_container, logging_relation, tmp_path
+):
+    """Test logging relation broken."""
+    state = State(relations=[logging_relation], containers=[integration_hub_container])
+
+    with (
+        patch("managers.k8s.KubernetesManager.__init__", return_value=None),
+        patch("managers.k8s.KubernetesManager.trusted", return_value=True),
+    ):
+        after_join_state = integration_hub_ctx.run(
+            logging_relation.changed_event, state
+        )  # relation changed
+        out = integration_hub_ctx.run(
+            logging_relation.broken_event, after_join_state
+        )  # relation broken
+
+    assert out.unit_status == ActiveStatus("")
+
+    # Check containers modifications
+    assert len(out.get_container(CONTAINER).layers) == 3
+
+    envs = (
+        out.get_container(CONTAINER)
+        .layers["integration-hub"]
+        .services["integration-hub"]
+        .environment
+    )
+
+    assert "SPARK_PROPERTIES_FILE" in envs
+
+    spark_properties = parse_spark_properties(out, tmp_path)
+    assert "spark.executorEnv.LOKI_URL" not in spark_properties
+    assert "spark.kubernetes.driverEnv.LOKI_URL" not in spark_properties

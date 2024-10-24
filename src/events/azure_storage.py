@@ -52,6 +52,7 @@ class AzureStorageEvents(BaseEventHandler, WithLogging):
             self.context.azure_storage,
             self.context.pushgateway,
             self.context.hub_configurations,
+            self.context.loki_url,
         )
 
     @defer_when_not_ready
@@ -59,7 +60,11 @@ class AzureStorageEvents(BaseEventHandler, WithLogging):
         """Handle the `StorageConnectionInfoGoneEvent` event for Object Storage integrator."""
         self.logger.info("Azure Storage connection info gone")
         self.integration_hub.update(
-            self.context.s3, None, self.context.pushgateway, self.context.hub_configurations
+            self.context.s3,
+            None,
+            self.context.pushgateway,
+            self.context.hub_configurations,
+            self.context.loki_url,
         )
 
         self.charm.unit.status = self.get_app_status(

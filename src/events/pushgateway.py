@@ -48,6 +48,7 @@ class PushgatewayEvents(BaseEventHandler, WithLogging):
                 self.context.azure_storage,
                 self.context.pushgateway,
                 self.context.hub_configurations,
+                self.context.loki_url,
             )
 
     @defer_when_not_ready
@@ -55,7 +56,11 @@ class PushgatewayEvents(BaseEventHandler, WithLogging):
         """Handle the `RelationBroken` event for PushGateway."""
         self.logger.info("PushGateway relation broken")
         self.integration_hub.update(
-            self.context.s3, self.context.azure_storage, None, self.context.hub_configurations
+            self.context.s3,
+            self.context.azure_storage,
+            None,
+            self.context.hub_configurations,
+            self.context.loki_url,
         )
 
         self.charm.unit.status = self.get_app_status(

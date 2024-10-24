@@ -14,6 +14,7 @@ from core.domain import User
 from events.azure_storage import AzureStorageEvents
 from events.configuration_actions import ConfigurationActionEvents
 from events.integration_hub import IntegrationHubEvents
+from events.logging import LoggingEvents
 from events.provider import IntegrationHubProviderEvents
 from events.pushgateway import PushgatewayEvents
 from events.s3 import S3Events
@@ -37,6 +38,7 @@ class SparkIntegrationHub(CharmBase, WithLogging):
         self.sa = IntegrationHubProviderEvents(self, context, workload)
         self.pushgateway = PushgatewayEvents(self, context, workload)
         self.integration_hub = IntegrationHubEvents(self, context, workload)
+        self.logging = LoggingEvents(self, context, workload)
 
 
 if __name__ == "__main__":  # pragma: nocover

@@ -3,12 +3,14 @@
 # See LICENSE file for licensing details.
 
 """Domain object of the Spark Integration Hub charm."""
-
 import json
+import logging
 from dataclasses import dataclass
 from typing import List, MutableMapping
 
 from ops import Application, Relation, Unit
+
+logger = logging.getLogger(__name__)
 
 
 class StateBase:
@@ -212,3 +214,21 @@ class ServiceAccount(StateBase):
     def namespace(self) -> str:
         """Return the used namespace."""
         return self.relation_data["namespace"]
+
+
+class LokiURL(StateBase):
+    """Class representing the Loki URL managed by the Spark Integration Hub charm."""
+
+    def __init__(self, relation: Relation, component: Unit):
+        super().__init__(relation, component)
+
+    @property
+    def url(self) -> str | None:
+        """Return the Loki URL."""
+        endpoint = json.loads(self.relation_data.get("endpoint", "{}"))
+        if url := endpoint.get("url"):
+            logger.debug("found Loki URL %s in relation data", url)
+            return url
+
+        logger.warning("Loki URL was not found in relation data")
+        return None
