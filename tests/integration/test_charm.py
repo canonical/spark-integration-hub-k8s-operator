@@ -822,7 +822,6 @@ async def test_integrate_logging_relation(ops_test: OpsTest, service_account):
     secret_data = get_secret_data(
         namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
-    assert len(secret_data) > 0
     # Note(rgildein): Double underscores are used in secrets, but only one will be present in POD.
     assert "spark.executorEnv.LOKI__URL" in secret_data
     assert "spark.kubernetes.driverEnv.LOKI__URL" in secret_data
@@ -840,7 +839,7 @@ async def test_remove_logging_relation(ops_test: OpsTest, service_account):
     logger.info(f"Setup spark output:\n{setup_spark_output}")
 
     logger.info("Remove relation between %s and %s", APP_NAME, GRAFANA_AGENT_APP)
-    await ops_test.model.remove_relation(
+    await ops_test.model.applications[APP_NAME].remove_relation(
         f"{GRAFANA_AGENT_APP}:logging-provider", f"{APP_NAME}:logging"
     )
 
@@ -851,7 +850,9 @@ async def test_remove_logging_relation(ops_test: OpsTest, service_account):
     secret_data = get_secret_data(
         namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
-    assert len(secret_data) == 0
+    # Note(rgildein): Double underscores are used in secrets, but only one will be present in POD.
+    assert "spark.executorEnv.LOKI__URL" not in secret_data
+    assert "spark.kubernetes.driverEnv.LOKI__URL" not in secret_data
 
 
 @pytest.mark.abort_on_fail
