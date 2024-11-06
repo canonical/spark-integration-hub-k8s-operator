@@ -70,6 +70,9 @@ def charm_versions() -> IntegrationTestsCharms:
                 "alias": "pushgateway",
             }
         ),
+        grafana_agent=CharmVersion(
+            name="grafana-agent-k8s", channel="latest/stable", series="jammy"
+        ),
     )
 
 

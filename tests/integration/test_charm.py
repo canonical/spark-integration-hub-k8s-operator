@@ -29,7 +29,6 @@ APP_NAME = METADATA["name"]
 BUCKET_NAME = "test-bucket"
 CONTAINER_NAME = "test-container"
 SECRET_NAME_PREFIX = "integrator-hub-conf-"
-GRAFANA_AGENT_APP = "grafana-agent-k8s"
 
 
 def run_service_account_registry(*args):
@@ -275,10 +274,14 @@ async def test_build_and_deploy(ops_test: OpsTest, charm_versions, azure_credent
         )
 
     logger.info("Deploying the grafana-agent-k8s charm")
-    await ops_test.model.deploy(GRAFANA_AGENT_APP, channel="latest/stable")
-    logger.debug("Waiting for %s to by in blocked state", GRAFANA_AGENT_APP)
+    await ops_test.model.deploy(**charm_versions.grafana_agent.deploy_dict())
+    logger.debug(
+        "Waiting for %s to by in blocked state", charm_versions.grafana_agent.application_name
+    )
     # Note(rgildein): The grafana-agent-k8s charm is in blocked state, since we are not deploying whole cos.
-    await ops_test.model.wait_for_idle(apps=[GRAFANA_AGENT_APP], status="blocked")
+    await ops_test.model.wait_for_idle(
+        apps=[charm_versions.grafana_agent.application_name], status="blocked"
+    )
 
 
 @pytest.mark.abort_on_fail
@@ -802,7 +805,7 @@ async def test_relation_to_pushgateway(
 
 
 @pytest.mark.abort_on_fail
-async def test_integrate_logging_relation(ops_test: OpsTest, service_account):
+async def test_integrate_logging_relation(ops_test: OpsTest, service_account, charm_versions):
     """Test integrate logging relation."""
     service_account_name, namespace = service_account
     setup_spark_output = subprocess.check_output(
@@ -812,8 +815,14 @@ async def test_integrate_logging_relation(ops_test: OpsTest, service_account):
     ).decode("utf-8")
     logger.info(f"Setup spark output:\n{setup_spark_output}")
 
-    logger.info("Integrate %s with %s through logging relation", APP_NAME, GRAFANA_AGENT_APP)
-    await ops_test.model.integrate(f"{GRAFANA_AGENT_APP}:logging-provider", f"{APP_NAME}:logging")
+    logger.info(
+        "Integrate %s with %s through logging relation",
+        APP_NAME,
+        charm_versions.grafana_agent.application_name,
+    )
+    await ops_test.model.integrate(
+        f"{charm_versions.grafana_agent.application_name}:logging-provider", f"{APP_NAME}:logging"
+    )
 
     # wait for the update of secrets
     await juju_sleep(ops_test, 15)
@@ -828,7 +837,7 @@ async def test_integrate_logging_relation(ops_test: OpsTest, service_account):
 
 
 @pytest.mark.abort_on_fail
-async def test_remove_logging_relation(ops_test: OpsTest, service_account):
+async def test_remove_logging_relation(ops_test: OpsTest, service_account, charm_versions):
     """Test remove logging relation."""
     service_account_name, namespace = service_account
     setup_spark_output = subprocess.check_output(
@@ -838,9 +847,13 @@ async def test_remove_logging_relation(ops_test: OpsTest, service_account):
     ).decode("utf-8")
     logger.info(f"Setup spark output:\n{setup_spark_output}")
 
-    logger.info("Remove relation between %s and %s", APP_NAME, GRAFANA_AGENT_APP)
+    logger.info(
+        "Remove relation between %s and %s",
+        APP_NAME,
+        charm_versions.grafana_agent.application_name,
+    )
     await ops_test.model.applications[APP_NAME].remove_relation(
-        f"{GRAFANA_AGENT_APP}:logging-provider", f"{APP_NAME}:logging"
+        f"{charm_versions.grafana_agent.application_name}:logging-provider", f"{APP_NAME}:logging"
     )
 
     # wait for the update of secrets
