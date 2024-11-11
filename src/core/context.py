@@ -14,7 +14,7 @@ from common.utils import WithLogging
 from constants import (
     AZURE_RELATION_NAME,
     INTEGRATION_HUB_REL,
-    LOGGING,
+    LOGGING_RELATION_NAME,
     PEER,
     PUSHGATEWAY,
     S3_RELATION_NAME,
@@ -140,8 +140,8 @@ class Context(WithLogging):
 
     @property
     def loki_url(self) -> str | None:
-        """Retrieve Loki URL form logging relations."""
-        if relation := self.charm.model.get_relation(LOGGING):
+        """Retrieve Loki URL from logging relations."""
+        if relation := self.charm.model.get_relation(LOGGING_RELATION_NAME):
             if units := list(relation.units):
                 # select the first unit, because we don't care which unit we get the URL from
                 return LokiURL(relation, units[0])

@@ -7,7 +7,7 @@ from scenario import Container, Context, Model, Mount, Relation
 from scenario.state import next_relation_id
 
 from charm import SparkIntegrationHub
-from constants import CONTAINER, LOGGING
+from constants import CONTAINER, LOGGING_RELATION_NAME
 from core.context import AZURE_RELATION_NAME, S3_RELATION_NAME
 
 
@@ -137,7 +137,7 @@ def logging_relation():
     relation_id = next_relation_id(update=True)
 
     return Relation(
-        endpoint=LOGGING,
+        endpoint=LOGGING_RELATION_NAME,
         interface="logging",
         remote_app_name="grafana-agent-k8s",
         relation_id=relation_id,
