@@ -4,26 +4,23 @@ attempt=1
 while [ $attempt -le 10 ]
 do
   echo "s3 params setup attempt=$attempt"
+  access_key=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_ACCESS_KEY}' | base64 -d)
   if [ -z "$access_key" ]; then
-    sudo microk8s.kubectl get secret -n minio-operator microk8s-user-1
-    if [ $? -eq 0 ]; then
-      echo "Use access-key from secret"
-    else
-      echo "use default access-key"
-      access_key="minio"
-    fi
+    echo "Use default access-key"
+    access_key="minio"
+  else
+    echo "Use access-key from secret"
   fi
+  secret_key=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_SECRET_KEY}' | base64 -d)
   if [ -z "$secret_key" ]; then
-    sudo microk8s.kubectl get secret -n minio-operator microk8s-user-1
-    if [ $? -eq 0 ]; then
-      echo "secret_key=$secret_key"
-    else
-      echo "Use default secret-key"
-      secret_key="minio123"
-    fi
+    echo "Use default secret-key"
+    secret_key="minio123"
+  else
+    echo "Use secret-key from secret"
   fi
+
   if [ -z "$endpoint_ip" ]; then
-    endpoint_ip=$(sudo microk8s.kubectl get services -n minio-operator | grep minio | awk '{ print $3 }')
+    endpoint_ip=$(kubectl get services -n minio-operator | grep minio | awk '{ print $3 }')
     endpoint="http://$endpoint_ip:80"
     echo "endpoint=$endpoint"
   fi
