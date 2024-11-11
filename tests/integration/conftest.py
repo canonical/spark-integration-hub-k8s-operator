@@ -46,6 +46,7 @@ class IntegrationTestsCharms(BaseModel):
     s3: CharmVersion
     pushgateway: CharmVersion
     azure_storage: CharmVersion
+    grafana_agent: CharmVersion
 
 
 @pytest.fixture
