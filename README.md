@@ -1,3 +1,4 @@
+[TEST] do not merge
 # Spark Integration Hub K8s Operator
 
 The Spark Configuration Hub charm, is the charm that enables the integration of 
