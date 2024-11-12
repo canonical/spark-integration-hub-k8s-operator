@@ -7,7 +7,7 @@ from scenario import Container, Context, Model, Mount, Relation
 from scenario.state import next_relation_id
 
 from charm import SparkIntegrationHub
-from constants import CONTAINER
+from constants import CONTAINER, LOGGING_RELATION_NAME
 from core.context import AZURE_RELATION_NAME, S3_RELATION_NAME
 
 
@@ -20,7 +20,10 @@ def integration_hub_charm():
 @pytest.fixture
 def integration_hub_ctx(integration_hub_charm):
     """Provide fixture for scenario context based on the SparkIntegrationHub charm."""
-    return Context(charm_type=integration_hub_charm)
+    return Context(
+        charm_type=integration_hub_charm,
+        juju_version="3.4.2",  # Note(rgildein): Pebble LogForwarding require Juju 3.4 or higher
+    )
 
 
 @pytest.fixture
@@ -124,5 +127,24 @@ def s3_relation_tls():
             "path": "spark-events",
             "secret-key": "secret-key",
             "tls-ca-chain": '["certificate"]',
+        },
+    )
+
+
+@pytest.fixture
+def logging_relation():
+    """Provide fixture for the logging relation."""
+    relation_id = next_relation_id(update=True)
+
+    return Relation(
+        endpoint=LOGGING_RELATION_NAME,
+        interface="logging",
+        remote_app_name="grafana-agent-k8s",
+        relation_id=relation_id,
+        remote_app_data={"promtail_binary_zip_url": "{}"},
+        remote_units_data={
+            0: {
+                "endpoint": '{"url": "http://grafana-agent-k8s-0.grafana-agent-k8s-endpoints.spark.svc.cluster.local:3500/loki/api/v1/push"}'
+            }
         },
     )

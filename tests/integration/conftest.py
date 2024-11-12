@@ -46,6 +46,7 @@ class IntegrationTestsCharms(BaseModel):
     s3: CharmVersion
     pushgateway: CharmVersion
     azure_storage: CharmVersion
+    grafana_agent: CharmVersion
 
 
 @pytest.fixture
@@ -69,6 +70,9 @@ def charm_versions() -> IntegrationTestsCharms:
                 "series": "jammy",
                 "alias": "pushgateway",
             }
+        ),
+        grafana_agent=CharmVersion(
+            name="grafana-agent-k8s", channel="latest/stable", series="jammy"
         ),
     )
 
