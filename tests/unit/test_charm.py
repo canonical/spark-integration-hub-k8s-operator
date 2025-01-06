@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from ops import ActiveStatus, BlockedStatus, MaintenanceStatus
-from scenario import Container, State
+from ops.testing import Container, State
 
 from constants import CONTAINER
 
