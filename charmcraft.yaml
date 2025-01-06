@@ -4,15 +4,24 @@
 type: charm
 parts:
   charm:
-    charm-binary-python-packages:
-      - setuptools
+    build-snaps:
+      - rustup
     build-packages:
-      - rustc
-      - cargo
-      - git
       - libffi-dev
       - libssl-dev
       - pkg-config
+    override-build: |
+      # get latest rust stable toolchain
+      rustup default stable
+
+      # Convert subset of poetry.lock to requirements.txt
+      curl -sSL https://install.python-poetry.org | python3 -
+      /root/.local/bin/poetry self add poetry-plugin-export
+      /root/.local/bin/poetry export --only main,charm-libs --output requirements.txt
+
+      craftctl default
+    charm-strict-dependencies: true
+    charm-requirements: [requirements.txt]
 bases:
   - build-on:
     - name: ubuntu
