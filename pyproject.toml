@@ -80,7 +80,7 @@ pytest-operator = ">0.20"
 boto3 = ">=1.28.0"
 tenacity = "^8.2.2"
 spark8t = { git = "https://github.com/canonical/spark-k8s-toolkit-py.git", tag = "v0.0.7" }
-pytest-operator-cache = { git = "https://github.com/canonical/data-platform-workflows", tag = "v24.0.0", subdirectory = "python/pytest_plugins/pytest_operator_cache" }
+pytest-operator-cache = { git = "https://github.com/canonical/data-platform-workflows", tag = "v24.0.5", subdirectory = "python/pytest_plugins/pytest_operator_cache" }
 # pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v13.1.2", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
 # pytest-operator-secrets = {git = "https://github.com/canonical/data-platform-workflows", tag = "v13.1.2", subdirectory = "python/pytest_plugins/pytest_operator_secrets"}
 
