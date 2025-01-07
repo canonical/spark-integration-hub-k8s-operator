@@ -10,6 +10,7 @@ import logging
 import subprocess
 import urllib.request
 import uuid
+from collections.abc import MutableMapping
 from pathlib import Path
 from time import sleep
 from typing import Any, Dict
@@ -141,6 +142,18 @@ async def run_action(
     )
     password = await action.wait()
     return password.results
+
+
+def flatten(map: MutableMapping, parent="", separator=".") -> dict[str, str]:
+    """Flatten given nested dictionary to a non-nested dictionary where keys are separated by a dot."""
+    items = []
+    for key, value in map.items():
+        new_key = parent + separator + key if parent else key
+        if isinstance(value, MutableMapping):
+            items.extend(flatten(value, new_key, separator).items())
+        else:
+            items.append((new_key, value))
+    return dict(items)
 
 
 @pytest.mark.abort_on_fail
@@ -348,7 +361,7 @@ async def test_actions(ops_test: OpsTest, namespace, service_account, conf_key, 
     )
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
     assert len(secret_data) > 0
-    assert conf_key in res
+    assert conf_key in flatten(res)
 
     # Remove inserted config
     res = await run_action(ops_test, "remove-config", {"key": conf_key})
