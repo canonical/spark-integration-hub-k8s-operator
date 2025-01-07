@@ -10,6 +10,8 @@ from typing import List, MutableMapping
 
 from ops import Application, Relation, Unit
 
+from common.utils import DotSerializer
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,7 +41,7 @@ class StateBase:
         """Clean the content of the relation data."""
         if not self.relation:
             return
-        self.relation.data[self.component] = {}
+        self.relation.data[self.component].clear()
 
 
 @dataclass
@@ -193,10 +195,24 @@ class HubConfiguration(StateBase):
         super().__init__(relation, component)
         self.app = component
 
+    def update(self, items):
+        """Overridden method to update the hub configuration data."""
+        serializer = DotSerializer()
+
+        # Workaround for https://bugs.launchpad.net/juju/+bug/2093149
+        items = {serializer.serialize(k): v for k, v in items.items()}
+
+        return super().update(items)
+
     @property
     def spark_configurations(self) -> dict[str, str]:
         """Get all Spark configuration options defined by the user."""
-        return dict(self.relation_data)
+        serializer = DotSerializer()
+
+        # Workaround for https://bugs.launchpad.net/juju/+bug/2093149
+        items = {serializer.deserialize(k): v for k, v in self.relation_data.items()}
+
+        return items
 
 
 class ServiceAccount(StateBase):
