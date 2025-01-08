@@ -64,7 +64,7 @@ class ConfigurationActionEvents(Object):
         if "=" in config:
             key, value = self._parse_property_line(config)
             logger.debug(self.context.hub_configurations.relation_data)
-            self.context.hub_configurations.relation_data.update({key: value})
+            self.context.hub_configurations.update({key: value})
             event.set_results({"added-config": f"{key}:{value}"})
             return
 
@@ -87,8 +87,8 @@ class ConfigurationActionEvents(Object):
             return
 
         key = event.params["key"]
-        if key in self.context.hub_configurations.relation_data:
-            self.context.hub_configurations.relation_data.update({key: ""})  # type: ignore
+        if key in self.context.hub_configurations.spark_configurations:
+            self.context.hub_configurations.update({key: ""})  # type: ignore
             event.set_results({"removed-key": key})
             return
 
@@ -111,7 +111,7 @@ class ConfigurationActionEvents(Object):
             event.fail(msg)
             return
 
-        self.context.hub_configurations.relation_data.clear()
+        self.context.hub_configurations.clear()
         event.set_results({"current-configuration": ""})
         return
 

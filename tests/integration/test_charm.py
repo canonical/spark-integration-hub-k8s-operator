@@ -10,6 +10,7 @@ import logging
 import subprocess
 import urllib.request
 import uuid
+from collections.abc import MutableMapping
 from pathlib import Path
 from time import sleep
 from typing import Any, Dict
@@ -141,6 +142,34 @@ async def run_action(
     )
     password = await action.wait()
     return password.results
+
+
+def flatten(map: MutableMapping, parent: str = "", separator: str = ".") -> dict[str, str]:
+    """Flatten given nested dictionary to a non-nested dictionary where keys are separated by a dot.
+
+    For example, consider a nested dictionary as follows:
+
+        {
+            'foo': {
+                'bar': 'val1',
+                'grok': 'val2'
+            }
+        }
+
+    The return value would be as follows:
+        {
+            'foo.bar': 'val1',
+            'foo.grok': 'val2'
+        }
+    """
+    items = []
+    for key, value in map.items():
+        new_key = parent + separator + key if parent else key
+        if isinstance(value, MutableMapping):
+            items.extend(flatten(value, new_key, separator).items())
+        else:
+            items.append((new_key, value))
+    return dict(items)
 
 
 @pytest.mark.abort_on_fail
@@ -285,7 +314,8 @@ async def test_build_and_deploy(ops_test: OpsTest, charm_versions, azure_credent
 
 
 @pytest.mark.abort_on_fail
-async def test_actions(ops_test: OpsTest, charm_versions, namespace, service_account):
+@pytest.mark.parametrize("conf_key,conf_value", [("a", "b"), ("foo.bar.grok", "val")])
+async def test_actions(ops_test: OpsTest, namespace, service_account, conf_key, conf_value):
     logger.info("Testing actions")
     service_account_name = service_account[0]
     logger.info(f"Service account name: {service_account_name}")
@@ -312,7 +342,7 @@ async def test_actions(ops_test: OpsTest, charm_versions, namespace, service_acc
     assert len(secret_data) == 0
 
     # add new configuration
-    res = await run_action(ops_test, "add-config", {"conf": "a=b"})
+    res = await run_action(ops_test, "add-config", {"conf": f"{conf_key}={conf_value}"})
     assert res["return-code"] == 0
     # wait for active status
     await ops_test.model.wait_for_idle(
@@ -329,7 +359,7 @@ async def test_actions(ops_test: OpsTest, charm_versions, namespace, service_acc
     )
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
     # check data in secret
-    assert "a" in secret_data
+    assert conf_key in secret_data
     assert len(secret_data) > 0
 
     # check that previously set configuration option is present
@@ -347,10 +377,10 @@ async def test_actions(ops_test: OpsTest, charm_versions, namespace, service_acc
     )
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
     assert len(secret_data) > 0
-    assert "a" in res
+    assert conf_key in flatten(res)
 
     # Remove inserted config
-    res = await run_action(ops_test, "remove-config", {"key": "a"})
+    res = await run_action(ops_test, "remove-config", {"key": conf_key})
     assert res["return-code"] == 0
     # wait for active status
     await ops_test.model.wait_for_idle(
