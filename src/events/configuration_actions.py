@@ -111,7 +111,7 @@ class ConfigurationActionEvents(Object):
             event.fail(msg)
             return
 
-        self.context.hub_configurations.clean()
+        self.context.hub_configurations.clear()
         event.set_results({"current-configuration": ""})
         return
 

@@ -144,8 +144,24 @@ async def run_action(
     return password.results
 
 
-def flatten(map: MutableMapping, parent="", separator=".") -> dict[str, str]:
-    """Flatten given nested dictionary to a non-nested dictionary where keys are separated by a dot."""
+def flatten(map: MutableMapping, parent: str = "", separator: str = ".") -> dict[str, str]:
+    """Flatten given nested dictionary to a non-nested dictionary where keys are separated by a dot.
+
+    For example, consider a nested dictionary as follows:
+
+        {
+            'foo': {
+                'bar': 'val1',
+                'grok': 'val2'
+            }
+        }
+
+    The return value would be as follows:
+        {
+            'foo.bar': 'val1',
+            'foo.grok': 'val2'
+        }
+    """
     items = []
     for key, value in map.items():
         new_key = parent + separator + key if parent else key
