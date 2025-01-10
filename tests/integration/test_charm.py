@@ -605,8 +605,8 @@ async def test_relation_to_both_s3_and_azure_storage_at_same_time(
         f"{APP_NAME}:s3-credentials", f"{charm_versions.s3.application_name}:s3-credentials"
     )
     await ops_test.model.applications[APP_NAME].remove_relation(
-        f"{APP_NAME}:azure-credentials",
-        f"{charm_versions.azure_storage.application_name}:azure-credentials",
+        f"{APP_NAME}:azure-storage-credentials",
+        f"{charm_versions.azure_storage.application_name}:azure-storage-credentials",
     )
 
     # wait for active status
@@ -698,8 +698,8 @@ async def test_add_removal_azure_storage_relation(
     )
 
     await ops_test.model.applications[APP_NAME].remove_relation(
-        f"{APP_NAME}:azure-credentials",
-        f"{charm_versions.azure_storage.application_name}:azure-credentials",
+        f"{APP_NAME}:azure-storage-credentials",
+        f"{charm_versions.azure_storage.application_name}:azure-storage-credentials",
     )
 
     await ops_test.model.wait_for_idle(

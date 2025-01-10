@@ -94,7 +94,7 @@ def azure_storage_relation():
     """Provide fixture for the Azure storage relation."""
     relation = Relation(
         endpoint=AZURE_RELATION_NAME,
-        interface="azure",
+        interface="azure-storage",
         remote_app_name="azure-storage-integrator",
     )
     relation_id = relation.id
