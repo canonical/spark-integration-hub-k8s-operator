@@ -13,7 +13,7 @@ jobs:
 
   build:
     name: Build charm
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v24.0.5
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v24.0.6
     with:
       cache: false
 
@@ -22,11 +22,11 @@ jobs:
     needs:
       - ci-tests
       - build
-    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v24.0.5
+    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v24.0.6
     with:
       channel: latest/edge
-      artifact-name: ${{ needs.build.outputs.artifact-name }}
+      artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
     secrets:
       charmhub-token: ${{ secrets.CHARMHUB_TOKEN }}
     permissions:
-      contents: write  # Needed to create GitHub release
+      contents: write # Needed to create GitHub release

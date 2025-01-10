@@ -1,6 +1,6 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
-name: Tests Spark Integration Hub 
+name: Tests Spark Integration Hub
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -10,7 +10,7 @@ on:
   workflow_call:
   pull_request:
   schedule:
-    - cron: '53 0 * * *' # Daily at 00:53 UTC
+    - cron: "53 0 * * *" # Daily at 00:53 UTC
 
 jobs:
   lint:
@@ -43,7 +43,7 @@ jobs:
 
   build:
     name: Build charms
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v24.0.5
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v24.0.6
     with:
       cache: true
       path-to-charm-directory: ${{ matrix.path }}
