@@ -15,6 +15,6 @@ PEBBLE_USER = ("_daemon_", "_daemon_")
 # integrations
 INTEGRATION_HUB_REL = "spark-service-account"
 S3_RELATION_NAME = "s3-credentials"
-AZURE_RELATION_NAME = "azure-credentials"
+AZURE_RELATION_NAME = "azure-storage-credentials"
 PUSHGATEWAY = "cos"
 LOGGING_RELATION_NAME = "logging"
