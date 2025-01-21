@@ -30,7 +30,9 @@ resources:
   integration-hub-image:
     type: oci-image
     description: OCI image for the Spark Integration Hub Charm
-    upstream-source: ghcr.io/canonical/spark-integration-hub@sha256:0b9a40435440256b1c10020bd59d19e186ea68d8973fc8f2310010f9bd4e3459  # 3.4-22.04_edge
+    # upstream-source: ghcr.io/canonical/spark-integration-hub@sha256:0b9a40435440256b1c10020bd59d19e186ea68d8973fc8f2310010f9bd4e3459  # 3.4-22.04_edge
+    upstream-source: docker.io/bikalpadhakalcanonical/bikalpa-integration-hub:11
+
 
 requires:
   s3-credentials:
