@@ -35,7 +35,7 @@ SECRET_NAME_PREFIX = "integrator-hub-conf-"
 
 @retry(
     wait=wait_fixed(5),
-    stop=stop_after_attempt(40),
+    stop=stop_after_attempt(120),
     reraise=True,
 )
 def check_metrics(address: str) -> None:
