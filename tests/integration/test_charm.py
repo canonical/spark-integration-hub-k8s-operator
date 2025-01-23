@@ -5,171 +5,32 @@
 
 import asyncio
 import base64
-import json
 import logging
 import subprocess
-import urllib.request
-import uuid
-from collections.abc import MutableMapping
 from pathlib import Path
-from time import sleep
-from typing import Any, Dict
 
-import boto3
 import pytest
 import yaml
-from botocore.client import Config
 from pytest_operator.plugin import OpsTest
 
-from .helpers import add_juju_secret, fetch_action_sync_s3_credentials
+from .helpers import (
+    BUCKET_NAME,
+    add_juju_secret,
+    fetch_action_sync_s3_credentials,
+    flatten,
+    get_secret_data,
+    juju_sleep,
+    run_action,
+    setup_s3_bucket_for_sch_server,
+)
 
 logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
-BUCKET_NAME = "test-bucket"
+# BUCKET_NAME = "test-bucket"
 CONTAINER_NAME = "test-container"
 SECRET_NAME_PREFIX = "integrator-hub-conf-"
-
-
-def run_service_account_registry(*args):
-    """Run service_account_registry CLI command with given set of args.
-
-    Returns:
-        Tuple: A tuple with the content of stdout, stderr and the return code
-            obtained when the command is run.
-    """
-    command = ["python3", "-m", "spark8t.cli.service_account_registry", *args]
-    try:
-        output = subprocess.run(command, check=True, capture_output=True)
-        return output.stdout.decode(), output.stderr.decode(), output.returncode
-    except subprocess.CalledProcessError as e:
-        return e.stdout.decode(), e.stderr.decode(), e.returncode
-
-
-def get_secret_data(namespace: str, secret_name: str):
-    """Retrieve secret data for a given namespace and secret."""
-    command = ["kubectl", "get", "secret", "-n", namespace, "--output", "json"]
-    try:
-        output = subprocess.run(command, check=True, capture_output=True)
-        # output.stdout.decode(), output.stderr.decode(), output.returncode
-        result = output.stdout.decode()
-        logger.info(f"Command: {command}")
-        logger.info(f"Secrets for namespace: {namespace}")
-        logger.info(f"Request secret: {secret_name}")
-        logger.info(f"results: {str(result)}")
-        secrets = json.loads(result)
-        data = {}
-        for secret in secrets["items"]:
-            name = secret["metadata"]["name"]
-            logger.info(f"\t secretName: {name}")
-            if name == secret_name:
-                data = {}
-                if "data" in secret:
-                    data = secret["data"]
-        return data
-    except subprocess.CalledProcessError as e:
-        return e.stdout.decode(), e.stderr.decode(), e.returncode
-
-
-@pytest.fixture()
-def service_account(namespace):
-    """A temporary service account that gets cleaned up automatically."""
-    username = str(uuid.uuid4())
-
-    run_service_account_registry(
-        "create",
-        "--username",
-        username,
-        "--namespace",
-        namespace,
-    )
-    logger.info(f"Service account: {username} created in namespace: {namespace}")
-    return username, namespace
-
-
-async def juju_sleep(ops: OpsTest, time: int):
-    await ops.model.wait_for_idle(
-        apps=[
-            APP_NAME,
-        ],
-        idle_period=time,
-        timeout=300,
-    )
-
-
-def setup_s3_bucket_for_sch_server(endpoint_url: str, aws_access_key: str, aws_secret_key: str):
-    config = Config(connect_timeout=60, retries={"max_attempts": 0})
-    session = boto3.session.Session(
-        aws_access_key_id=aws_access_key, aws_secret_access_key=aws_secret_key
-    )
-    s3 = session.client("s3", endpoint_url=endpoint_url, config=config)
-    # delete test bucket and its content if it already exist
-    buckets = s3.list_buckets()
-    for bucket in buckets["Buckets"]:
-        bucket_name = bucket["Name"]
-        if bucket_name == BUCKET_NAME:
-            logger.info(f"Deleting bucket: {bucket_name}")
-            objects = s3.list_objects_v2(Bucket=BUCKET_NAME)["Contents"]
-            objs = [{"Key": x["Key"]} for x in objects]
-            s3.delete_objects(Bucket=BUCKET_NAME, Delete={"Objects": objs})
-            s3.delete_bucket(Bucket=BUCKET_NAME)
-
-    logger.info("create bucket in minio")
-    for i in range(0, 30):
-        try:
-            s3.create_bucket(Bucket=BUCKET_NAME)
-            break
-        except Exception as e:
-            if i >= 30:
-                logger.error(f"create bucket failed....exiting....\n{str(e)}")
-                raise
-            else:
-                logger.warning(f"create bucket failed....retrying in 10 secs.....\n{str(e)}")
-                sleep(10)
-                continue
-
-    s3.put_object(Bucket=BUCKET_NAME, Key=("spark-events/"))
-    logger.debug(s3.list_buckets())
-
-
-async def run_action(
-    ops_test: OpsTest, action_name: str, params: Dict[str, str], num_unit=0
-) -> Any:
-    """Use the charm action to start a password rotation."""
-    action = await ops_test.model.units.get(f"{APP_NAME}/{num_unit}").run_action(
-        action_name, **params
-    )
-    password = await action.wait()
-    return password.results
-
-
-def flatten(map: MutableMapping, parent: str = "", separator: str = ".") -> dict[str, str]:
-    """Flatten given nested dictionary to a non-nested dictionary where keys are separated by a dot.
-
-    For example, consider a nested dictionary as follows:
-
-        {
-            'foo': {
-                'bar': 'val1',
-                'grok': 'val2'
-            }
-        }
-
-    The return value would be as follows:
-        {
-            'foo.bar': 'val1',
-            'foo.grok': 'val2'
-        }
-    """
-    items = []
-    for key, value in map.items():
-        new_key = parent + separator + key if parent else key
-        if isinstance(value, MutableMapping):
-            items.extend(flatten(value, new_key, separator).items())
-        else:
-            items.append((new_key, value))
-    return dict(items)
 
 
 @pytest.mark.abort_on_fail
@@ -326,7 +187,7 @@ async def test_actions(ops_test: OpsTest, namespace, service_account, conf_key, 
     assert len(secret_data) == 0
 
     # list config
-    res = await run_action(ops_test, "list-config", {})
+    res = await run_action(ops_test, "list-config", {}, APP_NAME)
     assert res["return-code"] == 0
     # wait for active status
     await ops_test.model.wait_for_idle(
@@ -342,7 +203,7 @@ async def test_actions(ops_test: OpsTest, namespace, service_account, conf_key, 
     assert len(secret_data) == 0
 
     # add new configuration
-    res = await run_action(ops_test, "add-config", {"conf": f"{conf_key}={conf_value}"})
+    res = await run_action(ops_test, "add-config", {"conf": f"{conf_key}={conf_value}"}, APP_NAME)
     assert res["return-code"] == 0
     # wait for active status
     await ops_test.model.wait_for_idle(
@@ -352,7 +213,7 @@ async def test_actions(ops_test: OpsTest, namespace, service_account, conf_key, 
     )
     logger.info(f"add-config action result: {res}")
 
-    await juju_sleep(ops_test, 15)
+    await juju_sleep(ops_test, APP_NAME, 15)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -363,7 +224,7 @@ async def test_actions(ops_test: OpsTest, namespace, service_account, conf_key, 
     assert len(secret_data) > 0
 
     # check that previously set configuration option is present
-    res = await run_action(ops_test, "list-config", {})
+    res = await run_action(ops_test, "list-config", {}, APP_NAME)
     assert res["return-code"] == 0
     # wait for active status
     await ops_test.model.wait_for_idle(
@@ -380,7 +241,7 @@ async def test_actions(ops_test: OpsTest, namespace, service_account, conf_key, 
     assert conf_key in flatten(json.loads(res.get("properties", {})))
 
     # Remove inserted config
-    res = await run_action(ops_test, "remove-config", {"key": conf_key})
+    res = await run_action(ops_test, "remove-config", {"key": conf_key}, APP_NAME)
     assert res["return-code"] == 0
     # wait for active status
     await ops_test.model.wait_for_idle(
@@ -390,7 +251,7 @@ async def test_actions(ops_test: OpsTest, namespace, service_account, conf_key, 
     )
     logger.info(f"Remove-config action result: {res}")
 
-    await juju_sleep(ops_test, 15)
+    await juju_sleep(ops_test, APP_NAME, 15)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -404,7 +265,7 @@ async def test_add_config_with_equal_sign(ops_test: OpsTest, namespace, service_
     service_account_name = service_account[0]
 
     # add new configuration whose value contains '=' characters
-    res = await run_action(ops_test, "add-config", {"conf": "key=iam=secret=="})
+    res = await run_action(ops_test, "add-config", {"conf": "key=iam=secret=="}, APP_NAME)
     assert res["return-code"] == 0
     # wait for active status
     await ops_test.model.wait_for_idle(
@@ -414,7 +275,7 @@ async def test_add_config_with_equal_sign(ops_test: OpsTest, namespace, service_
     )
     logger.info(f"add-config action result: {res}")
 
-    await juju_sleep(ops_test, 15)
+    await juju_sleep(ops_test, APP_NAME, 15)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -434,7 +295,7 @@ async def test_add_new_service_account_with_config_value_containing_equals_sign(
     service_account_name = service_account[0]
 
     # wait for the update of secrets
-    await juju_sleep(ops_test, 15)
+    await juju_sleep(ops_test, APP_NAME, 15)
 
     # check secret
     secret_data = get_secret_data(
@@ -448,7 +309,7 @@ async def test_add_new_service_account_with_config_value_containing_equals_sign(
     assert value == "iam=secret=="
 
     # clear config
-    res = await run_action(ops_test, "clear-config", {})
+    res = await run_action(ops_test, "clear-config", {}, APP_NAME)
     assert res["return-code"] == 0
     # wait for active status
     await ops_test.model.wait_for_idle(
@@ -457,7 +318,7 @@ async def test_add_new_service_account_with_config_value_containing_equals_sign(
         timeout=1000,
     )
 
-    await juju_sleep(ops_test, 15)
+    await juju_sleep(ops_test, APP_NAME, 15)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -493,7 +354,7 @@ async def test_relation_to_s3(ops_test: OpsTest, charm_versions, namespace, serv
     # wait for secret update
     logger.info("Wait for secret update.")
 
-    await juju_sleep(ops_test, 15)
+    await juju_sleep(ops_test, APP_NAME, 15)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -508,7 +369,7 @@ async def test_add_new_service_account_with_s3(ops_test: OpsTest, namespace, ser
     service_account_name = service_account[0]
 
     # wait for the update of secrets
-    await juju_sleep(ops_test, 15)
+    await juju_sleep(ops_test, APP_NAME, 15)
 
     # check secret
     secret_data = get_secret_data(
@@ -525,7 +386,7 @@ async def test_add_removal_s3_relation(
     service_account_name = service_account[0]
 
     # wait for the update of secrets
-    await juju_sleep(ops_test, 15)
+    await juju_sleep(ops_test, APP_NAME, 15)
 
     # check secret
     secret_data = get_secret_data(
@@ -566,7 +427,7 @@ async def test_add_removal_s3_relation(
 
     # wait for secret update
     logger.info("Wait for secret update.")
-    await juju_sleep(ops_test, 15)
+    await juju_sleep(ops_test, APP_NAME, 15)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -641,7 +502,7 @@ async def test_relation_to_azure_storage(
 
     # wait for secret update
     logger.info("Wait for secret update.")
-    await juju_sleep(ops_test, 15)
+    await juju_sleep(ops_test, APP_NAME, 15)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -661,7 +522,7 @@ async def test_add_new_service_account_with_azure_storage(
     service_account_name = service_account[0]
 
     # wait for the update of secrets
-    await juju_sleep(ops_test, 15)
+    await juju_sleep(ops_test, APP_NAME, 15)
 
     # check secret
     secret_data = get_secret_data(
@@ -681,7 +542,7 @@ async def test_add_removal_azure_storage_relation(
     service_account_name = service_account[0]
 
     # wait for the update of secrets
-    await juju_sleep(ops_test, 15)
+    await juju_sleep(ops_test, APP_NAME, 15)
 
     # check secret
     secret_data = get_secret_data(
@@ -725,7 +586,7 @@ async def test_add_removal_azure_storage_relation(
 
     # wait for secret update
     logger.info("Wait for secret update.")
-    await juju_sleep(ops_test, 15)
+    await juju_sleep(ops_test, APP_NAME, 15)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -739,168 +600,13 @@ async def test_add_removal_azure_storage_relation(
 
 
 @pytest.mark.abort_on_fail
-async def test_relation_to_pushgateway(
-    ops_test: OpsTest, charm_versions, namespace, service_account
-):
-    logger.info("Relating spark integration hub charm with s3-integrator charm")
-    service_account_name = service_account[0]
-    # namespace= ops_test.model_name
-    logger.info(f"Test with namespace: {namespace}")
-    await ops_test.model.deploy(**charm_versions.pushgateway.deploy_dict())
-
-    await ops_test.model.wait_for_idle(
-        apps=[charm_versions.pushgateway.application_name], timeout=1000, status="active"
-    )
-
-    await ops_test.model.add_relation(charm_versions.pushgateway.application_name, APP_NAME)
-
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME, charm_versions.pushgateway.application_name],
-        status="active",
-        timeout=1000,
-    )
-
-    await juju_sleep(ops_test, 15)
-
-    secret_data = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-    )
-    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
-
-    conf_prop = False
-    for key in secret_data.keys():
-        if "spark.metrics.conf" in key:
-            conf_prop = True
-            break
-    assert conf_prop
-
-    status = await ops_test.model.get_status()
-    address = status["applications"][charm_versions.pushgateway.application_name]["units"][
-        f"{charm_versions.pushgateway.application_name}/0"
-    ]["address"]
-
-    metrics = json.loads(urllib.request.urlopen(f"http://{address}:9091/api/v1/metrics").read())
-
-    assert len(metrics["data"]) == 0
-
-    setup_spark_output = subprocess.check_output(
-        f"./tests/integration/setup/setup_spark.sh {service_account_name} {namespace}",
-        shell=True,
-        stderr=None,
-    ).decode("utf-8")
-
-    logger.info(f"Setup spark output:\n{setup_spark_output}")
-
-    logger.info("Executing Spark job")
-
-    run_spark_output = subprocess.check_output(
-        f"./tests/integration/setup/run_spark_job.sh {service_account_name} {namespace}",
-        shell=True,
-        stderr=None,
-    ).decode("utf-8")
-
-    logger.info(f"Run spark output:\n{run_spark_output}")
-
-    logger.info("Verifying metrics is present in the pushgateway has")
-
-    metrics = json.loads(urllib.request.urlopen(f"http://{address}:9091/api/v1/metrics").read())
-
-    logger.info(f"Metrics: {metrics}")
-
-    assert len(metrics["data"]) > 0
-
-    await ops_test.model.applications[APP_NAME].remove_relation(
-        f"{APP_NAME}:cos", f"{charm_versions.pushgateway.application_name}:push-endpoint"
-    )
-
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME, charm_versions.pushgateway.application_name],
-        status="active",
-        timeout=300,
-        idle_period=30,
-    )
-
-    secret_data = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-    )
-
-    for key in secret_data.keys():
-        if "spark.metrics.conf" in key:
-            assert False
-
-
-@pytest.mark.abort_on_fail
-async def test_integrate_logging_relation(ops_test: OpsTest, service_account, charm_versions):
-    """Test integrate logging relation."""
-    service_account_name, namespace = service_account
-    setup_spark_output = subprocess.check_output(
-        f"./tests/integration/setup/setup_spark.sh {service_account_name} {namespace}",
-        shell=True,
-        stderr=None,
-    ).decode("utf-8")
-    logger.info(f"Setup spark output:\n{setup_spark_output}")
-
-    logger.info(
-        "Integrate %s with %s through logging relation",
-        APP_NAME,
-        charm_versions.grafana_agent.application_name,
-    )
-    await ops_test.model.integrate(
-        f"{charm_versions.grafana_agent.application_name}:logging-provider", f"{APP_NAME}:logging"
-    )
-
-    # wait for the update of secrets
-    await juju_sleep(ops_test, 15)
-
-    # check secret
-    secret_data = get_secret_data(
-        namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-    )
-    # Note(rgildein): Double underscores are used in secrets, but only one will be present in POD.
-    assert "spark.executorEnv.LOKI__URL" in secret_data
-    assert "spark.kubernetes.driverEnv.LOKI__URL" in secret_data
-
-
-@pytest.mark.abort_on_fail
-async def test_remove_logging_relation(ops_test: OpsTest, service_account, charm_versions):
-    """Test remove logging relation."""
-    service_account_name, namespace = service_account
-    setup_spark_output = subprocess.check_output(
-        f"./tests/integration/setup/setup_spark.sh {service_account_name} {namespace}",
-        shell=True,
-        stderr=None,
-    ).decode("utf-8")
-    logger.info(f"Setup spark output:\n{setup_spark_output}")
-
-    logger.info(
-        "Remove relation between %s and %s",
-        APP_NAME,
-        charm_versions.grafana_agent.application_name,
-    )
-    await ops_test.model.applications[APP_NAME].remove_relation(
-        f"{charm_versions.grafana_agent.application_name}:logging-provider", f"{APP_NAME}:logging"
-    )
-
-    # wait for the update of secrets
-    await juju_sleep(ops_test, 15)
-
-    # check secret
-    secret_data = get_secret_data(
-        namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-    )
-    # Note(rgildein): Double underscores are used in secrets, but only one will be present in POD.
-    assert "spark.executorEnv.LOKI__URL" not in secret_data
-    assert "spark.kubernetes.driverEnv.LOKI__URL" not in secret_data
-
-
-@pytest.mark.abort_on_fail
 async def test_remove_application(
     ops_test: OpsTest, namespace, service_account, azure_credentials, charm_versions
 ):
     service_account_name = service_account[0]
 
     # wait for the update of secres
-    await juju_sleep(ops_test, 15)
+    await juju_sleep(ops_test, APP_NAME, 15)
 
     # check secret
     secret_data = get_secret_data(

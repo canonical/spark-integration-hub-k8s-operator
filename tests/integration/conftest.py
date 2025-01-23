@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
+import logging
 import shutil
 import subprocess
 import uuid
@@ -9,6 +10,10 @@ from typing import Optional
 import pytest
 from pydantic import BaseModel
 from pytest_operator.plugin import OpsTest
+
+from .helpers import run_service_account_registry
+
+logger = logging.getLogger(__name__)
 
 
 class CharmVersion(BaseModel):
@@ -113,3 +118,19 @@ def azure_credentials(ops_test: OpsTest):
         "connection-protocol": "abfss",
         "secret-key": "i-am-secret",
     }
+
+
+@pytest.fixture()
+def service_account(namespace):
+    """A temporary service account that gets cleaned up automatically."""
+    username = str(uuid.uuid4())
+
+    run_service_account_registry(
+        "create",
+        "--username",
+        username,
+        "--namespace",
+        namespace,
+    )
+    logger.info(f"Service account: {username} created in namespace: {namespace}")
+    return username, namespace
