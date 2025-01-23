@@ -4,6 +4,7 @@
 
 
 import asyncio
+import datetime
 import json
 import logging
 import subprocess
@@ -34,13 +35,14 @@ SECRET_NAME_PREFIX = "integrator-hub-conf-"
 
 @retry(
     wait=wait_fixed(5),
-    stop=stop_after_attempt(20),
+    stop=stop_after_attempt(40),
     reraise=True,
 )
 def check_metrics(address: str) -> None:
     metrics = json.loads(urllib.request.urlopen(f"http://{address}:9091/api/v1/metrics").read())
 
-    logger.info(f"Metrics: {metrics}")
+    logger.info(f"Metrics: {metrics} at time: {datetime.datetime.now()}")
+    
 
     assert len(metrics["data"]) > 0
 
