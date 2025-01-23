@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2024 Canonical Limited
+# Copyright 2025 Canonical Limited
 # See LICENSE file for licensing details.
 
 
@@ -226,10 +226,15 @@ async def test_build_and_deploy(
 async def test_relation_to_pushgateway(
     ops_test: OpsTest, charm_versions, namespace, service_account
 ):
+    service_account_name, namespace = service_account
+    setup_spark_output = subprocess.check_output(
+        f"./tests/integration/setup/setup_spark.sh {service_account_name} {namespace}",
+        shell=True,
+        stderr=None,
+    ).decode("utf-8")
+    logger.info(f"Setup spark output:\n{setup_spark_output}")
 
     logger.info("Relating spark integration hub charm with s3-integrator charm")
-    service_account_name = service_account[0]
-    # namespace= ops_test.model_name
     logger.info(f"Test with namespace: {namespace}")
     await ops_test.model.deploy(**charm_versions.pushgateway.deploy_dict())
 

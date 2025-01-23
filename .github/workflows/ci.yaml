@@ -103,9 +103,9 @@ jobs:
             echo Skipping unstable tests
             echo "mark_expression=not unstable" >> $GITHUB_OUTPUT
           fi
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
-        timeout-minutes: 30
+      # - name: Setup upterm session
+      #   uses: lhotari/action-upterm@v1
+      #   timeout-minutes: 30
       - name: Run integration tests
         run: tox run -e ${{ matrix.tox-environments }} -- -m '${{ steps.select-tests.outputs.mark_expression }}'
         env:
