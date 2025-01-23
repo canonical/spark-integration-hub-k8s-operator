@@ -42,7 +42,6 @@ def check_metrics(address: str) -> None:
     metrics = json.loads(urllib.request.urlopen(f"http://{address}:9091/api/v1/metrics").read())
 
     logger.info(f"Metrics: {metrics} at time: {datetime.datetime.now()}")
-    
 
     assert len(metrics["data"]) > 0
 
