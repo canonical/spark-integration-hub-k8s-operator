@@ -13,7 +13,6 @@ from constants import CONTAINER, PEER
 
 
 def parse_spark_properties(out: State, tmp_path: Path) -> dict[str, str]:
-
     spark_properties_path = (
         out.get_container(CONTAINER)
         .layers["base"]
@@ -31,7 +30,7 @@ def parse_spark_properties(out: State, tmp_path: Path) -> dict[str, str]:
         )
 
 
-def test_start_integration_hub(integration_hub_ctx):
+def test_start_integration_hub(integration_hub_ctx: Context) -> None:
     state = State(
         config={},
         containers=[Container(name=CONTAINER, can_connect=False)],
@@ -41,7 +40,9 @@ def test_start_integration_hub(integration_hub_ctx):
 
 
 @patch("workload.IntegrationHub.exec")
-def test_pebble_ready(exec_calls, integration_hub_ctx, integration_hub_container):
+def test_pebble_ready(
+    exec_calls, integration_hub_ctx: Context, integration_hub_container: Container
+) -> None:
     state = State(
         containers=[integration_hub_container],
     )
@@ -60,11 +61,11 @@ def test_pebble_ready(exec_calls, integration_hub_ctx, integration_hub_container
 def test_s3_relation_connection_ok(
     exec_calls,
     verify_call,
-    tmp_path,
-    integration_hub_ctx,
-    integration_hub_container,
-    s3_relation,
-):
+    tmp_path: Path,
+    integration_hub_ctx: Context,
+    integration_hub_container: Container,
+    s3_relation: Relation,
+) -> None:
     state = State(
         relations=[s3_relation],
         containers=[integration_hub_container],
@@ -103,12 +104,12 @@ def test_s3_relation_connection_ok(
 def test_s3_relation_connection_ok_tls(
     exec_calls,
     verify_call,
-    tmp_path,
-    integration_hub_ctx,
-    integration_hub_container,
-    s3_relation_tls,
-    s3_relation,
-):
+    tmp_path: Path,
+    integration_hub_ctx: Context,
+    integration_hub_container: Container,
+    s3_relation_tls: Relation,
+    s3_relation: Relation,
+) -> None:
     state = State(
         relations=[s3_relation_tls],
         containers=[integration_hub_container],
@@ -118,7 +119,6 @@ def test_s3_relation_connection_ok_tls(
         patch("managers.k8s.KubernetesManager.__init__", return_value=None),
         patch("managers.k8s.KubernetesManager.trusted", return_value=True),
     ):
-
         inter = integration_hub_ctx.run(
             integration_hub_ctx.on.relation_changed(s3_relation_tls), state
         )
@@ -148,11 +148,10 @@ def test_s3_relation_connection_ok_tls(
 def test_s3_relation_connection_ko(
     exec_calls,
     verify_call,
-    tmp_path,
-    integration_hub_ctx,
-    integration_hub_container,
-    s3_relation,
-):
+    integration_hub_ctx: Context,
+    integration_hub_container: Container,
+    s3_relation: Relation,
+) -> None:
     state = State(
         relations=[s3_relation],
         containers=[integration_hub_container],
@@ -170,11 +169,11 @@ def test_s3_relation_connection_ko(
 def test_s3_relation_broken(
     exec_calls,
     verify_call,
-    integration_hub_ctx,
-    integration_hub_container,
-    s3_relation,
-    tmp_path,
-):
+    tmp_path: Path,
+    integration_hub_ctx: Context,
+    integration_hub_container: Container,
+    s3_relation: Relation,
+) -> None:
     initial_state = State(
         relations=[s3_relation],
         containers=[integration_hub_container],
@@ -184,7 +183,6 @@ def test_s3_relation_broken(
         patch("managers.k8s.KubernetesManager.__init__", return_value=None),
         patch("managers.k8s.KubernetesManager.trusted", return_value=True),
     ):
-
         state_after_relation_changed = integration_hub_ctx.run(
             integration_hub_ctx.on.relation_changed(s3_relation), initial_state
         )
@@ -207,11 +205,11 @@ def test_azure_storage_relation(
     mock_has_secrets,
     exec_calls,
     verify_call,
-    tmp_path,
-    integration_hub_ctx,
-    integration_hub_container,
-    azure_storage_relation,
-):
+    tmp_path: Path,
+    integration_hub_ctx: Context,
+    integration_hub_container: Container,
+    azure_storage_relation: Relation,
+) -> None:
     state = State(
         relations=[azure_storage_relation],
         containers=[integration_hub_container],
@@ -260,11 +258,11 @@ def test_azure_storage_relation_broken(
     mock_has_secrets,
     exec_calls,
     verify_call,
-    tmp_path,
-    integration_hub_ctx,
-    integration_hub_container,
-    azure_storage_relation,
-):
+    tmp_path: Path,
+    integration_hub_ctx: Context,
+    integration_hub_container: Container,
+    azure_storage_relation: Relation,
+) -> None:
     state = State(
         relations=[azure_storage_relation],
         containers=[integration_hub_container],
@@ -299,12 +297,11 @@ def test_both_azure_storage_and_s3_relation_together(
     mock_has_secrets,
     exec_calls,
     verify_call,
-    tmp_path,
-    integration_hub_ctx,
-    integration_hub_container,
-    s3_relation,
-    azure_storage_relation,
-):
+    integration_hub_ctx: Context,
+    integration_hub_container: Container,
+    s3_relation: Relation,
+    azure_storage_relation: Relation,
+) -> None:
     state = State(
         relations=[s3_relation, azure_storage_relation],
         containers=[integration_hub_container],
@@ -323,8 +320,12 @@ def test_both_azure_storage_and_s3_relation_together(
 
 @patch("workload.IntegrationHub.exec")
 def test_logging_relation_changed(
-    exec_calls, integration_hub_ctx, integration_hub_container, logging_relation, tmp_path
-):
+    exec_calls,
+    tmp_path: Path,
+    integration_hub_ctx: Context,
+    integration_hub_container: Container,
+    logging_relation: Relation,
+) -> None:
     """Test logging relation changed."""
     exp_url = "http://grafana-agent-k8s-0.grafana-agent-k8s-endpoints.spark.svc.cluster.local:3500/loki/api/v1/push"
     state = State(relations=[logging_relation], containers=[integration_hub_container])
@@ -358,8 +359,12 @@ def test_logging_relation_changed(
 
 @patch("workload.IntegrationHub.exec")
 def test_logging_relation_broken(
-    exec_calls, integration_hub_ctx, integration_hub_container, logging_relation, tmp_path
-):
+    exec_calls,
+    tmp_path: Path,
+    integration_hub_ctx: Context,
+    integration_hub_container: Container,
+    logging_relation: Relation,
+) -> None:
     """Test logging relation broken."""
     state = State(relations=[logging_relation], containers=[integration_hub_container])
 
