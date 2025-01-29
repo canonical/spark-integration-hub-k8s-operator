@@ -377,7 +377,7 @@ async def test_actions(ops_test: OpsTest, namespace, service_account, conf_key, 
     )
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
     assert len(secret_data) > 0
-    assert conf_key in flatten(res)
+    assert conf_key in flatten(json.loads(res.get("properties", {})))
 
     # Remove inserted config
     res = await run_action(ops_test, "remove-config", {"key": conf_key})
@@ -469,7 +469,6 @@ async def test_add_new_service_account_with_config_value_containing_equals_sign(
 
 @pytest.mark.abort_on_fail
 async def test_relation_to_s3(ops_test: OpsTest, charm_versions, namespace, service_account):
-
     logger.info("Relating spark integration hub charm with s3-integrator charm")
     service_account_name = service_account[0]
     secret_data = get_secret_data(
@@ -523,7 +522,6 @@ async def test_add_new_service_account_with_s3(ops_test: OpsTest, namespace, ser
 async def test_add_removal_s3_relation(
     ops_test: OpsTest, namespace, service_account, charm_versions
 ):
-
     service_account_name = service_account[0]
 
     # wait for the update of secrets
@@ -582,7 +580,6 @@ async def test_add_removal_s3_relation(
 async def test_relation_to_both_s3_and_azure_storage_at_same_time(
     ops_test: OpsTest, charm_versions
 ):
-
     logger.info(
         "Relating spark integration hub charm with azure-storage-integrator along with existing relation with s3-integrator charm"
     )
@@ -625,7 +622,6 @@ async def test_relation_to_both_s3_and_azure_storage_at_same_time(
 async def test_relation_to_azure_storage(
     ops_test: OpsTest, charm_versions, namespace, service_account, azure_credentials
 ):
-
     logger.info("Relating spark integration hub charm with azure-storage-integrator charm")
     service_account_name = service_account[0]
     secret_data = get_secret_data(
@@ -746,7 +742,6 @@ async def test_add_removal_azure_storage_relation(
 async def test_relation_to_pushgateway(
     ops_test: OpsTest, charm_versions, namespace, service_account
 ):
-
     logger.info("Relating spark integration hub charm with s3-integrator charm")
     service_account_name = service_account[0]
     # namespace= ops_test.model_name
