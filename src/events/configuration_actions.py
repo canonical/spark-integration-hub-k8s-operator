@@ -3,9 +3,11 @@
 # See LICENSE file for licensing details.
 
 """Event handlers for configuration-related Juju Actions."""
+
+import json
 import logging
 import re
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 
 from ops.charm import ActionEvent
 from ops.framework import Object
@@ -131,10 +133,10 @@ class ConfigurationActionEvents(Object):
 
         configuration = self.context.hub_configurations.spark_configurations
         logger.info(f"Get configuration: {configuration}")
-        event.set_results(configuration)
+        event.set_results({"properties": json.dumps(configuration)})
         return
 
-    def _parse_property_line(self, line: str) -> Tuple[str, str]:  # type: ignore
+    def _parse_property_line(self, line: str) -> tuple[str, str]:
         prop_assignment = list(filter(None, re.split("=| ", line.strip())))
         prop_key = prop_assignment[0].strip()
         option_assignment = line.split("=", 1)

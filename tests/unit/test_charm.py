@@ -1,14 +1,15 @@
 # Copyright 2024 Canonical Limited
 # See LICENSE file for licensing details.
 
+import json
 from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
 from ops import ActiveStatus, BlockedStatus, MaintenanceStatus
-from ops.testing import Container, State
+from ops.testing import Container, Context, PeerRelation, Relation, State
 
-from constants import CONTAINER
+from constants import CONTAINER, PEER
 
 
 def parse_spark_properties(out: State, tmp_path: Path) -> dict[str, str]:
@@ -390,3 +391,29 @@ def test_logging_relation_broken(
     spark_properties = parse_spark_properties(out, tmp_path)
     assert "spark.executorEnv.LOKI_URL" not in spark_properties
     assert "spark.kubernetes.driverEnv.LOKI_URL" not in spark_properties
+
+
+def test_action_get_capitalized_property(
+    integration_hub_ctx: Context,
+    integration_hub_container: Container,
+    s3_relation: Relation,
+) -> None:
+    # Given
+    properties = {
+        "spark.capitalizedProperty": "value",
+    }
+    peers_relation = PeerRelation(
+        endpoint=PEER,
+        interface="spark_configurations",
+        local_app_data=properties,
+    )
+    state = State(
+        relations=[peers_relation, s3_relation],
+        containers=[integration_hub_container],
+    )
+
+    # When
+    state = integration_hub_ctx.run(integration_hub_ctx.on.action("list-config"), state)
+
+    # Then
+    assert integration_hub_ctx.action_results == {"properties": json.dumps(properties)}
