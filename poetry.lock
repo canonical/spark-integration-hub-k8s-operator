@@ -420,14 +420,14 @@ markers = {format = "platform_system == \"Windows\"", integration = "sys_platfor
 
 [[package]]
 name = "cosl"
-version = "0.0.50"
+version = "0.0.51"
 description = "Utils for COS Lite charms"
 optional = false
 python-versions = ">=3.8"
-groups = ["charm-libs"]
+groups = ["main", "charm-libs"]
 files = [
-    {file = "cosl-0.0.50-py3-none-any.whl", hash = "sha256:b059b2af5db9c124ab7b7eba6cbbc61fc1c99c513c00f031587a963c73b9af38"},
-    {file = "cosl-0.0.50.tar.gz", hash = "sha256:d81e2db6b8ccdb417e90b39eb53be7d53275103e05a66867a82c1345147d7896"},
+    {file = "cosl-0.0.51-py3-none-any.whl", hash = "sha256:2ef43a94f0ca130fb4f2af924b75329f3c5e74b5c40ad4036af16713ad7d47d4"},
+    {file = "cosl-0.0.51.tar.gz", hash = "sha256:32af380475bba32df7334d53ff16fb93466a169c7433e79a9fef8dbbecfdd43c"},
 ]
 
 [package.dependencies]
@@ -1358,7 +1358,7 @@ version = "1.10.19"
 description = "Data validation and settings management using python type hints"
 optional = false
 python-versions = ">=3.7"
-groups = ["charm-libs"]
+groups = ["main", "charm-libs"]
 files = [
     {file = "pydantic-1.10.19-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:a415b9e95fa602b10808113967f72b2da8722061265d6af69268c111c254832d"},
     {file = "pydantic-1.10.19-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:11965f421f7eb026439d4eb7464e9182fe6d69c3d4d416e464a4485d1ba61ab6"},
@@ -1830,7 +1830,7 @@ version = "8.5.0"
 description = "Retry code until it succeeds"
 optional = false
 python-versions = ">=3.8"
-groups = ["charm-libs", "integration"]
+groups = ["main", "charm-libs", "integration"]
 files = [
     {file = "tenacity-8.5.0-py3-none-any.whl", hash = "sha256:b594c2a5945830c267ce6b79a166228323ed52718f30302c1359836112346687"},
     {file = "tenacity-8.5.0.tar.gz", hash = "sha256:8bc6c0c8a09b31e6cad13c47afbed1a567518250a9a171418582ed8d9c20ca78"},
@@ -1922,7 +1922,6 @@ files = [
     {file = "typing_extensions-4.12.2-py3-none-any.whl", hash = "sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d"},
     {file = "typing_extensions-4.12.2.tar.gz", hash = "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8"},
 ]
-markers = {main = "python_version < \"3.13\""}
 
 [[package]]
 name = "typing-inspect"
@@ -2069,4 +2068,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">3.10,<4.0"
-content-hash = "ff1251d97877d17d71c47d018a88af5b7f3dbdd344717fa2c4998fddbd095df0"
+content-hash = "8a0691cbaafb5e0c47e5788b367dd2814952ff58ed3adf1e6d387c1a38b5dd7d"
