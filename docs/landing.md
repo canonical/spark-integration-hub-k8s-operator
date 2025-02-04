@@ -79,10 +79,6 @@ It is an open-source project that warmly welcomes community projects, contributi
 - Meet the community and chat with us on [Matrix](https://matrix.to/#/#charmhub-data-platform:ubuntu.com)
 - [Contribute](https://github.com/canonical/spark-integration-hub-k8s-operator/blob/main/CONTRIBUTING.md) and report [issues](https://github.com/canonical/spark-integration-hub-k8s-operator/issues/new)
 
-<!-- FIXME: Do we share this? Is it just to link to the Jira board?
-* [Roadmap](<link>)
--->
-
 Thinking about using Charmed Apache Spark for your next project? [Get in touch!](https://canonical.com/data)
 
 ## License
