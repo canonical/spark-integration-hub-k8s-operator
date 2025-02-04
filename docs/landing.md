@@ -2,7 +2,7 @@
 
 Spark Integration Hub K8s is an open-source [Kubernetes charm](https://juju.is/docs/olm/charmed-operator) that enables the integration of the Charmed Apache Spark solution with existing charms (PostgreSQL, S3-integrator, etc.) or bundles (COS, Identity, etc.) and properly configure the corresponding option in the Spark ecosystem.
 
-The Spark Integration Hub K8s charm provides centralization for other charmed components and generates the configuration options for the Spark jobs that will be run with the Spark Client snap, abstracting low-level configuration option settings.
+The Spark Integration Hub K8s charm provides centralization for other charmed components and generates the configuration options for the Spark jobs that will be run using Charmed Spark tooling (e.g. Spark-client snap, spark8t library, charmed applications).
 
 The needs met by the Spark Integration Hub K8s charm are the following:
 
