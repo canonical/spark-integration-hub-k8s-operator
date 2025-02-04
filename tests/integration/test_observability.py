@@ -293,6 +293,7 @@ async def test_relation_to_pushgateway(
     logger.info(f"Spark job stderr :\n{stderr}")
 
     logger.info("Spark job has ended!")
+    await juju_sleep(ops_test, APP_NAME, 15)
     logger.info("Check that metrics are deleted from the prometheus pushgateway")
     metrics = json.loads(urllib.request.urlopen(f"http://{address}:9091/api/v1/metrics").read())
 
