@@ -17,13 +17,42 @@ Spark Integration Hub K8s is a solution designed and developed to help teams str
 Spark Integration Hub K8s is developed and supported by [Canonical](https://canonical.com/), as part of its commitment to provide open-source, self-driving solutions, seamlessly integrated using the Operator Framework Juju.
 Please refer to [Charmhub](https://charmhub.io/), for more charmed operators that can be integrated by [Juju](https://juju.is/).
 
-
 <!--
 
 # Navigation
 
 SEE TEMPLATE
 -->
+
+## Usage
+
+<!--TODO: Remove this entire section once we have a dedicated page-->
+
+To deploy this charm, use
+
+```shell
+juju add-model <my-model>
+juju deploy s3-integrator --channel latest/edge
+juju deploy spark-integration-hub-k8s --channel edge
+juju relate spark-integration-hub-k8s s3-integrator
+```
+
+[note type=information]
+You may use a different object storage, such as `azure-storage-integrator`
+[/note]
+
+When creating new Spark service account using the [`spark-client` snap](https://snapcraft.io/spark-client)
+
+```shell
+spark-client.service-account-registry create --username <spark-user> --namespace <namespace>
+```
+
+The Spark Integration Hub will take care of adding relevant configuration to the
+Charmed Spark properties,
+
+```shell
+spark-client.service-account-registry get-config --username <spark-user> --namespace <namespace>
+```
 
 ## Project and community
 
