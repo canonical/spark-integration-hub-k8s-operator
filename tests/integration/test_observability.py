@@ -226,6 +226,10 @@ async def test_build_and_deploy(
 async def test_relation_to_pushgateway(
     ops_test: OpsTest, charm_versions, namespace, service_account
 ):
+    """Test relation with prometheus pushgateway.
+
+    Assert on the unit status and on the presence/absence of the metrics.
+    """
     service_account_name, namespace = service_account
     setup_spark_output = subprocess.check_output(
         f"./tests/integration/setup/setup_spark.sh {service_account_name} {namespace}",
