@@ -122,7 +122,7 @@ def azure_credentials(ops_test: OpsTest):
 
 @pytest.fixture()
 def service_account(namespace):
-    """A temporary service account that gets cleaned up automatically."""
+    """A fixture that creates a service account that has the permission to run spark jobs."""
     username = str(uuid.uuid4())
 
     run_service_account_registry(
