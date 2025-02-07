@@ -27,9 +27,7 @@ juju deploy spark-integration-hub-k8s --channel edge
 juju relate spark-integration-hub-k8s s3-integrator
 ```
 
-[note type=information]
-You may use a different object storage, such as `azure-storage-integrator`.
-[/note]
+> **Note**: You may use a different object storage, such as `azure-storage-integrator`.
 
 When creating new Spark service account using the [`spark-client` snap](https://snapcraft.io/spark-client)
 
