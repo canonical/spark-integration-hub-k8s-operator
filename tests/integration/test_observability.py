@@ -18,7 +18,6 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 
 from .helpers import (
     BUCKET_NAME,
-    add_juju_secret,
     fetch_action_sync_s3_credentials,
     get_secret_data,
     juju_sleep,
@@ -47,9 +46,7 @@ def check_metrics(address: str) -> None:
 
 
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(
-    ops_test: OpsTest, charm_versions, azure_credentials, service_account, namespace
-):
+async def test_build_and_deploy(ops_test: OpsTest, charm_versions, service_account, namespace):
     """Build the charm-under-test and deploy it together with related charms.
 
     Assert on the unit status before any relations/configurations take place.
@@ -90,14 +87,11 @@ async def test_build_and_deploy(
 
     resources = {"integration-hub-image": image_version}
 
-    logger.info(
-        "Deploying Spark Integration hub charm, s3-integrator charm and azure-storage-integrator charm"
-    )
+    logger.info("Deploying Spark Integration hub charm and s3-integrator charm")
 
     # Deploy the charm and wait for waiting status
     await asyncio.gather(
         ops_test.model.deploy(**charm_versions.s3.deploy_dict()),
-        ops_test.model.deploy(**charm_versions.azure_storage.deploy_dict()),
         ops_test.model.deploy(
             charm,
             resources=resources,
@@ -108,12 +102,11 @@ async def test_build_and_deploy(
         ),
     )
 
-    logger.info("Waiting for s3-integrator and azure-storage-integrator charms to be idle...")
+    logger.info("Waiting for s3-integrator and integration hub charms to be idle...")
     await ops_test.model.wait_for_idle(
         apps=[
             APP_NAME,
             charm_versions.s3.application_name,
-            charm_versions.azure_storage.application_name,
         ],
         timeout=300,
     )
@@ -140,43 +133,6 @@ async def test_build_and_deploy(
     await ops_test.model.applications[charm_versions.s3.application_name].set_config(
         configuration_parameters
     )
-
-    logger.info("Adding Juju secret for secret-key config option for azure-storage-integrator")
-    credentials_secret_uri = await add_juju_secret(
-        ops_test,
-        charm_versions.azure_storage.application_name,
-        "iamsecret",
-        {"secret-key": azure_credentials["secret-key"]},
-    )
-    logger.info(
-        f"Juju secret for secret-key config option for azure-storage-integrator added. Secret URI: {credentials_secret_uri}"
-    )
-
-    configuration_parameters = {
-        "container": azure_credentials["container"],
-        "path": azure_credentials["path"],
-        "storage-account": azure_credentials["storage-account"],
-        "connection-protocol": azure_credentials["connection-protocol"],
-        "credentials": credentials_secret_uri,
-    }
-    # apply new configuration options
-    logger.info("Setting up configuration for azure-storage-integrator charm...")
-    await ops_test.model.applications[charm_versions.azure_storage.application_name].set_config(
-        configuration_parameters
-    )
-
-    logger.info(
-        "Waiting for s3-integrator, azure-storage-integrator and integration-hub charm to be idle and active..."
-    )
-    async with ops_test.fast_forward():
-        await ops_test.model.wait_for_idle(
-            apps=[
-                charm_versions.azure_storage.application_name,
-                charm_versions.s3.application_name,
-                APP_NAME,
-            ],
-            status="active",
-        )
 
     logger.info("Deploying the grafana-agent-k8s charm")
     await ops_test.model.deploy(**charm_versions.grafana_agent.deploy_dict())
