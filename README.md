@@ -1,6 +1,6 @@
 # Integration Hub for Apache Spark K8s Operator
 
-The Integration Hub for Apache Spark K8s charm is the charm that enables the integration of the Charmed Spark solution with existing charms (PostgreSQL, S3-integrator, etc) and bundles (COS, Identity, etc) and properly configure the corresponding option in the Spark ecosystem.
+The Integration Hub for Apache Spark K8s charm is the charm that enables the integration of the Charmed Apache Spark solution with existing charms (PostgreSQL, S3-integrator, etc) and bundles (COS, Identity, etc) and properly configure the corresponding option in the Apache Spark ecosystem.
 
 The main tasks of the Integration Hub charm are the following:
 
@@ -20,7 +20,7 @@ The Integration Hub for Apache Spark K8s charm is responsible for the generation
 proper configuration options for the Spark jobs that will be run with the
 Spark Client snap.
 
-The Integration Hub for Apache Spark K8s charm will need to get all service accounts that are associated with the Charmed Spark solution.
+The Integration Hub for Apache Spark K8s charm will need to get all service accounts that are associated with the Charmed Apache Spark solution.
 This implies that the charm needs to detect existing and new service accounts in order to add the corresponding configuration in the Kubernetes secrets related to those service accounts.
 
 ## Usage
