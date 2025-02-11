@@ -18,7 +18,7 @@ The main tasks of the Integration Hub charm are the following:
 
 The Integration Hub for Apache Spark K8s charm is responsible for the generation of the
 proper configuration options for the Spark jobs that will be run with the
-Spark Client snap.
+Client tools snap for Apache Spark.
 
 The Integration Hub for Apache Spark K8s charm will need to get all service accounts that are associated with the Charmed Apache Spark solution.
 This implies that the charm needs to detect existing and new service accounts in order to add the corresponding configuration in the Kubernetes secrets related to those service accounts.
@@ -38,7 +38,7 @@ When creating new Spark service account using the [`spark-client` snap](https://
 spark-client.service-account-registry create --username <spark-user> --namespace <namespace>
 ```
 
-The Integration Hub will take care of adding relevant configuration to the Charmed Spark properties,
+The Integration Hub will take care of adding relevant configuration to the Charmed Apache Spark properties,
 
 ```shell
 spark-client.service-account-registry get-config --username <spark-user> --namespace <namespace>
