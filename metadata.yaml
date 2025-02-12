@@ -9,6 +9,7 @@ description: |
   charmed components and allows simple configuration of Spark jobs and 
   integration with client applications, abstracting low-level configuration 
   option settings.
+docs: https://discourse.charmhub.io/t/integration-hub-for-apache-spark-documentation/16751
 source: https://github.com/canonical/spark-integration-hub-k8s-operator
 issues: https://github.com/canonical/spark-integration-hub-k8s-operator/issues
 website:
