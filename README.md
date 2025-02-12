@@ -13,8 +13,7 @@ The main tasks of the Integration Hub charm are the following:
 - Handle updates from the related charms (i.e., new database credentials,
   change of endpoints, updated S3 credentials.)
 - The Integration Hub charm may also be able to create and configure services
-  accounts that are able to run Spark jobs. This can be a possible scenario if
-  we relate our solution with Kubeflow.
+  accounts that are able to run Spark jobs.
 
 The Integration Hub for Apache Spark K8s charm is responsible for the generation of the
 proper configuration options for the Spark jobs that will be run with the
