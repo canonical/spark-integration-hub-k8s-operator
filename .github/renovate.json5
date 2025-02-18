@@ -6,7 +6,7 @@
   reviewers: [
     'welpaolo',
     'theoctober19th',
-    'abatisse',
+    'batalex',
   ],
   "schedule": ["after 1am and before 3am on friday"],
   "lockFileMaintenance": {
