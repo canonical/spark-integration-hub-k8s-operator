@@ -1,12 +1,12 @@
 {
-  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
-  extends: [
-    'github>canonical/data-platform//renovate_presets/charm.json5',
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>canonical/data-platform//renovate_presets/charm.json5",
   ],
-  reviewers: [
-    'welpaolo',
-    'theoctober19th',
-    'batalex',
+  "reviewers": [
+    "welpaolo",
+    "theoctober19th",
+    "batalex",
   ],
   "schedule": ["after 1am and before 3am on friday"],
   "lockFileMaintenance": {
