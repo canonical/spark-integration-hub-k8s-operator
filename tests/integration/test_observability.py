@@ -246,9 +246,16 @@ async def test_relation_to_pushgateway(
 
     logger.info("Verifying metrics are present in the pushgateway while job is running")
 
-    check_metrics(address=address)
+    try:
+        check_metrics(address=address)
+    except Exception:
+        stdout, stderr = await proc.communicate()
+        logger.info(f"spark job stdout :\n{stdout}")
+        logger.info(f"Spark job stderr :\n{stderr}")
+        raise
+    else:
+        stdout, stderr = await proc.communicate()
 
-    stdout, stderr = await proc.communicate()
     logger.info(f"spark job stdout :\n{stdout}")
     logger.info(f"Spark job stderr :\n{stderr}")
 
