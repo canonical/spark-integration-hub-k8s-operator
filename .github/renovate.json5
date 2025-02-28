@@ -8,9 +8,9 @@
     "theoctober19th",
     "batalex",
   ],
-  "schedule": ["after 1am and before 3am on friday"],
+  "schedule": ["* 3 * * 5"],
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["after 1am and before 3am on friday"]
+    "schedule": ["* 3 * * 5"]
   },
 }
