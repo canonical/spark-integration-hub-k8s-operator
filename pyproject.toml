@@ -76,7 +76,7 @@ pytest-operator = ">0.20"
 boto3 = ">=1.37.4"
 tenacity = "^8.5.0"
 spark8t = "^0.0.11"
-pytest-operator-cache = { git = "https://github.com/canonical/data-platform-workflows", tag = "v29.0.0", subdirectory = "python/pytest_plugins/pytest_operator_cache" }
+pytest-operator-cache = { git = "https://github.com/canonical/data-platform-workflows", tag = "v30.1.3", subdirectory = "python/pytest_plugins/pytest_operator_cache" }
 # pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v13.1.2", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
 # pytest-operator-secrets = {git = "https://github.com/canonical/data-platform-workflows", tag = "v13.1.2", subdirectory = "python/pytest_plugins/pytest_operator_secrets"}
 
