@@ -11,6 +11,7 @@ from constants import INTEGRATION_HUB_REL
 from core.context import Context
 from core.workload import IntegrationHubWorkloadBase
 from events.base import BaseEventHandler, defer_when_not_ready
+from managers.integration_hub import IntegrationHubManager
 from relations.spark_sa import (
     IntegrationHubProvider,
     ServiceAccountReleasedEvent,
@@ -29,6 +30,8 @@ class IntegrationHubProviderEvents(BaseEventHandler, WithLogging):
         self.workload = workload
 
         self.sa = IntegrationHubProvider(self.charm, INTEGRATION_HUB_REL)
+        self.integration_hub = IntegrationHubManager(self.workload, self.context)
+
         self.framework.observe(self.sa.on.account_requested, self._on_service_account_requested)
         self.framework.observe(self.sa.on.account_released, self._on_service_account_released)
 
@@ -60,6 +63,7 @@ class IntegrationHubProviderEvents(BaseEventHandler, WithLogging):
 
         self.sa.set_service_account(relation_id, service_account)  # type: ignore
         self.sa.set_namespace(relation_id, namespace)  # type: ignore
+        self.integration_hub.update()
 
     @defer_when_not_ready
     def _on_service_account_released(self, event: ServiceAccountReleasedEvent):
