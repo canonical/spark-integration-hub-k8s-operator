@@ -25,7 +25,7 @@ class PushgatewayEvents(BaseEventHandler, WithLogging):
         self.context = context
         self.workload = workload
 
-        self.integration_hub = IntegrationHubManager(self.workload)
+        self.integration_hub = IntegrationHubManager(self.workload, self.context)
 
         self.pushgateway = PrometheusPushgatewayRequirer(self.charm, PUSHGATEWAY)
 
@@ -43,25 +43,13 @@ class PushgatewayEvents(BaseEventHandler, WithLogging):
         self.logger.info("PushGateway relation changed")
         self.logger.info(f"PushGateway ready: {self.pushgateway.is_ready()}")
         if self.pushgateway.is_ready():
-            self.integration_hub.update(
-                self.context.s3,
-                self.context.azure_storage,
-                self.context.pushgateway,
-                self.context.hub_configurations,
-                self.context.loki_url,
-            )
+            self.integration_hub.update()
 
     @defer_when_not_ready
     def _on_pushgateway_gone(self, _: RelationBrokenEvent):
         """Handle the `RelationBroken` event for PushGateway."""
         self.logger.info("PushGateway relation broken")
-        self.integration_hub.update(
-            self.context.s3,
-            self.context.azure_storage,
-            None,
-            self.context.hub_configurations,
-            self.context.loki_url,
-        )
+        self.integration_hub.update(set_pushgateway_none=True)
 
         self.charm.unit.status = self.get_app_status(
             self.context.s3, self.context.azure_storage, None

@@ -7,6 +7,7 @@
 import re
 
 from common.utils import WithLogging
+from core.context import Context
 from core.domain import (
     AzureStorageConnectionInfo,
     HubConfiguration,
@@ -57,8 +58,8 @@ class IntegrationHubConfig(WithLogging):
 
         self.logger.debug("Log forwarding is enabled to %s.", self.loki_url.url)
         return {
-            "spark.executorEnv.LOKI_URL": self.loki_url.url,
-            "spark.kubernetes.driverEnv.LOKI_URL": self.loki_url.url,
+            "spark.executorEnv.LOKI_URL": self.loki_url.url or "",
+            "spark.kubernetes.driverEnv.LOKI_URL": self.loki_url.url or "",
         }
 
     @property
@@ -155,26 +156,68 @@ class IntegrationHubConfig(WithLogging):
 class IntegrationHubManager(WithLogging):
     """Class exposing general functionalities of the IntegrationHub workload."""
 
-    def __init__(self, workload: IntegrationHubWorkloadBase):
+    def __init__(self, workload: IntegrationHubWorkloadBase, context: Context):
         self.workload = workload
+        self.context = context
+
+    def _compare_and_update_file(self, content: str, file_path: str) -> bool:
+        """Update the file at given file_path with given content.
+
+        Before doing the update, compare the existing content of the file and update
+        it only if has changed.
+
+        Return True if the file was re-written, else False.
+        """
+        try:
+            existing_content = self.workload.read(file_path)
+            file_exists = True
+        except FileNotFoundError:
+            existing_content = ""
+            file_exists = False
+        self.logger.debug(f"{file_path=}")
+        self.logger.debug(f"{existing_content=}")
+        self.logger.debug(f"{content=}")
+        if not file_exists or existing_content != content:
+            self.logger.warning("File was written.")
+            self.workload.write(content, file_path)
+            return True
+
+        return False
 
     def update(
         self,
-        s3: S3ConnectionInfo | None,
-        azure_storage: AzureStorageConnectionInfo | None,
-        pushgateway: PushGatewayInfo | None,
-        hub_conf: HubConfiguration | None,
-        loki_url: LokiURL | None,
+        set_s3_none: bool = False,
+        set_azure_storage_none: bool = False,
+        set_pushgateway_none: bool = False,
+        set_hub_conf_none: bool = False,
+        set_loki_url_none: bool = False,
     ) -> None:
         """Update the Integration Hub service if needed."""
+        s3 = None if set_s3_none else self.context.s3
+        azure_storage = None if set_azure_storage_none else self.context.azure_storage
+        pushgateway = None if set_pushgateway_none else self.context.pushgateway
+        hub_conf = None if set_hub_conf_none else self.context.hub_configurations
+        loki_url = None if set_loki_url_none else self.context.loki_url
+
         self.logger.debug("Update")
         self.workload.stop()
 
         config = IntegrationHubConfig(s3, azure_storage, pushgateway, hub_conf, loki_url)
-        self.logger.info("Updating integration hub config...")
-        self.workload.write(config.contents, str(self.workload.paths.spark_properties))
-        self.workload.set_environment(
-            {"SPARK_PROPERTIES_FILE": str(self.workload.paths.spark_properties)}
-        )
-        self.logger.info("Start service")
-        self.workload.start()
+
+        if self._compare_and_update_file(
+            config.contents, str(self.workload.paths.spark_properties)
+        ):
+            self.logger.info("Updating integration hub config...")
+            self.workload.set_environment(
+                {"SPARK_PROPERTIES_FILE": str(self.workload.paths.spark_properties)}
+            )
+            self.workload.restart()
+
+        self.logger.warning("service acccounts are")
+        self.logger.warning(self.context.service_accounts)
+
+        for sa in self.context.service_accounts:
+            self.logger.warning(sa.spark_properties)
+            self.logger.warning(config.to_dict())
+            if sa.spark_properties != config.to_dict():
+                sa.set_spark_properties(config.to_dict())

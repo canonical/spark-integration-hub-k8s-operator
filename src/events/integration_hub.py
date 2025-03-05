@@ -23,7 +23,7 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
         self.context = context
         self.workload = workload
 
-        self.integration_hub = IntegrationHubManager(self.workload)
+        self.integration_hub = IntegrationHubManager(self.workload, self.context)
 
         self.framework.observe(
             self.charm.on.integration_hub_pebble_ready,
@@ -46,25 +46,13 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
     @defer_when_not_ready
     def _on_integration_hub_pebble_ready(self, _):
         """Handle on Pebble ready event."""
-        self.integration_hub.update(
-            self.context.s3,
-            self.context.azure_storage,
-            self.context.pushgateway,
-            self.context.hub_configurations,
-            self.context.loki_url,
-        )
+        self.integration_hub.update()
 
     @compute_status
     @defer_when_not_ready
     def _on_peer_relation_changed(self, _):
         """Handle on PEER relation changed event."""
-        self.integration_hub.update(
-            self.context.s3,
-            self.context.azure_storage,
-            self.context.pushgateway,
-            self.context.hub_configurations,
-            self.context.loki_url,
-        )
+        self.integration_hub.update()
 
     @compute_status
     def _update_event(self, _):
