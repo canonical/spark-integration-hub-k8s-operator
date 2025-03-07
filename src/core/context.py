@@ -71,7 +71,6 @@ class Context(WithLogging):
         """The Pushgateway relation."""
         return self.charm.model.get_relation(PUSHGATEWAY)
 
-
     # --- DOMAIN OBJECTS ---
 
     @property
