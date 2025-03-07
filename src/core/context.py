@@ -56,36 +56,15 @@ class Context(WithLogging):
     # --- RELATIONS ---
     # -----------------
 
-    # @property
-    # def _s3_relation_id(self) -> int | None:
-    #     """The S3 relation."""
-    #     return (
-    #         relation.id if (relation := self.charm.model.get_relation(S3_RELATION_NAME)) else None
-    #     )
-
     @property
     def _s3_relation(self) -> Relation | None:
         """The S3 relation."""
         return self.charm.model.get_relation(S3_RELATION_NAME)
 
-    # @property
-    # def _azure_storage_relation_id(self) -> int | None:
-    #     """The Azure Storage relation ID."""
-    #     return (
-    #         relation.id
-    #         if (relation := self.charm.model.get_relation(AZURE_RELATION_NAME))
-    #         else None
-    #     )
-
     @property
     def _azure_storage_relation(self) -> Relation | None:
         """The Azure Storage relation."""
         return self.charm.model.get_relation(AZURE_RELATION_NAME)
-
-    # @property
-    # def _pushgateway_relation_id(self) -> int | None:
-    #     """The Pushgateway relation."""
-    #     return relation.id if (relation := self.charm.model.get_relation(PUSHGATEWAY)) else None
 
     @property
     def _pushgateway_relation(self) -> Relation | None:

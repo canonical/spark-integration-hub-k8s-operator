@@ -228,31 +228,20 @@ class ServiceAccount:
         )
 
     @property
-    def namespace(self) -> str | None:
-        """Return the used namespace."""
-        return self.relation_data.fetch_my_relation_field(
-            relation_id=self.relation_id, field="namespace"
-        )
-
-    @property
     def spark_properties(self) -> dict[str, str] | None:
         """Return the set of Spark properties."""
-        field_data = (
-            self.relation_data.fetch_my_relation_field(
-                relation_id=self.relation_id, field="spark-properties"
-            )
-            or "{}"
+        field_data = self.relation_data.fetch_my_relation_field(
+            relation_id=self.relation_id, field="spark-properties"
         )
+        if field_data is None:
+            return None
+
         props = dict(json.loads(field_data))
         return dict(sorted(props.items()))
 
     def set_service_account(self, service_account: str) -> None:
         """Set the service account name."""
         self.relation_data.set_service_account(self.relation_id, service_account)
-
-    def set_namespace(self, namespace: str) -> str | None:
-        """Set namespace relation field for this service account."""
-        self.relation_data.set_namespace(self.relation_id, namespace)
 
     def set_spark_properties(self, spark_properties: dict[str, str]) -> None:
         """Set spark-properties relation field for this service account."""

@@ -178,7 +178,6 @@ class IntegrationHubManager(WithLogging):
         self.logger.debug(f"{existing_content=}")
         self.logger.debug(f"{content=}")
         if not file_exists or existing_content != content:
-            self.logger.warning("File was written.")
             self.workload.write(content, file_path)
             return True
 
@@ -213,11 +212,7 @@ class IntegrationHubManager(WithLogging):
             )
             self.workload.restart()
 
-        self.logger.warning("service acccounts are")
-        self.logger.warning(self.context.service_accounts)
-
-        for sa in self.context.service_accounts:
-            self.logger.warning(sa.spark_properties)
-            self.logger.warning(config.to_dict())
-            if sa.spark_properties != config.to_dict():
-                sa.set_spark_properties(config.to_dict())
+        if self.context.charm.unit.is_leader():
+            for sa in self.context.service_accounts:
+                if sa.spark_properties != config.to_dict():
+                    sa.set_spark_properties(config.to_dict())

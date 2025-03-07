@@ -13,13 +13,13 @@ from core.workload import IntegrationHubWorkloadBase
 from events.base import BaseEventHandler, defer_when_not_ready
 from managers.integration_hub import IntegrationHubManager
 from relations.spark_sa import (
-    IntegrationHubProvider,
     ServiceAccountReleasedEvent,
     ServiceAccountRequestedEvent,
+    SparkServiceAccountProvider,
 )
 
 
-class IntegrationHubProviderEvents(BaseEventHandler, WithLogging):
+class SparkServiceAccountProviderEvents(BaseEventHandler, WithLogging):
     """Class implementing Spark Service Account Integration event hooks."""
 
     def __init__(self, charm: CharmBase, context: Context, workload: IntegrationHubWorkloadBase):
@@ -29,7 +29,7 @@ class IntegrationHubProviderEvents(BaseEventHandler, WithLogging):
         self.context = context
         self.workload = workload
 
-        self.sa = IntegrationHubProvider(self.charm, INTEGRATION_HUB_REL)
+        self.sa = SparkServiceAccountProvider(self.charm, INTEGRATION_HUB_REL)
         self.integration_hub = IntegrationHubManager(self.workload, self.context)
 
         self.framework.observe(self.sa.on.account_requested, self._on_service_account_requested)
@@ -42,27 +42,26 @@ class IntegrationHubProviderEvents(BaseEventHandler, WithLogging):
 
         if not self.charm.unit.is_leader():
             return
-        relation_id = event.relation.id
 
-        service_account = event.service_account
-        namespace = event.namespace
-        self.logger.debug(
-            f"Desired service account name: {service_account} in namespace: {namespace}"
-        )
+        if not event.service_account:
+            return
+
+        relation_id = event.relation.id
+        namespace, username = event.service_account.split(":")
+        self.logger.debug(f"Desired service account name: {username} in namespace: {namespace}")
 
         # Try to create service account
         try:
             self.workload.exec(
-                f"python3 -m spark8t.cli.service_account_registry create --username={service_account} --namespace={namespace}"
+                f"python3 -m spark8t.cli.service_account_registry create --username={username} --namespace={namespace}"
             )
         except Exception as e:
             self.logger.error(e)
             raise RuntimeError(
-                f"Impossible to create service account: {service_account} in namespace: {namespace}"
+                f"Impossible to create service account: {username} in namespace: {namespace}"
             )
 
-        self.sa.set_service_account(relation_id, service_account)  # type: ignore
-        self.sa.set_namespace(relation_id, namespace)  # type: ignore
+        self.sa.set_service_account(relation_id, event.service_account)  # type: ignore
         self.integration_hub.update()
 
     @defer_when_not_ready
@@ -73,19 +72,21 @@ class IntegrationHubProviderEvents(BaseEventHandler, WithLogging):
         if not self.charm.unit.is_leader():
             return
 
-        service_account = event.service_account
-        namespace = event.namespace
+        if not event.service_account:
+            return
+
+        namespace, username = event.service_account.split(":")
         self.logger.debug(
-            f"The service account name: {service_account} in namespace: {namespace} should be deleted"
+            f"The service account name: {username} in namespace: {namespace} should be deleted"
         )
 
-        # Try to create service account
+        # Try to delete the service account
         try:
             self.workload.exec(
-                f"python3 -m spark8t.cli.service_account_registry delete --username={service_account} --namespace={namespace}"
+                f"python3 -m spark8t.cli.service_account_registry delete --username={username} --namespace={namespace}"
             )
         except Exception as e:
             self.logger.error(e)
             raise RuntimeError(
-                f"Failed to delete service account: {service_account} in namespace: {namespace}"
+                f"Failed to delete service account: {username} in namespace: {namespace}"
             )
