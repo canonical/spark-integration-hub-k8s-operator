@@ -195,6 +195,7 @@ class IntegrationHubManager(WithLogging):
         azure_storage = None if set_azure_storage_none else self.context.azure_storage
         pushgateway = None if set_pushgateway_none else self.context.pushgateway
         loki_url = None if set_loki_url_none else self.context.loki_url
+        hub_conf = self.context.hub_configurations
 
         self.logger.debug("Update")
         self.workload.stop()

@@ -8,8 +8,8 @@ on:
       - sa-relation
 
 jobs:
-  # ci-tests:
-  #   uses: ./.github/workflows/ci.yaml
+  ci-tests:
+    uses: ./.github/workflows/ci.yaml
 
   release:
     name: Release charm
