@@ -11,7 +11,7 @@ from typing import List, MutableMapping
 from ops import Application, Relation, Unit
 
 from common.utils import DotSerializer
-from relations.spark_sa import IntegrationHubProviderData
+from relations.spark_sa import SparkServiceAccountProviderData
 
 logger = logging.getLogger(__name__)
 
@@ -216,7 +216,7 @@ class HubConfiguration(StateBase):
 class ServiceAccount:
     """Class representing the service account managed by the Spark Integration Hub charm."""
 
-    def __init__(self, relation_data: IntegrationHubProviderData, relation_id: int):
+    def __init__(self, relation_data: SparkServiceAccountProviderData, relation_id: int):
         self.relation_data = relation_data
         self.relation_id = relation_id
 

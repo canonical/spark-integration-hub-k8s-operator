@@ -27,7 +27,7 @@ from core.domain import (
     S3ConnectionInfo,
     ServiceAccount,
 )
-from relations.spark_sa import IntegrationHubProviderData
+from relations.spark_sa import SparkServiceAccountProviderData
 
 
 class Context(WithLogging):
@@ -42,7 +42,7 @@ class Context(WithLogging):
         self.azure_storage_endpoint = RequirerData(
             self.charm.model, AZURE_RELATION_NAME, additional_secret_fields=["secret-key"]
         )
-        self.integration_hub_provider_data = IntegrationHubProviderData(
+        self.integration_hub_provider_data = SparkServiceAccountProviderData(
             self.model, INTEGRATION_HUB_REL
         )
 
