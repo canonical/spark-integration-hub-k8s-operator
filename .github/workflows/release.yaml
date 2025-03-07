@@ -5,11 +5,11 @@ name: Release to Charmhub
 on:
   push:
     branches:
-      - main
+      - sa-relation
 
 jobs:
-  ci-tests:
-    uses: ./.github/workflows/ci.yaml
+  # ci-tests:
+  #   uses: ./.github/workflows/ci.yaml
 
   release:
     name: Release charm
@@ -17,9 +17,12 @@ jobs:
       - ci-tests
     uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v29.0.0
     with:
-      channel: latest/edge
+      channel: latest/edge/test
       artifact-prefix: ${{ needs.ci-tests.outputs.artifact-prefix }}
     secrets:
       charmhub-token: ${{ secrets.CHARMHUB_TOKEN }}
     permissions:
       contents: write  # Needed to create git tags
+
+
+

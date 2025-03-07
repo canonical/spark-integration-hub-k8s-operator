@@ -42,7 +42,7 @@ class Context(WithLogging):
         self.azure_storage_endpoint = RequirerData(
             self.charm.model, AZURE_RELATION_NAME, additional_secret_fields=["secret-key"]
         )
-        self.integration_hub_provider_data = SparkServiceAccountProviderData(
+        self.spark_service_account_provider_data = SparkServiceAccountProviderData(
             self.model, INTEGRATION_HUB_REL
         )
 
@@ -71,10 +71,6 @@ class Context(WithLogging):
         """The Pushgateway relation."""
         return self.charm.model.get_relation(PUSHGATEWAY)
 
-    @property
-    def _spark_service_account_relation(self) -> Relation | None:
-        """The Spark service account relation."""
-        return self.charm.model.get_relation(INTEGRATION_HUB_REL)
 
     # --- DOMAIN OBJECTS ---
 
@@ -121,7 +117,7 @@ class Context(WithLogging):
             List of service accounts/namespaces managed by the Integration Hub
         """
         return [
-            ServiceAccount(self.integration_hub_provider_data, relation.id)
+            ServiceAccount(self.spark_service_account_provider_data, relation.id)
             for relation in self.client_relations
         ]
 

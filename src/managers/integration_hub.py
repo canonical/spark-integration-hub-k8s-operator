@@ -188,14 +188,12 @@ class IntegrationHubManager(WithLogging):
         set_s3_none: bool = False,
         set_azure_storage_none: bool = False,
         set_pushgateway_none: bool = False,
-        set_hub_conf_none: bool = False,
         set_loki_url_none: bool = False,
     ) -> None:
         """Update the Integration Hub service if needed."""
         s3 = None if set_s3_none else self.context.s3
         azure_storage = None if set_azure_storage_none else self.context.azure_storage
         pushgateway = None if set_pushgateway_none else self.context.pushgateway
-        hub_conf = None if set_hub_conf_none else self.context.hub_configurations
         loki_url = None if set_loki_url_none else self.context.loki_url
 
         self.logger.debug("Update")
