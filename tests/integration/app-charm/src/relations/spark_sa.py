@@ -23,6 +23,7 @@ from charms.data_platform_libs.v0.data_interfaces import (
     SECRET_GROUPS,
     EventHandlers,
     ProviderData,
+    RelationEventWithSecret,
     RequirerData,
     RequirerEventHandlers,
 )
@@ -97,7 +98,7 @@ def diff(event: RelationChangedEvent, bucket: Union[Unit, Application]) -> Diff:
     return Diff(added, changed, deleted)
 
 
-class ServiceAccountEvent(RelationEvent):
+class ServiceAccountEvent(RelationEventWithSecret):
     """Base class for Service account events."""
 
     @property
@@ -107,6 +108,19 @@ class ServiceAccountEvent(RelationEvent):
             return None
 
         return self.relation.data[self.relation.app].get("service-account", "")
+
+    @property
+    def spark_properties(self) -> Optional[str]:
+        """Returns the Spark properties associated with service account."""
+        if not self.relation.app:
+            return None
+
+        if self.secrets_enabled:
+            secret = self._get_secret("extra")
+            if secret:
+                return secret.get("spark-properties", "{}")
+
+        return self.relation.data[self.relation.app].get("spark-properties", "{}")
 
 
 class ServiceAccountRequestedEvent(ServiceAccountEvent):
@@ -132,11 +146,16 @@ class ServiceAccountGoneEvent(RelationEvent):
     """Event emitted when service account are removed from this relation."""
 
 
+class ServiceAccountPropertyChangedEvent(ServiceAccountEvent):
+    """Event emitted when Spark properties for the service account are changed in this relation."""
+
+
 class SparkServiceAccountRequirerEvents(ObjectEvents):
     """Event descriptor for events raised by the Requirer."""
 
     account_granted = EventSource(ServiceAccountGrantedEvent)
     account_gone = EventSource(ServiceAccountGoneEvent)
+    properties_changed = EventSource(ServiceAccountPropertyChangedEvent)
 
 
 class SparkServiceAccountProviderData(ProviderData):
@@ -268,9 +287,27 @@ class SparkServiceAccountRequirerEventHandlers(RequirerEventHandlers):
 
         self.relation_data.update_relation_data(event.relation.id, relation_data)
 
-    def _on_secret_changed_event(self, _: SecretChangedEvent):
+    def _on_secret_changed_event(self, event: SecretChangedEvent):
         """Event notifying about a new value of a secret."""
-        pass
+        if not event.secret.label:
+            return
+
+        relation = self.relation_data._relation_from_secret_label(event.secret.label)
+        if not relation:
+            logging.info(
+                f"Received secret {event.secret.label} but couldn't parse, seems irrelevant"
+            )
+            return
+
+        if relation.app == self.charm.app:
+            logging.info("Secret changed event ignored for Secret Owner")
+
+        remote_unit = None
+        for unit in relation.units:
+            if unit.app != self.charm.app:
+                remote_unit = unit
+
+        getattr(self.on, "properties_changed").emit(relation, app=relation.app, unit=remote_unit)
 
     def _on_relation_changed_event(self, event: RelationChangedEvent) -> None:
         """Event emitted when the Spark Service Account relation has changed."""
@@ -284,9 +321,7 @@ class SparkServiceAccountRequirerEventHandlers(RequirerEventHandlers):
 
         secret_field_user = self.relation_data._generate_secret_field_name(SECRET_GROUPS.USER)
 
-        if (
-            "service-account" in diff.added and "spark-properties" in diff.added
-        ) or secret_field_user in diff.added:
+        if ("service-account" in diff.added) or secret_field_user in diff.added:
             getattr(self.on, "account_granted").emit(
                 event.relation, app=event.app, unit=event.unit
             )
