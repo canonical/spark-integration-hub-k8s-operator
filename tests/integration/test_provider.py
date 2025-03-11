@@ -144,5 +144,5 @@ async def test_integration_hub_relation(ops_test: OpsTest, namespace):
 
     await ops_test.model.wait_for_idle(apps=[APP_NAME, DUMMY_APP_NAME], timeout=600)
 
-    # The service account named 'sa1' should have been created
+    # The service account named 'sa1' should have been removed
     assert not check_service_account_existance(namespace, "sa1")
