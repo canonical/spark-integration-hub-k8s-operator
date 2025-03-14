@@ -11,6 +11,7 @@ from typing import List, MutableMapping
 from ops import Application, Relation, Unit
 
 from common.utils import DotSerializer
+from relations.spark_sa import SparkServiceAccountProviderData
 
 logger = logging.getLogger(__name__)
 
@@ -212,21 +213,40 @@ class HubConfiguration(StateBase):
         return items
 
 
-class ServiceAccount(StateBase):
+class ServiceAccount:
     """Class representing the service account managed by the Spark Integration Hub charm."""
 
-    def __init__(self, relation: Relation, component: Application):
-        super().__init__(relation, component)
+    def __init__(self, relation_data: SparkServiceAccountProviderData, relation_id: int):
+        self.relation_data = relation_data
+        self.relation_id = relation_id
 
     @property
     def service_account(self) -> str | None:
         """Return service account name."""
-        return self.relation_data.get("service-account", None)
+        return self.relation_data.fetch_my_relation_field(
+            relation_id=self.relation_id, field="service-account"
+        )
 
     @property
-    def namespace(self) -> str:
-        """Return the used namespace."""
-        return self.relation_data["namespace"]
+    def spark_properties(self) -> dict[str, str] | None:
+        """Return the set of Spark properties."""
+        field_data = self.relation_data.fetch_my_relation_field(
+            relation_id=self.relation_id, field="spark-properties"
+        )
+        if field_data is None:
+            return None
+
+        props = dict(json.loads(field_data))
+        return dict(sorted(props.items()))
+
+    def set_service_account(self, service_account: str) -> None:
+        """Set the service account name."""
+        self.relation_data.set_service_account(self.relation_id, service_account)
+
+    def set_spark_properties(self, spark_properties: dict[str, str]) -> None:
+        """Set spark-properties relation field for this service account."""
+        field_data = json.dumps(spark_properties)
+        self.relation_data.set_spark_properties(self.relation_id, field_data)
 
 
 class LokiURL(StateBase):

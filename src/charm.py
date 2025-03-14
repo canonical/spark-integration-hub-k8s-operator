@@ -15,7 +15,7 @@ from events.azure_storage import AzureStorageEvents
 from events.configuration_actions import ConfigurationActionEvents
 from events.integration_hub import IntegrationHubEvents
 from events.logging import LoggingEvents
-from events.provider import IntegrationHubProviderEvents
+from events.provider import SparkServiceAccountProviderEvents
 from events.pushgateway import PushgatewayEvents
 from events.s3 import S3Events
 from workload import IntegrationHub
@@ -35,7 +35,7 @@ class SparkIntegrationHub(CharmBase, WithLogging):
         self.s3 = S3Events(self, context, workload)
         self.azure_storage = AzureStorageEvents(self, context, workload)
         self.configuration_action_events = ConfigurationActionEvents(self, context, workload)
-        self.sa = IntegrationHubProviderEvents(self, context, workload)
+        self.sa = SparkServiceAccountProviderEvents(self, context, workload)
         self.pushgateway = PushgatewayEvents(self, context, workload)
         self.integration_hub = IntegrationHubEvents(self, context, workload)
         self.logging = LoggingEvents(self, context, workload)
