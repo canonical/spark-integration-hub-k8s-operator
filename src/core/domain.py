@@ -8,10 +8,10 @@ import logging
 from dataclasses import dataclass
 from typing import List, MutableMapping
 
+from charms.data_platform_libs.v0.spark_service_account import SparkServiceAccountProviderData
 from ops import Application, Relation, Unit
 
 from common.utils import DotSerializer
-from relations.spark_sa import SparkServiceAccountProviderData
 
 logger = logging.getLogger(__name__)
 

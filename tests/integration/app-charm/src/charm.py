@@ -10,11 +10,13 @@ of the libraries in this repository.
 
 import logging
 
+from charms.data_platform_libs.v0.spark_service_account import (
+    ServiceAccountGrantedEvent,
+    SparkServiceAccountRequirer,
+)
 from ops.charm import ActionEvent, CharmBase
 from ops.main import main
 from ops.model import ActiveStatus
-
-from relations.spark_sa import ServiceAccountGrantedEvent, SparkServiceAccountRequirer
 
 logger = logging.getLogger(__name__)
 
