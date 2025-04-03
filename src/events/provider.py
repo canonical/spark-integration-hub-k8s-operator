@@ -4,6 +4,11 @@
 
 """Spark Service accounts related event handlers."""
 
+from charms.data_platform_libs.v0.spark_service_account import (
+    ServiceAccountReleasedEvent,
+    ServiceAccountRequestedEvent,
+    SparkServiceAccountProvider,
+)
 from ops import CharmBase
 
 from common.utils import WithLogging
@@ -12,11 +17,6 @@ from core.context import Context
 from core.workload import IntegrationHubWorkloadBase
 from events.base import BaseEventHandler, defer_when_not_ready
 from managers.integration_hub import IntegrationHubManager
-from relations.spark_sa import (
-    ServiceAccountReleasedEvent,
-    ServiceAccountRequestedEvent,
-    SparkServiceAccountProvider,
-)
 
 
 class SparkServiceAccountProviderEvents(BaseEventHandler, WithLogging):
