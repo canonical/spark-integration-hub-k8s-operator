@@ -28,7 +28,7 @@ class S3Events(BaseEventHandler, WithLogging):
         self.context = context
         self.workload = workload
 
-        self.integration_hub = IntegrationHubManager(self.workload)
+        self.integration_hub = IntegrationHubManager(self.workload, self.context)
 
         self.s3_requirer = S3Requirer(self.charm, self.context.s3_endpoint.relation_name)
         self.framework.observe(
@@ -41,25 +41,13 @@ class S3Events(BaseEventHandler, WithLogging):
     def _on_s3_credential_changed(self, _: CredentialsChangedEvent):
         """Handle the `CredentialsChangedEvent` event from S3 integrator."""
         self.logger.info("S3 Credentials changed")
-        self.integration_hub.update(
-            self.context.s3,
-            self.context.azure_storage,
-            self.context.pushgateway,
-            self.context.hub_configurations,
-            self.context.loki_url,
-        )
+        self.integration_hub.update()
 
     @defer_when_not_ready
     def _on_s3_credential_gone(self, _: CredentialsGoneEvent):
         """Handle the `CredentialsGoneEvent` event for S3 integrator."""
         self.logger.info("S3 Credentials gone")
-        self.integration_hub.update(
-            None,
-            self.context.azure_storage,
-            self.context.pushgateway,
-            self.context.hub_configurations,
-            self.context.loki_url,
-        )
+        self.integration_hub.update(set_s3_none=True)
 
         self.charm.unit.status = self.get_app_status(
             None, self.context.azure_storage, self.context.pushgateway

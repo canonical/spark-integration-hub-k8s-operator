@@ -28,7 +28,7 @@ class AzureStorageEvents(BaseEventHandler, WithLogging):
         self.context = context
         self.workload = workload
 
-        self.integration_hub = IntegrationHubManager(self.workload)
+        self.integration_hub = IntegrationHubManager(self.workload, self.context)
 
         self.azure_storage_requirer = AzureStorageRequires(
             self.charm, self.context.azure_storage_endpoint.relation_name
@@ -47,25 +47,13 @@ class AzureStorageEvents(BaseEventHandler, WithLogging):
     def _on_azure_storage_connection_info_changed(self, _: StorageConnectionInfoChangedEvent):
         """Handle the `StorageConnectionInfoChangedEvent` event from Object Storage integrator."""
         self.logger.info("Azure Storage connection info changed")
-        self.integration_hub.update(
-            self.context.s3,
-            self.context.azure_storage,
-            self.context.pushgateway,
-            self.context.hub_configurations,
-            self.context.loki_url,
-        )
+        self.integration_hub.update()
 
     @defer_when_not_ready
     def _on_azure_storage_connection_info_gone(self, _: StorageConnectionInfoGoneEvent):
         """Handle the `StorageConnectionInfoGoneEvent` event for Object Storage integrator."""
         self.logger.info("Azure Storage connection info gone")
-        self.integration_hub.update(
-            self.context.s3,
-            None,
-            self.context.pushgateway,
-            self.context.hub_configurations,
-            self.context.loki_url,
-        )
+        self.integration_hub.update(set_azure_storage_none=True)
 
         self.charm.unit.status = self.get_app_status(
             self.context.s3, None, self.context.pushgateway

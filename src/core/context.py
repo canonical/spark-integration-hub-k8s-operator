@@ -27,6 +27,7 @@ from core.domain import (
     S3ConnectionInfo,
     ServiceAccount,
 )
+from relations.spark_sa import SparkServiceAccountProviderData
 
 
 class Context(WithLogging):
@@ -41,6 +42,9 @@ class Context(WithLogging):
         self.azure_storage_endpoint = RequirerData(
             self.charm.model, AZURE_RELATION_NAME, additional_secret_fields=["secret-key"]
         )
+        self.spark_service_account_provider_data = SparkServiceAccountProviderData(
+            self.model, INTEGRATION_HUB_REL
+        )
 
     # --------------
     # --- CONFIG ---
@@ -53,35 +57,14 @@ class Context(WithLogging):
     # -----------------
 
     @property
-    def _s3_relation_id(self) -> int | None:
-        """The S3 relation."""
-        return (
-            relation.id if (relation := self.charm.model.get_relation(S3_RELATION_NAME)) else None
-        )
-
-    @property
     def _s3_relation(self) -> Relation | None:
         """The S3 relation."""
         return self.charm.model.get_relation(S3_RELATION_NAME)
 
     @property
-    def _azure_storage_relation_id(self) -> int | None:
-        """The Azure Storage relation ID."""
-        return (
-            relation.id
-            if (relation := self.charm.model.get_relation(AZURE_RELATION_NAME))
-            else None
-        )
-
-    @property
     def _azure_storage_relation(self) -> Relation | None:
         """The Azure Storage relation."""
         return self.charm.model.get_relation(AZURE_RELATION_NAME)
-
-    @property
-    def _pushgateway_relation_id(self) -> int | None:
-        """The Pushgateway relation."""
-        return relation.id if (relation := self.charm.model.get_relation(PUSHGATEWAY)) else None
 
     @property
     def _pushgateway_relation(self) -> Relation | None:
@@ -99,7 +82,7 @@ class Context(WithLogging):
     def azure_storage(self) -> AzureStorageConnectionInfo | None:
         """The server state of the current running Unit."""
         relation_data = (
-            self.azure_storage_endpoint.fetch_relation_data()[self._azure_storage_relation_id]
+            self.azure_storage_endpoint.fetch_relation_data()[self._azure_storage_relation.id]
             if self._azure_storage_relation
             else None
         )
@@ -126,20 +109,19 @@ class Context(WithLogging):
         return set(self.model.relations[INTEGRATION_HUB_REL])
 
     @property
-    def services_accounts(self) -> List[ServiceAccount]:
+    def service_accounts(self) -> List[ServiceAccount]:
         """Retrieve  service account managed by relations.
 
         Returns:
             List of service accounts/namespaces managed by the Integration Hub
         """
         return [
-            ServiceAccount(relation, relation.app)
+            ServiceAccount(self.spark_service_account_provider_data, relation.id)
             for relation in self.client_relations
-            if not relation or not relation.app
         ]
 
     @property
-    def loki_url(self) -> str | None:
+    def loki_url(self) -> LokiURL | None:
         """Retrieve Loki URL from logging relations."""
         if relation := self.charm.model.get_relation(LOGGING_RELATION_NAME):
             if units := list(relation.units):

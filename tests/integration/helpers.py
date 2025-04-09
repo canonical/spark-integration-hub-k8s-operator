@@ -157,12 +157,12 @@ def setup_s3_bucket_for_sch_server(endpoint_url: str, aws_access_key: str, aws_s
 async def run_action(
     ops_test: OpsTest, action_name: str, params: Dict[str, str], app_name: str, num_unit=0
 ) -> Any:
-    """Use the charm action to start a password rotation."""
+    """Run the given charm action in given charm with given parameters."""
     action = await ops_test.model.units.get(f"{app_name}/{num_unit}").run_action(
         action_name, **params
     )
-    password = await action.wait()
-    return password.results
+    action_result = await action.wait()
+    return action_result.results
 
 
 def flatten(map: MutableMapping, parent: str = "", separator: str = ".") -> dict[str, str]:
