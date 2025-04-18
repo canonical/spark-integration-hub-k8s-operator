@@ -4,7 +4,6 @@
 
 """Prometheus PushGateway related event handlers."""
 
-
 from charms.prometheus_pushgateway_k8s.v0.pushgateway import PrometheusPushgatewayRequirer
 from ops import CharmBase, RelationBrokenEvent, RelationChangedEvent
 

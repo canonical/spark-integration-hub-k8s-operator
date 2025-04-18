@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 """Domain object of the Spark Integration Hub charm."""
+
 import json
 import logging
 from dataclasses import dataclass
