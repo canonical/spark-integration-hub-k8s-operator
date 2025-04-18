@@ -271,23 +271,20 @@ def test_azure_storage_relation_broken(
         patch("managers.k8s.KubernetesManager.__init__", return_value=None),
         patch("managers.k8s.KubernetesManager.trusted", return_value=True),
     ):
-        state_after_relation_changed = integration_hub_ctx.run(
-            integration_hub_ctx.on.relation_changed(azure_storage_relation), state
-        )
         state_after_relation_broken = integration_hub_ctx.run(
             integration_hub_ctx.on.relation_broken(azure_storage_relation),
-            state_after_relation_changed,
+            state,
         )
 
-        assert state_after_relation_broken.unit_status == ActiveStatus("")
+    assert state_after_relation_broken.unit_status == ActiveStatus("")
 
-        spark_properties = parse_spark_properties(state_after_relation_broken, tmp_path)
+    spark_properties = parse_spark_properties(state_after_relation_broken, tmp_path)
 
-        storage_account = azure_storage_relation.remote_app_data["storage-account"]
-        assert (
-            f"spark.hadoop.fs.azure.account.key.{storage_account}.dfs.core.windows.net"
-            not in spark_properties
-        )
+    storage_account = azure_storage_relation.remote_app_data["storage-account"]
+    assert (
+        f"spark.hadoop.fs.azure.account.key.{storage_account}.dfs.core.windows.net"
+        not in spark_properties
+    )
 
 
 @patch("managers.s3.S3Manager.verify", return_value=True)

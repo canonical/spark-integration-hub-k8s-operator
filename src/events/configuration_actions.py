@@ -4,6 +4,8 @@
 
 """Event handlers for configuration-related Juju Actions."""
 
+from __future__ import annotations
+
 import json
 import logging
 import re
@@ -24,8 +26,10 @@ logger = logging.getLogger(__name__)
 class ConfigurationActionEvents(Object):
     """Event handlers for configuration-related Juju Actions."""
 
-    def __init__(self, charm, context: Context, workload: IntegrationHubWorkloadBase):
-        super().__init__(charm, "configutation_events")
+    def __init__(
+        self, charm: SparkIntegrationHub, context: Context, workload: IntegrationHubWorkloadBase
+    ):
+        super().__init__(charm, "configuration_events")
         self.charm: "SparkIntegrationHub" = charm
         self.context = context
         self.workload = workload
@@ -73,7 +77,6 @@ class ConfigurationActionEvents(Object):
         msg = f"Configuration {config} cannot be applied"
         logger.error(msg)
         event.fail(msg)
-        return
 
     def _remove_config_action(self, event: ActionEvent) -> None:
         """Remove configuration action."""
@@ -97,7 +100,6 @@ class ConfigurationActionEvents(Object):
         msg = f"Configuration {key} is not present"
         logger.error(msg)
         event.fail(msg)
-        return
 
     def _clear_config_action(self, event: ActionEvent) -> None:
         """Clear configuration action."""
@@ -115,7 +117,6 @@ class ConfigurationActionEvents(Object):
 
         self.context.hub_configurations.clear()
         event.set_results({"current-configuration": ""})
-        return
 
     def _list_config_action(self, event: ActionEvent) -> None:
         """List configuration action."""
@@ -134,7 +135,6 @@ class ConfigurationActionEvents(Object):
         configuration = self.context.hub_configurations.spark_configurations
         logger.info(f"Get configuration: {configuration}")
         event.set_results({"properties": json.dumps(configuration)})
-        return
 
     def _parse_property_line(self, line: str) -> tuple[str, str]:
         prop_assignment = list(filter(None, re.split("=| ", line.strip())))

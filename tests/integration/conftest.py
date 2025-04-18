@@ -5,6 +5,7 @@ import logging
 import shutil
 import subprocess
 import uuid
+from pathlib import Path
 from typing import Optional
 
 import pytest
@@ -134,3 +135,22 @@ def service_account(namespace):
     )
     logger.info(f"Service account: {username} created in namespace: {namespace}")
     return username, namespace
+
+
+@pytest.fixture
+def hub_charm() -> Path:
+    """Path to the packed integration hub charm."""
+    if not (path := next(iter(Path.cwd().glob("*.charm")), None)):
+        raise FileNotFoundError("Could not find packed integration hub charm.")
+
+    return path
+
+
+@pytest.fixture
+def test_charm() -> Path:
+    if not (
+        path := next(iter((Path.cwd() / "tests/integration/app-charm").glob("*.charm")), None)
+    ):
+        raise FileNotFoundError("Could not find packed test charm.")
+
+    return path
