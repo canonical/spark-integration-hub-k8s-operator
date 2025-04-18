@@ -4,8 +4,7 @@
 
 """Charmed Kubernetes Operator for the Spark Integration Hub Charm."""
 
-from ops import CharmBase
-from ops.main import main
+import ops
 
 from common.utils import WithLogging
 from constants import CONTAINER, PEBBLE_USER
@@ -21,7 +20,7 @@ from events.s3 import S3Events
 from workload import IntegrationHub
 
 
-class SparkIntegrationHub(CharmBase, WithLogging):
+class SparkIntegrationHub(ops.CharmBase, WithLogging):
     """Charm the service."""
 
     def __init__(self, *args):
@@ -42,4 +41,4 @@ class SparkIntegrationHub(CharmBase, WithLogging):
 
 
 if __name__ == "__main__":  # pragma: nocover
-    main(SparkIntegrationHub)
+    ops.main(SparkIntegrationHub)

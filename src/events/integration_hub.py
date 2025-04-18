@@ -4,7 +4,11 @@
 
 """Spark Integration Hub workload related event handlers."""
 
-from ops.charm import CharmBase
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from ops import InstallEvent, PebbleReadyEvent, RelationChangedEvent, StopEvent
 
 from common.utils import WithLogging
 from constants import INTEGRATION_HUB_LABEL, PEER
@@ -13,11 +17,16 @@ from core.workload import IntegrationHubWorkloadBase
 from events.base import BaseEventHandler, compute_status, defer_when_not_ready
 from managers.integration_hub import IntegrationHubManager
 
+if TYPE_CHECKING:
+    from charm import SparkIntegrationHub
+
 
 class IntegrationHubEvents(BaseEventHandler, WithLogging):
     """Class implementing Spark Integration Hub event hooks."""
 
-    def __init__(self, charm: CharmBase, context: Context, workload: IntegrationHubWorkloadBase):
+    def __init__(
+        self, charm: SparkIntegrationHub, context: Context, workload: IntegrationHubWorkloadBase
+    ) -> None:
         super().__init__(charm, "integration-hub")
         self.charm = charm
         self.context = context
@@ -36,7 +45,7 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
             self.charm.on[PEER].relation_changed, self._on_peer_relation_changed
         )
 
-    def _remove_resources(self, _):
+    def _remove_resources(self, _: StopEvent) -> None:
         """Handle the stop event."""
         self.integration_hub.workload.exec(
             f"kubectl delete secret -l {INTEGRATION_HUB_LABEL} --all-namespaces"
@@ -44,16 +53,17 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
 
     @compute_status
     @defer_when_not_ready
-    def _on_integration_hub_pebble_ready(self, _):
+    def _on_integration_hub_pebble_ready(self, _: PebbleReadyEvent) -> None:
         """Handle on Pebble ready event."""
         self.integration_hub.update()
 
     @compute_status
     @defer_when_not_ready
-    def _on_peer_relation_changed(self, _):
+    def _on_peer_relation_changed(self, _: RelationChangedEvent) -> None:
         """Handle on PEER relation changed event."""
         self.integration_hub.update()
 
     @compute_status
-    def _update_event(self, _):
+    def _update_event(self, _: InstallEvent) -> None:
+        # only used to trigger charm status update
         pass

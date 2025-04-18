@@ -172,7 +172,7 @@ class IntegrationHubManager(WithLogging):
             existing_content = self.workload.read(file_path)
             file_exists = True
         except FileNotFoundError:
-            existing_content = ""
+            existing_content = [""]
             file_exists = False
         self.logger.debug(f"{file_path=}")
         self.logger.debug(f"{existing_content=}")

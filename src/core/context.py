@@ -5,7 +5,6 @@
 """Charm Context definition and parsing logic."""
 
 from enum import Enum
-from typing import List
 
 from charms.data_platform_libs.v0.data_interfaces import RequirerData
 from ops import ActiveStatus, BlockedStatus, CharmBase, MaintenanceStatus, Relation
@@ -98,7 +97,7 @@ class Context(WithLogging):
         return self.model.get_relation(PEER)
 
     @property
-    def hub_configurations(self) -> HubConfiguration | None:
+    def hub_configurations(self) -> HubConfiguration:
         """The spark configuration of the current running Hub."""
         return HubConfiguration(relation=self.peer_relation, component=self.model.app)
 
@@ -108,7 +107,7 @@ class Context(WithLogging):
         return set(self.model.relations[INTEGRATION_HUB_REL])
 
     @property
-    def service_accounts(self) -> List[ServiceAccount]:
+    def service_accounts(self) -> list[ServiceAccount]:
         """Retrieve  service account managed by relations.
 
         Returns:
@@ -126,6 +125,8 @@ class Context(WithLogging):
             if units := list(relation.units):
                 # select the first unit, because we don't care which unit we get the URL from
                 return LokiURL(relation, units[0])
+
+        return None
 
 
 class Status(Enum):

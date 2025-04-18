@@ -5,6 +5,7 @@
 """Module containing all business logic related to the workload."""
 
 import json
+from typing import cast
 
 import ops.pebble
 from ops.model import Container
@@ -31,8 +32,7 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
         self.user = user
 
         self.paths = IntegrationHubPaths(conf_path=self.CONFS_PATH, keytool="keytool")
-
-        self._envs = None
+        self._envs: dict[str, str] | None = None
 
     @property
     def envs(self):
@@ -45,7 +45,7 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
         return self._envs
 
     @property
-    def _spark_integration_hub_layer(self):
+    def _spark_integration_hub_layer(self) -> dict:
         """Return a dictionary representing a Pebble layer."""
         layer = {
             "summary": "spark integration hub layer",
@@ -59,9 +59,9 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
         self.logger.info(f"Layer: {json.dumps(layer)}")
         return layer
 
-    def start(self):
+    def start(self) -> None:
         """Execute business-logic for starting the workload."""
-        layer = dict(self.container.get_plan().to_dict())
+        layer: dict = dict(self.container.get_plan().to_dict())
 
         layer["services"][self.INTEGRATION_HUB_SERVICE] = (
             layer["services"][self.INTEGRATION_HUB_SERVICE]
@@ -71,7 +71,9 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
         # Temporal fix to restart the container when the watch process fails
         layer["services"][self.INTEGRATION_HUB_SERVICE]["on-failure"] = "restart"
 
-        self.container.add_layer(self.CONTAINER_LAYER, layer, combine=True)
+        self.container.add_layer(
+            self.CONTAINER_LAYER, cast(ops.pebble.LayerDict, layer), combine=True
+        )
 
         if not self.exists(str(self.paths.spark_properties)):
             self.logger.error(f"{self.paths.spark_properties} not found")
@@ -80,7 +82,7 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
         # Push an updated layer with the new config
         self.container.restart(self.INTEGRATION_HUB_SERVICE)
 
-    def stop(self):
+    def stop(self) -> None:
         """Execute business-logic for stopping the workload."""
         self.container.stop(self.INTEGRATION_HUB_SERVICE)
 
@@ -98,7 +100,7 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
 
         return service.is_running()
 
-    def set_environment(self, env: dict[str, str | None]):
+    def set_environment(self, env: dict[str, str | None]) -> None:
         """Set environment for workload."""
         merged_envs = self.envs | env
 

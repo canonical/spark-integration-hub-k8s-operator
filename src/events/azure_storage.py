@@ -4,6 +4,10 @@
 
 """Azure Storage Integration related event handlers."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from charms.data_platform_libs.v0.object_storage import (
     AzureStorageRequires,
     StorageConnectionInfoChangedEvent,
@@ -17,11 +21,16 @@ from core.workload import IntegrationHubWorkloadBase
 from events.base import BaseEventHandler, compute_status, defer_when_not_ready
 from managers.integration_hub import IntegrationHubManager
 
+if TYPE_CHECKING:
+    pass
+
 
 class AzureStorageEvents(BaseEventHandler, WithLogging):
     """Class implementing Azure Storage Integration event hooks."""
 
-    def __init__(self, charm: CharmBase, context: Context, workload: IntegrationHubWorkloadBase):
+    def __init__(
+        self, charm: CharmBase, context: Context, workload: IntegrationHubWorkloadBase
+    ) -> None:
         super().__init__(charm, "azure-storage")
 
         self.charm = charm
@@ -44,13 +53,15 @@ class AzureStorageEvents(BaseEventHandler, WithLogging):
 
     @compute_status
     @defer_when_not_ready
-    def _on_azure_storage_connection_info_changed(self, _: StorageConnectionInfoChangedEvent):
+    def _on_azure_storage_connection_info_changed(
+        self, _: StorageConnectionInfoChangedEvent
+    ) -> None:
         """Handle the `StorageConnectionInfoChangedEvent` event from Object Storage integrator."""
         self.logger.info("Azure Storage connection info changed")
         self.integration_hub.update()
 
     @defer_when_not_ready
-    def _on_azure_storage_connection_info_gone(self, _: StorageConnectionInfoGoneEvent):
+    def _on_azure_storage_connection_info_gone(self, _: StorageConnectionInfoGoneEvent) -> None:
         """Handle the `StorageConnectionInfoGoneEvent` event for Object Storage integrator."""
         self.logger.info("Azure Storage connection info gone")
         self.integration_hub.update(set_azure_storage_none=True)
