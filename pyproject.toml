@@ -1,19 +1,6 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# Testing tools configuration
-[tool.coverage.run]
-branch = true
-
-[tool.coverage.report]
-show_missing = true
-
-[tool.pytest.ini_options]
-minversion = "6.0"
-log_cli_level = "INFO"
-asyncio_mode = "auto"
-markers = ["unstable"]
-
 [tool.poetry]
 package-mode = false
 requires-poetry = ">=2.0.0"
@@ -92,6 +79,18 @@ extend-ignore = [
 ignore = ["E501", "D107"]
 per-file-ignores = { "tests/*" = ["D100", "D101", "D102", "D103", "D104", "E999"], "src/literals.py" = ["D101"] }
 mccabe.max-complexity = 10
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+log_cli_level = "INFO"
+asyncio_mode = "auto"
+markers = ["unstable"]
 
 [tool.pyright]
 include = ["src"]
