@@ -35,11 +35,10 @@ SECRET_NAME_PREFIX = "integrator-hub-conf-"
 
 
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest, charm_versions, azure_credentials):
-    """Build the charm-under-test and deploy it together with related charms.
-
-    Assert on the unit status before any relations/configurations take place.
-    """
+async def test_build_and_deploy(
+    ops_test: OpsTest, charm_versions, azure_credentials: dict[str, str], hub_charm: Path
+) -> None:
+    """Assert on the unit status before any relations/configurations take place."""
     logger.info("Setting up minio.....")
 
     setup_minio_output = (
@@ -65,11 +64,6 @@ async def test_build_and_deploy(ops_test: OpsTest, charm_versions, azure_credent
 
     logger.info("Bucket setup complete")
 
-    logger.info("Building charm")
-    # Build and deploy charm from local source folder
-
-    charm = await ops_test.build_charm(".")
-
     image_version = METADATA["resources"]["integration-hub-image"]["upstream-source"]
 
     logger.info(f"Image version: {image_version}")
@@ -85,7 +79,7 @@ async def test_build_and_deploy(ops_test: OpsTest, charm_versions, azure_credent
         ops_test.model.deploy(**charm_versions.s3.deploy_dict()),
         ops_test.model.deploy(**charm_versions.azure_storage.deploy_dict()),
         ops_test.model.deploy(
-            charm,
+            hub_charm,
             resources=resources,
             application_name=APP_NAME,
             num_units=1,

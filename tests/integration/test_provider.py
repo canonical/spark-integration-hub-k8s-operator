@@ -43,18 +43,13 @@ def check_service_account_existance(namespace: str, service_account_name) -> boo
 
 
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy_test_app(ops_test: OpsTest):
+async def test_build_and_deploy_test_app(
+    ops_test: OpsTest, hub_charm: Path, test_charm: Path
+) -> None:
     """Build the charm-under-test and deploy it together with related charms.
 
     Assert on the unit status before any relations/configurations take place.
     """
-    logger.info("Building charm")
-    # Build and deploy charm from local source folder
-
-    charm = await ops_test.build_charm(".")
-
-    test_charm = await ops_test.build_charm("tests/integration/app-charm")
-
     image_version = METADATA["resources"]["integration-hub-image"]["upstream-source"]
 
     logger.info(f"Image version: {image_version}")
@@ -69,7 +64,7 @@ async def test_build_and_deploy_test_app(ops_test: OpsTest):
             test_charm, application_name=DUMMY_APP_NAME, num_units=1, series="jammy"
         ),
         ops_test.model.deploy(
-            charm,
+            hub_charm,
             resources=resources,
             application_name=APP_NAME,
             num_units=1,
