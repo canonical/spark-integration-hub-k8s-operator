@@ -19,9 +19,6 @@ markers = ["unstable"]
 line-length = 99
 target-version = ["py310"]
 
-[tool.isort]
-profile = "black"
-
 [tool.poetry]
 package-mode = false
 requires-poetry = ">=2.0.0"
