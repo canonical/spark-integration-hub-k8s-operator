@@ -202,7 +202,6 @@ class IntegrationHubManager(WithLogging):
         hub_conf = self.context.hub_configurations
 
         self.logger.debug("Update")
-        self.workload.stop()
 
         config = IntegrationHubConfig(s3, azure_storage, pushgateway, hub_conf, loki_url)
 
