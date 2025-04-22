@@ -8,6 +8,7 @@ requires-poetry = ">=2.0.0"
 [tool.poetry.dependencies]
 python = ">3.10,<4.0"
 ops = ">=2.19.0"
+# NOTE(boto): 1.36+ incompatible with minio because of MD5 checksum
 boto3 = ">=1.28.0,<1.36"
 lightkube = "0.17.1"
 
@@ -54,7 +55,6 @@ pytest = ">=7.4.4"
 juju = "^3.5.2"
 coverage = { extras = ["toml"], version = ">7.0" }
 pytest-operator = ">0.20"
-boto3 = ">=1.28.0,<1.36"
 tenacity = "^8.5.0"
 spark8t = "^0.0.11"
 
