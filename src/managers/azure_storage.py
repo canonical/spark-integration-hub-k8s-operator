@@ -4,7 +4,6 @@
 
 """Azure Storage manager."""
 
-
 from common.utils import WithLogging
 from core.domain import AzureStorageConnectionInfo
 

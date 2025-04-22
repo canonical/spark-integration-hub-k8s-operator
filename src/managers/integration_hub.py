@@ -169,7 +169,7 @@ class IntegrationHubManager(WithLogging):
         Return True if the file was re-written, else False.
         """
         try:
-            existing_content = self.workload.read(file_path)
+            existing_content = "\n".join(self.workload.read(file_path))
             file_exists = True
         except FileNotFoundError:
             existing_content = ""
@@ -177,7 +177,11 @@ class IntegrationHubManager(WithLogging):
         self.logger.debug(f"{file_path=}")
         self.logger.debug(f"{existing_content=}")
         self.logger.debug(f"{content=}")
-        if not file_exists or existing_content != content:
+
+        is_content_different = set(existing_content.strip().splitlines()) != set(
+            content.strip().splitlines()
+        )
+        if not file_exists or is_content_different:
             self.workload.write(content, file_path)
             return True
 
@@ -198,7 +202,6 @@ class IntegrationHubManager(WithLogging):
         hub_conf = self.context.hub_configurations
 
         self.logger.debug("Update")
-        self.workload.stop()
 
         config = IntegrationHubConfig(s3, azure_storage, pushgateway, hub_conf, loki_url)
 

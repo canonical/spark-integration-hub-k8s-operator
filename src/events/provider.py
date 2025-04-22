@@ -4,7 +4,9 @@
 
 """Spark Service accounts related event handlers."""
 
-from ops import CharmBase
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from common.utils import WithLogging
 from constants import INTEGRATION_HUB_REL
@@ -18,11 +20,16 @@ from relations.spark_sa import (
     SparkServiceAccountProvider,
 )
 
+if TYPE_CHECKING:
+    from charm import SparkIntegrationHub
+
 
 class SparkServiceAccountProviderEvents(BaseEventHandler, WithLogging):
     """Class implementing Spark Service Account Integration event hooks."""
 
-    def __init__(self, charm: CharmBase, context: Context, workload: IntegrationHubWorkloadBase):
+    def __init__(
+        self, charm: SparkIntegrationHub, context: Context, workload: IntegrationHubWorkloadBase
+    ) -> None:
         super().__init__(charm, "service-account")
 
         self.charm = charm
@@ -36,7 +43,7 @@ class SparkServiceAccountProviderEvents(BaseEventHandler, WithLogging):
         self.framework.observe(self.sa.on.account_released, self._on_service_account_released)
 
     @defer_when_not_ready
-    def _on_service_account_requested(self, event: ServiceAccountRequestedEvent):
+    def _on_service_account_requested(self, event: ServiceAccountRequestedEvent) -> None:
         """Handle the `ServiceAccountRequested` event for the Spark Integration hub."""
         self.logger.info("Service account requested.")
 
@@ -65,7 +72,7 @@ class SparkServiceAccountProviderEvents(BaseEventHandler, WithLogging):
         self.integration_hub.update()
 
     @defer_when_not_ready
-    def _on_service_account_released(self, event: ServiceAccountReleasedEvent):
+    def _on_service_account_released(self, event: ServiceAccountReleasedEvent) -> None:
         """Handle the `ServiceAccountReleased` event for the Spark Integration hub."""
         self.logger.info("Service account released.")
 
