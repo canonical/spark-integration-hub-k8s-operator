@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
+import logging
 import shutil
 import subprocess
 import uuid
+from pathlib import Path
 from typing import Optional
 
 import pytest
 from pydantic import BaseModel
 from pytest_operator.plugin import OpsTest
+
+from .helpers import run_service_account_registry
+
+logger = logging.getLogger(__name__)
 
 
 class CharmVersion(BaseModel):
@@ -113,3 +119,38 @@ def azure_credentials(ops_test: OpsTest):
         "connection-protocol": "abfss",
         "secret-key": "i-am-secret",
     }
+
+
+@pytest.fixture()
+def service_account(namespace):
+    """A fixture that creates a service account that has the permission to run spark jobs."""
+    username = str(uuid.uuid4())
+
+    run_service_account_registry(
+        "create",
+        "--username",
+        username,
+        "--namespace",
+        namespace,
+    )
+    logger.info(f"Service account: {username} created in namespace: {namespace}")
+    return username, namespace
+
+
+@pytest.fixture
+def hub_charm() -> Path:
+    """Path to the packed integration hub charm."""
+    if not (path := next(iter(Path.cwd().glob("*.charm")), None)):
+        raise FileNotFoundError("Could not find packed integration hub charm.")
+
+    return path
+
+
+@pytest.fixture
+def test_charm() -> Path:
+    if not (
+        path := next(iter((Path.cwd() / "tests/integration/app-charm").glob("*.charm")), None)
+    ):
+        raise FileNotFoundError("Could not find packed test charm.")
+
+    return path

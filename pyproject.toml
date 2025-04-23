@@ -1,39 +1,16 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# Testing tools configuration
-[tool.coverage.run]
-branch = true
-
-[tool.coverage.report]
-show_missing = true
-
-[tool.pytest.ini_options]
-minversion = "6.0"
-log_cli_level = "INFO"
-asyncio_mode = "auto"
-markers = ["unstable"]
-
-# Formatting tools configuration
-[tool.black]
-line-length = 99
-target-version = ["py310"]
-
-[tool.isort]
-profile = "black"
-
 [tool.poetry]
-name = "spark-integration-hub-k8s"
-version = "1.0"
-description = "spark-integration-hub-k8s"
-authors = []
 package-mode = false
+requires-poetry = ">=2.0.0"
 
 [tool.poetry.dependencies]
 python = ">3.10,<4.0"
-ops = ">=2.10.1"
-boto3 = ">=1.34.55"
-lightkube = "0.15.4"
+ops = ">=2.19.0"
+# NOTE(boto): 1.36+ incompatible with minio because of MD5 checksum
+boto3 = ">=1.28.0,<1.36"
+lightkube = "0.17.1"
 
 [tool.poetry.group.charm-libs.dependencies]
 ops = "^2.13.0"
@@ -49,40 +26,37 @@ cosl = "*"
 optional = true
 
 [tool.poetry.group.format.dependencies]
-black = "^22.3.0"
-ruff = ">=0.2.2"
+ruff = ">=0.9.9"
 
 [tool.poetry.group.lint]
 optional = true
 
 [tool.poetry.group.lint.dependencies]
-black = ">=22.3.0"
-ruff = ">=0.2.2"
-codespell = ">=2.2.2"
+ruff = ">=0.9.9"
+codespell = ">=2.4.1"
+mypy = "^1.15.0"
+types-boto3 = { extras = ["essentials"], version = ">=1.28.0,<1.36" }
+types-pyyaml = "^6.0.12.20250402"
+types-pygments = "^2.19.0.20250305"
 
 [tool.poetry.group.unit]
 optional = true
 
 [tool.poetry.group.unit.dependencies]
-pytest = "<8.2.0"
-pytest-asyncio = ">=0.21"
+pytest = "<8.3.6"
 coverage = { extras = ["toml"], version = ">7.0" }
-ops = { extras = ["testing"], version = "^2.17.0" }
+ops = { extras = ["testing"], version = "^2.19.0" }
 
 [tool.poetry.group.integration]
 optional = true
 
 [tool.poetry.group.integration.dependencies]
-pytest = ">=7.2"
+pytest = ">=7.4.4"
 juju = "^3.5.2"
 coverage = { extras = ["toml"], version = ">7.0" }
 pytest-operator = ">0.20"
-boto3 = ">=1.28.0"
-tenacity = "^8.2.2"
-spark8t = { git = "https://github.com/canonical/spark-k8s-toolkit-py.git", tag = "v0.0.7" }
-pytest-operator-cache = { git = "https://github.com/canonical/data-platform-workflows", tag = "v24.0.5", subdirectory = "python/pytest_plugins/pytest_operator_cache" }
-# pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v13.1.2", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
-# pytest-operator-secrets = {git = "https://github.com/canonical/data-platform-workflows", tag = "v13.1.2", subdirectory = "python/pytest_plugins/pytest_operator_secrets"}
+tenacity = "^8.5.0"
+spark8t = "^0.0.11"
 
 [tool.ruff]
 line-length = 99
@@ -107,8 +81,29 @@ extend-ignore = [
   "D413",
 ]
 ignore = ["E501", "D107"]
-per-file-ignores = { "tests/*" = ["D100", "D101", "D102", "D103", "D104", "E999"], "src/literals.py" = ["D101"] }
+per-file-ignores = { "tests/*" = ["D100", "D101", "D102", "D103", "D104", "E999"], "src/literals.py" = ["D101"], "src/*/__init__.py" = ["D104"] }
 mccabe.max-complexity = 10
+
+[tool.mypy]
+[[tool.mypy.overrides]]
+module = [
+  "charms.data_platform_libs.*",
+  "charms.prometheus_pushgateway_k8s.*",
+  "charms.loki_k8s.*",
+]
+ignore_missing_imports = true
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+log_cli_level = "INFO"
+asyncio_mode = "auto"
+markers = ["unstable"]
 
 [tool.pyright]
 include = ["src"]

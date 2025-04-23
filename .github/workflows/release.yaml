@@ -1,6 +1,6 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
-name: Release to charmhub
+name: Release to Charmhub
 
 on:
   push:
@@ -11,22 +11,15 @@ jobs:
   ci-tests:
     uses: ./.github/workflows/ci.yaml
 
-  build:
-    name: Build charm
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v24.0.5
-    with:
-      cache: false
-
-  publish:
+  release:
     name: Release charm
     needs:
       - ci-tests
-      - build
-    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v24.0.5
+    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v30.1.3
     with:
       channel: latest/edge
-      artifact-name: ${{ needs.build.outputs.artifact-name }}
+      artifact-prefix: ${{ needs.ci-tests.outputs.artifact-prefix }}
     secrets:
       charmhub-token: ${{ secrets.CHARMHUB_TOKEN }}
     permissions:
-      contents: write  # Needed to create GitHub release
+      contents: write # Needed to create git tags
