@@ -37,7 +37,7 @@ requires:
   s3-credentials:
     interface: s3
   azure-storage-credentials:
-    interface: azure-storage
+    interface: azure_storage
   cos:
     interface: pushgateway
   logging:
