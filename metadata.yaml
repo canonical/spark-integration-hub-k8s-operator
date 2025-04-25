@@ -36,8 +36,8 @@ resources:
 requires:
   s3-credentials:
     interface: s3
-  azure-credentials:
-    interface: azure
+  azure-storage-credentials:
+    interface: azure_storage
   cos:
     interface: pushgateway
   logging:
