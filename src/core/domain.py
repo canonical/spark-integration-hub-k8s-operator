@@ -128,7 +128,7 @@ class AzureStorageConnectionInfo:
     @property
     def secret_key(self) -> str:
         """Return the secret key."""
-        return self.relation_data["secret-key"]
+        return self.relation_data.get("secret-key", "")
 
     @property
     def path(self) -> str:
@@ -138,17 +138,17 @@ class AzureStorageConnectionInfo:
     @property
     def container(self) -> str:
         """Return the name of the Azure Storage container."""
-        return self.relation_data["container"]
+        return self.relation_data.get("container", "")
 
     @property
     def connection_protocol(self) -> str:
         """Return the protocol to be used to access files."""
-        return self.relation_data["connection-protocol"].lower()
+        return self.relation_data.get("connection-protocol", "").lower()
 
     @property
     def storage_account(self) -> str:
         """Return the name of the Azure Storage account."""
-        return self.relation_data["storage-account"]
+        return self.relation_data.get("storage-account", "")
 
     @property
     def log_dir(self) -> str:
@@ -170,6 +170,17 @@ class AzureStorageConnectionInfo:
         if self.endpoint:
             return f"{self.endpoint}/warehouse"
         return ""
+
+    def __bool__(self) -> bool:
+        """Return True if the Azure Storage relation is ready."""
+        return all(
+            [
+                self.storage_account,
+                self.container,
+                self.secret_key,
+                self.connection_protocol,
+            ]
+        )
 
 
 class PushGatewayInfo(StateBase):
