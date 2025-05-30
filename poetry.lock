@@ -6,7 +6,7 @@ version = "4.9.0"
 description = "High level compatibility layer for multiple asynchronous event loop implementations"
 optional = false
 python-versions = ">=3.9"
-groups = ["main", "charm-libs", "integration"]
+groups = ["main", "integration"]
 files = [
     {file = "anyio-4.9.0-py3-none-any.whl", hash = "sha256:9f76d541cad6e36af7beb62e978876f3b41e3e04f2c1fbf0884604c0a9c4d93c"},
     {file = "anyio-4.9.0.tar.gz", hash = "sha256:673c0c244e15788651a4ff38710fea9675823028a6f08a5eda409e0c9840a028"},
@@ -250,7 +250,7 @@ version = "2025.1.31"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
 python-versions = ">=3.6"
-groups = ["main", "charm-libs", "integration"]
+groups = ["main", "integration"]
 files = [
     {file = "certifi-2025.1.31-py3-none-any.whl", hash = "sha256:ca78db4565a652026a4db2bcdf68f2fb589ea80d0be70e03929ed730746b84fe"},
     {file = "certifi-2025.1.31.tar.gz", hash = "sha256:3d5da6925056f6f18f119200434a4780a94263f10d1c21d032a6f6b2baa20651"},
@@ -471,18 +471,17 @@ files = [
 
 [[package]]
 name = "cosl"
-version = "0.0.57"
+version = "1.0.0"
 description = "Utils for COS Lite charms"
 optional = false
 python-versions = ">=3.8"
 groups = ["charm-libs"]
 files = [
-    {file = "cosl-0.0.57-py3-none-any.whl", hash = "sha256:0f2bac6dd84a636747e63acd6cb277f1cc642d3c5f80caa13cd9b51644b8ff67"},
-    {file = "cosl-0.0.57.tar.gz", hash = "sha256:7ed489973e6e72a9b9533dddf0da1df3499a0aacdc513ad0b579cb04b4671b04"},
+    {file = "cosl-1.0.0-py3-none-any.whl", hash = "sha256:4ed54e818a5614a5164011253c12441cd0bffacfd99c8bd6b5b9740a397e482d"},
+    {file = "cosl-1.0.0.tar.gz", hash = "sha256:5cef884faac1313ae6d234fcd6f40db0cbdd44bcdacfd9a6e9ecf9cede219359"},
 ]
 
 [package.dependencies]
-lightkube = ">=v0.15.4"
 ops = "*"
 pydantic = "*"
 pyyaml = "*"
@@ -659,7 +658,7 @@ version = "1.2.2"
 description = "Backport of PEP 654 (exception groups)"
 optional = false
 python-versions = ">=3.7"
-groups = ["main", "charm-libs", "integration", "unit"]
+groups = ["main", "integration", "unit"]
 markers = "python_version < \"3.11\""
 files = [
     {file = "exceptiongroup-1.2.2-py3-none-any.whl", hash = "sha256:3111b9d131c238bec2f8f516e123e14ba243563fb135d3fe885990585aa7795b"},
@@ -717,7 +716,7 @@ version = "0.14.0"
 description = "A pure-Python, bring-your-own-I/O implementation of HTTP/1.1"
 optional = false
 python-versions = ">=3.7"
-groups = ["main", "charm-libs", "integration"]
+groups = ["main", "integration"]
 files = [
     {file = "h11-0.14.0-py3-none-any.whl", hash = "sha256:e3fe4ac4b851c468cc8363d500db52c2ead036020723024a109d37346efaa761"},
     {file = "h11-0.14.0.tar.gz", hash = "sha256:8f19fbbe99e72420ff35c00b27a34cb9937e902a8b810e2c88300c6f0a3b699d"},
@@ -729,7 +728,7 @@ version = "1.0.8"
 description = "A minimal low-level HTTP client."
 optional = false
 python-versions = ">=3.8"
-groups = ["main", "charm-libs", "integration"]
+groups = ["main", "integration"]
 files = [
     {file = "httpcore-1.0.8-py3-none-any.whl", hash = "sha256:5254cf149bcb5f75e9d1b2b9f729ea4a4b883d1ad7379fc632b727cec23674be"},
     {file = "httpcore-1.0.8.tar.gz", hash = "sha256:86e94505ed24ea06514883fd44d2bc02d90e77e7979c8eb71b90f41d364a1bad"},
@@ -751,7 +750,7 @@ version = "0.28.1"
 description = "The next generation HTTP client."
 optional = false
 python-versions = ">=3.8"
-groups = ["main", "charm-libs", "integration"]
+groups = ["main", "integration"]
 files = [
     {file = "httpx-0.28.1-py3-none-any.whl", hash = "sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad"},
     {file = "httpx-0.28.1.tar.gz", hash = "sha256:75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc"},
@@ -794,7 +793,7 @@ version = "3.10"
 description = "Internationalized Domain Names in Applications (IDNA)"
 optional = false
 python-versions = ">=3.6"
-groups = ["main", "charm-libs", "integration"]
+groups = ["main", "integration"]
 files = [
     {file = "idna-3.10-py3-none-any.whl", hash = "sha256:946d195a0d259cbba61165e88e65941f16e9b36ea6ddb97f00452bae8b1287d3"},
     {file = "idna-3.10.tar.gz", hash = "sha256:12f65c9b470abda6dc35cf8e63cc574b1c52b11df2c86030af0ac09b01b13ea9"},
@@ -985,7 +984,7 @@ version = "0.17.1"
 description = "Lightweight kubernetes client library"
 optional = false
 python-versions = "*"
-groups = ["main", "charm-libs", "integration"]
+groups = ["main", "integration"]
 files = [
     {file = "lightkube-0.17.1-py3-none-any.whl", hash = "sha256:3d046c2c46191b3745471763710ef4ed2df4259a7405f798b577df2ae390358a"},
     {file = "lightkube-0.17.1.tar.gz", hash = "sha256:e0d6b71476a4fa7cbda7080da1f0943e43c7e747212db9f2ec7d87415bf8d23e"},
@@ -1005,7 +1004,7 @@ version = "1.32.0.8"
 description = "Models and Resources for lightkube module"
 optional = false
 python-versions = "*"
-groups = ["main", "charm-libs", "integration"]
+groups = ["main", "integration"]
 files = [
     {file = "lightkube-models-1.32.0.8.tar.gz", hash = "sha256:97f6c2ab554a23a69554dd56ffbd94173fb416af6490c3a21b1e0b8e13a2bafe"},
     {file = "lightkube_models-1.32.0.8-py3-none-any.whl", hash = "sha256:73786dac63085521f4c88aa69d86bfdc76a67da997c1770e5bdcef8482e4b2a0"},
@@ -1844,7 +1843,7 @@ version = "1.3.1"
 description = "Sniff out which async library your code is running under"
 optional = false
 python-versions = ">=3.7"
-groups = ["main", "charm-libs", "integration"]
+groups = ["main", "integration"]
 files = [
     {file = "sniffio-1.3.1-py3-none-any.whl", hash = "sha256:2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2"},
     {file = "sniffio-1.3.1.tar.gz", hash = "sha256:f4324edc670a0f49750a81b895f35c3adb843cca46f0530f79fc1babb23789dc"},
