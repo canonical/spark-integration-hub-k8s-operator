@@ -8,17 +8,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import yaml
+from charms.spark_integration_hub_k8s.v0.spark_service_account import (
+    ServiceAccountReleasedEvent,
+    ServiceAccountRequestedEvent,
+    SparkServiceAccountProvider,
+)
+
 from common.utils import WithLogging
 from constants import INTEGRATION_HUB_REL
 from core.context import Context
 from core.workload import IntegrationHubWorkloadBase
 from events.base import BaseEventHandler, defer_when_not_ready
 from managers.integration_hub import IntegrationHubManager
-from relations.spark_sa import (
-    ServiceAccountReleasedEvent,
-    ServiceAccountRequestedEvent,
-    SparkServiceAccountProvider,
-)
 
 if TYPE_CHECKING:
     from charm import SparkIntegrationHub
@@ -55,20 +57,17 @@ class SparkServiceAccountProviderEvents(BaseEventHandler, WithLogging):
 
         relation_id = event.relation.id
         namespace, username = event.service_account.split(":")
+        skip_creation = event.skip_creation
         self.logger.debug(f"Desired service account name: {username} in namespace: {namespace}")
 
-        # Try to create service account
-        try:
-            self.workload.exec(
-                f"python3 -m spark8t.cli.service_account_registry create --username={username} --namespace={namespace}"
-            )
-        except Exception as e:
-            self.logger.error(e)
-            raise RuntimeError(
-                f"Impossible to create service account: {username} in namespace: {namespace}"
-            )
+        if not skip_creation:
+            self.workload.create_service_account(namespace=namespace, username=username)
 
         self.sa.set_service_account(relation_id, event.service_account)  # type: ignore
+
+        # TODO: Add logic for generation of resource manifest
+        self.sa.set_resource_manifest(relation_id, resource_manifest=yaml.dump({}))
+
         self.integration_hub.update()
 
     @defer_when_not_ready
@@ -83,17 +82,11 @@ class SparkServiceAccountProviderEvents(BaseEventHandler, WithLogging):
             return
 
         namespace, username = event.service_account.split(":")
+        skip_creation = event.skip_creation
+
         self.logger.debug(
             f"The service account name: {username} in namespace: {namespace} should be deleted"
         )
 
-        # Try to delete the service account
-        try:
-            self.workload.exec(
-                f"python3 -m spark8t.cli.service_account_registry delete --username={username} --namespace={namespace}"
-            )
-        except Exception as e:
-            self.logger.error(e)
-            raise RuntimeError(
-                f"Failed to delete service account: {username} in namespace: {namespace}"
-            )
+        if not skip_creation:
+            self.workload.delete_service_account(namespace=namespace, username=username)

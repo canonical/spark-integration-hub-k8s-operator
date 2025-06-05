@@ -6,3 +6,8 @@ options:
     description: The name of the test namespace.
     type: string
     default: test-namespace
+  skip-creation:
+    description: Whether the charm should request the resource to be created
+    type: boolean
+    default: false
+  
