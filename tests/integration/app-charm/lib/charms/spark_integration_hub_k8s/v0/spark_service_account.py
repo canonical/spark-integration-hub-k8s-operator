@@ -41,7 +41,7 @@ class RequirerCharm(CharmBase):
         super().__init__(*args)
 
         namespace, username = "default", "test"
-        self.spark_service_account_requirer = SparkServiceAccountRequirer(self, relation_name="service-account", service_account=f"{namespace}:{username}", )
+        self.spark_service_account_requirer = SparkServiceAccountRequirer(self, relation_name="service-account", service_account=f"{namespace}:{username}", skip_creation=False)
         self.framework.observe(
             self.spark_service_account_requirer.on.account_granted, self._on_account_granted
         )

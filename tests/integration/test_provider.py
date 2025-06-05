@@ -1,14 +1,10 @@
-import asyncio
 import json
 import logging
 import subprocess
 from pathlib import Path
 
-import pytest
+import jubilant
 import yaml
-from pytest_operator.plugin import OpsTest
-
-from .helpers import run_action
 
 logger = logging.getLogger(__name__)
 
@@ -42,101 +38,132 @@ def check_service_account_existance(namespace: str, service_account_name) -> boo
         return False
 
 
-@pytest.mark.abort_on_fail
-async def test_build_and_deploy_test_app(
-    ops_test: OpsTest, hub_charm: Path, test_charm: Path
-) -> None:
+def test_build_and_deploy_charms(juju: jubilant.Juju, hub_charm: Path, test_charm: Path) -> None:
     """Build the charm-under-test and deploy it together with related charms.
 
     Assert on the unit status before any relations/configurations take place.
     """
     image_version = METADATA["resources"]["integration-hub-image"]["upstream-source"]
-
     logger.info(f"Image version: {image_version}")
-
     resources = {"integration-hub-image": image_version}
 
     logger.info("Deploying Spark Integration hub charm")
-
-    # Deploy the charm and wait for waiting status
-    await asyncio.gather(
-        ops_test.model.deploy(
-            test_charm, application_name=DUMMY_APP_NAME, num_units=1, series="jammy"
-        ),
-        ops_test.model.deploy(
-            hub_charm,
-            resources=resources,
-            application_name=APP_NAME,
-            num_units=1,
-            series="jammy",
-            trust=True,
-        ),
+    juju.deploy(
+        charm=hub_charm,
+        app=APP_NAME,
+        num_units=1,
+        resources=resources,
+        base="ubuntu@22.04",
+        trust=True,
     )
 
-    await ops_test.model.wait_for_idle(apps=[APP_NAME, DUMMY_APP_NAME], timeout=600)
+    logger.info("Deploying test application charm")
+    juju.deploy(charm=test_charm, app=DUMMY_APP_NAME, num_units=1, base="ubuntu@22.04")
 
-    async with ops_test.fast_forward():
-        await ops_test.model.wait_for_idle(apps=[APP_NAME, DUMMY_APP_NAME], status="active")
+    juju.wait(jubilant.all_active)
 
 
-@pytest.mark.abort_on_fail
-async def test_integration_hub_relation(ops_test: OpsTest, namespace):
-    logger.info(f"Add namespace: {namespace}")
+def test_relate_charms(juju: jubilant.Juju, namespace: str) -> None:
     configuration_parameters = {"namespace": namespace}
 
-    # apply new configuration options
-    await ops_test.model.applications[DUMMY_APP_NAME].set_config(configuration_parameters)
+    logger.info(f"Setting config for test application charm: {configuration_parameters}...")
+    juju.config(DUMMY_APP_NAME, configuration_parameters)
+    juju.wait(jubilant.all_active)
 
-    # Add a new relation between dummy application charm and integration hub
-    await ops_test.model.add_relation(APP_NAME, f"{DUMMY_APP_NAME}:{REL_NAME_A}")
-
-    async with ops_test.fast_forward(fast_interval="60s"):
-        await ops_test.model.wait_for_idle(
-            apps=[APP_NAME, DUMMY_APP_NAME], idle_period=30, status="active", timeout=2000
-        )
+    logger.info("Integrating integration hub with test application for service account sa1")
+    juju.integrate(APP_NAME, f"{DUMMY_APP_NAME}:{REL_NAME_A}")
+    juju.wait(jubilant.all_active)
 
     # The service account named 'sa1' should have been created
     assert check_service_account_existance(namespace, "sa1")
 
     # Add a spark property via configuration action of integration hub
-    await run_action(
-        ops_test=ops_test, action_name="add-config", params={"conf": "foo=bar"}, app_name=APP_NAME
-    )
-    async with ops_test.fast_forward(fast_interval="60s"):
-        await ops_test.model.wait_for_idle(
-            apps=[APP_NAME, DUMMY_APP_NAME], idle_period=30, status="active", timeout=2000
-        )
+    task = juju.run(f"{APP_NAME}/0", "add-config", params={"conf": "foo=bar"})
+    assert task.return_code == 0
+    juju.wait(jubilant.all_active, delay=3)
 
     # The added spark property be reflected on the requirer charm
-    res = await run_action(
-        ops_test=ops_test, action_name="get-properties-sa1", params={}, app_name=DUMMY_APP_NAME
-    )
-    properties = res.get("spark-properties", {})
+    task = juju.run(f"{DUMMY_APP_NAME}/0", "get-properties-sa1")
+    assert task.return_code == 0
+    assert "spark-properties" in task.results
+    properties = task.results["spark-properties"]
     assert "foo" in json.loads(properties)
 
-    # Add a new relation between dummy application charm and integration hub
-    await ops_test.model.add_relation(APP_NAME, f"{DUMMY_APP_NAME}:{REL_NAME_B}")
+    task = juju.run(f"{DUMMY_APP_NAME}/0", "get-resource-manifest-sa1")
+    assert task.return_code == 0
+    assert "resource-manifest" in task.results
+    manifest = task.results["resource-manifest"]
+    assert manifest is not None
+    assert manifest.strip() == "{}"
 
-    async with ops_test.fast_forward(fast_interval="60s"):
-        await ops_test.model.wait_for_idle(
-            apps=[APP_NAME, DUMMY_APP_NAME], idle_period=30, status="active", timeout=2000
-        )
+    # Add a new relation between dummy application charm and integration hub
+    logger.info("Integrating integration hub with test application for service account sa2")
+    juju.integrate(APP_NAME, f"{DUMMY_APP_NAME}:{REL_NAME_B}")
+
+    juju.wait(jubilant.all_active)
 
     # The service account named 'sa2' should have been created
     assert check_service_account_existance(namespace, "sa2")
 
-    res = await run_action(
-        ops_test=ops_test, action_name="get-properties-sa2", params={}, app_name=DUMMY_APP_NAME
-    )
-    properties = res.get("spark-properties", {})
+    # The added spark property be reflected on the requirer charm
+    task = juju.run(f"{DUMMY_APP_NAME}/0", "get-properties-sa2")
+    assert task.return_code == 0
+    assert "spark-properties" in task.results
+    properties = task.results["spark-properties"]
     assert "foo" in json.loads(properties)
 
-    # Remove the relation between dummy application charm and integration hub
-    await ops_test.model.applications[APP_NAME].remove_relation(
-        f"{APP_NAME}:spark-service-account", f"{DUMMY_APP_NAME}:{REL_NAME_A}"
+    task = juju.run(f"{DUMMY_APP_NAME}/0", "get-resource-manifest-sa2")
+    assert task.return_code == 0
+    assert "resource-manifest" in task.results
+    manifest = task.results["resource-manifest"]
+    assert manifest is not None
+    assert manifest.strip() == "{}"
+
+
+def test_remove_relation(juju: jubilant.Juju, namespace: str) -> None:
+    logger.info(
+        "Removing relation between integration hub and test application for service account sa1"
     )
+    juju.remove_relation(APP_NAME, f"{DUMMY_APP_NAME}:{REL_NAME_A}")
 
-    await ops_test.model.wait_for_idle(apps=[APP_NAME, DUMMY_APP_NAME], timeout=600)
+    juju.wait(jubilant.all_active)
+    assert not check_service_account_existance(namespace=namespace, service_account_name="sa1")
 
-    # The service account named 'sa1' should have been removed
+    logger.info(
+        "Removing relation between integration hub and test application for service account sa2"
+    )
+    juju.remove_relation(APP_NAME, f"{DUMMY_APP_NAME}:{REL_NAME_B}")
+
+    juju.wait(jubilant.all_active)
+    assert not check_service_account_existance(namespace=namespace, service_account_name="sa2")
+
+
+def test_configure_test_charm_for_skip_creation(juju: jubilant.Juju, namespace: str) -> None:
+    configuration_parameters = {"skip-creation": "true"}
+    juju.config(DUMMY_APP_NAME, configuration_parameters)
+    juju.wait(jubilant.all_active)
+
+    logger.info("Integrating integration hub with test application for service account sa1")
+    juju.integrate(APP_NAME, f"{DUMMY_APP_NAME}:{REL_NAME_A}")
+    juju.wait(jubilant.all_active)
+
     assert not check_service_account_existance(namespace, "sa1")
+
+    # Add a spark property via configuration action of integration hub
+    task = juju.run(f"{APP_NAME}/0", "add-config", {"conf": "foo=bar"})
+    assert task.return_code == 0
+    juju.wait(jubilant.all_active)
+
+    # The added spark property be reflected on the requirer charm
+    task = juju.run(f"{DUMMY_APP_NAME}/0", "get-properties-sa1")
+    assert task.return_code == 0
+    assert "spark-properties" in task.results
+    properties = task.results["spark-properties"]
+    assert "foo" in json.loads(properties)
+
+    task = juju.run(f"{DUMMY_APP_NAME}/0", "get-resource-manifest-sa1")
+    assert task.return_code == 0
+    assert "resource-manifest" in task.results
+    manifest = task.results["resource-manifest"]
+    assert manifest is not None
+    assert manifest.strip() == "{}"

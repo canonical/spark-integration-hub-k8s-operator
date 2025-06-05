@@ -52,11 +52,10 @@ optional = true
 
 [tool.poetry.group.integration.dependencies]
 pytest = ">=7.4.4"
-juju = "^3.5.2"
 coverage = { extras = ["toml"], version = ">7.0" }
-pytest-operator = ">0.20"
 tenacity = "^9.1.2"
-spark8t = "^0.0.11"
+spark8t = "^0.0.12"
+jubilant = "^1.0.0"
 
 [tool.ruff]
 line-length = 99
@@ -90,6 +89,7 @@ module = [
   "charms.data_platform_libs.*",
   "charms.prometheus_pushgateway_k8s.*",
   "charms.loki_k8s.*",
+  "charms.spark_integration_hub_k8s.*",
 ]
 ignore_missing_imports = true
 
