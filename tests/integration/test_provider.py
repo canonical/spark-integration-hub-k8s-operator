@@ -98,10 +98,9 @@ async def test_integration_hub_relation(ops_test: OpsTest, namespace):
     # The service account named 'sa1' should have been created
     assert check_service_account_existance(namespace, "sa1")
 
-    # Add a spark property via configuration action of integration hub
-    await run_action(
-        ops_test=ops_test, action_name="add-config", params={"conf": "foo=bar"}, app_name=APP_NAME
-    )
+    logger.info("Enable autoscaling...")
+    await ops_test.model.applications[APP_NAME].set_config({"enable-dynamic-allocation": "true"})
+
     async with ops_test.fast_forward(fast_interval="60s"):
         await ops_test.model.wait_for_idle(
             apps=[APP_NAME, DUMMY_APP_NAME], idle_period=30, status="active", timeout=2000

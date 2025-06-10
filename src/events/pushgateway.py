@@ -33,7 +33,9 @@ class PushgatewayEvents(BaseEventHandler, WithLogging):
         self.context = context
         self.workload = workload
 
-        self.integration_hub = IntegrationHubManager(self.workload, self.context)
+        self.integration_hub = IntegrationHubManager(
+            self.workload, self.context, self.charm.config
+        )
 
         self.pushgateway = PrometheusPushgatewayRequirer(self.charm, PUSHGATEWAY)
 

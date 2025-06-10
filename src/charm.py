@@ -5,9 +5,11 @@
 """Charmed Kubernetes Operator for the Spark Integration Hub Charm."""
 
 import ops
+from charms.data_platform_libs.v0.data_models import TypedCharmBase
 
 from common.utils import WithLogging
 from constants import CONTAINER, PEBBLE_USER
+from core.config import CharmConfig
 from core.context import Context
 from core.domain import User
 from events.azure_storage import AzureStorageEvents
@@ -19,8 +21,10 @@ from events.s3 import S3Events
 from workload import IntegrationHub
 
 
-class SparkIntegrationHub(ops.CharmBase, WithLogging):
+class SparkIntegrationHub(TypedCharmBase[CharmConfig], WithLogging):
     """Charm the service."""
+
+    config_type = CharmConfig
 
     def __init__(self, *args):
         super().__init__(*args)
