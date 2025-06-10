@@ -106,12 +106,12 @@ async def test_integration_hub_relation(ops_test: OpsTest, namespace):
             apps=[APP_NAME, DUMMY_APP_NAME], idle_period=30, status="active", timeout=2000
         )
 
-    # The added spark property be reflected on the requirer charm
+    # The added spark properties be reflected on the requirer charm
     res = await run_action(
         ops_test=ops_test, action_name="get-properties-sa1", params={}, app_name=DUMMY_APP_NAME
     )
     properties = res.get("spark-properties", {})
-    assert "foo" in json.loads(properties)
+    assert "spark.dynamicAllocation.enabled" in json.loads(properties)
 
     # Add a new relation between dummy application charm and integration hub
     await ops_test.model.add_relation(APP_NAME, f"{DUMMY_APP_NAME}:{REL_NAME_B}")
@@ -128,7 +128,7 @@ async def test_integration_hub_relation(ops_test: OpsTest, namespace):
         ops_test=ops_test, action_name="get-properties-sa2", params={}, app_name=DUMMY_APP_NAME
     )
     properties = res.get("spark-properties", {})
-    assert "foo" in json.loads(properties)
+    assert "spark.dynamicAllocation.enabled" in json.loads(properties)
 
     # Remove the relation between dummy application charm and integration hub
     await ops_test.model.applications[APP_NAME].remove_relation(
