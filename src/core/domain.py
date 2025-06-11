@@ -14,8 +14,6 @@ from charms.spark_integration_hub_k8s.v0.spark_service_account import (
 )
 from ops import Application, Relation, Unit
 
-from common.utils import DotSerializer
-
 logger = logging.getLogger(__name__)
 
 
@@ -201,30 +199,6 @@ class PushGatewayInfo(StateBase):
                 url = data["url"]
                 return url.replace("https://", "").replace("http://", "")
         return None
-
-
-class HubConfiguration(StateBase):
-    """State collection metadata for the peer relation."""
-
-    def __init__(self, relation: Relation | None, component: Application):
-        super().__init__(relation, component)
-        self.app = component
-        self.serializer = DotSerializer()
-
-    def update(self, items):
-        """Overridden method to update the hub configuration data."""
-        # Workaround for https://bugs.launchpad.net/juju/+bug/2093149
-        items = {self.serializer.serialize(k): v for k, v in items.items()}
-
-        return super().update(items)
-
-    @property
-    def spark_configurations(self) -> dict[str, str]:
-        """Get all Spark configuration options defined by the user."""
-        # Workaround for https://bugs.launchpad.net/juju/+bug/2093149
-        items = {self.serializer.deserialize(k): v for k, v in self.relation_data.items()}
-
-        return items
 
 
 class ServiceAccount:

@@ -4,10 +4,10 @@
 name: spark-integration-hub-k8s
 display-name: Spark Integration Hub K8s
 summary: Kubernetes based charm for the Spark Integration Hub
-description: | 
+description: |
   This is the Spark integration hub charm. It provide centralization for other
-  charmed components and allows simple configuration of Spark jobs and 
-  integration with client applications, abstracting low-level configuration 
+  charmed components and allows simple configuration of Spark jobs and
+  integration with client applications, abstracting low-level configuration
   option settings.
 docs: https://discourse.charmhub.io/t/integration-hub-for-apache-spark-documentation/16751
 source: https://github.com/canonical/spark-integration-hub-k8s-operator
@@ -47,7 +47,3 @@ requires:
 provides:
   spark-service-account:
     interface: spark_service_account
-
-peers:
-  spark-configurations:
-    interface: spark_configurations
