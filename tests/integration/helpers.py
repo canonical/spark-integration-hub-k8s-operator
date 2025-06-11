@@ -35,14 +35,6 @@ async def fetch_action_sync_s3_credentials(unit: Unit, access_key: str, secret_k
     return result.results
 
 
-async def get_juju_secret(ops_test: OpsTest, secret_uri: str) -> Dict[str, str]:
-    """Retrieve juju secret."""
-    secret_unique_id = secret_uri.split("/")[-1]
-    complete_command = f"show-secret {secret_uri} --reveal --format=json"
-    _, stdout, _ = await ops_test.juju(*complete_command.split())
-    return json.loads(stdout)[secret_unique_id]["content"]["Data"]
-
-
 async def add_juju_secret(
     ops_test: OpsTest, charm_name: str, secret_label: str, data: Dict[str, str]
 ) -> str:
@@ -54,19 +46,6 @@ async def add_juju_secret(
     command = f"grant-secret {secret_label} {charm_name}"
     _, stdout, _ = await ops_test.juju(*command.split())
     return secret_uri
-
-
-async def update_juju_secret(
-    ops_test: OpsTest, charm_name: str, secret_label: str, data: Dict[str, str]
-) -> str:
-    """Update the given juju secret."""
-    key_values = " ".join([f"{key}={value}" for key, value in data.items()])
-    command = f"update-secret {secret_label} {key_values}"
-    retcode, stdout, stderr = await ops_test.juju(*command.split())
-    if retcode != 0:
-        logger.warning(
-            f"Update Juju secret exited with non zero status. \nSTDOUT: {stdout.strip()} \nSTDERR: {stderr.strip()}"
-        )
 
 
 def run_service_account_registry(*args):
@@ -163,31 +142,3 @@ async def run_action(
     )
     action_result = await action.wait()
     return action_result.results
-
-
-def flatten(map: MutableMapping, parent: str = "", separator: str = ".") -> dict[str, str]:
-    """Flatten given nested dictionary to a non-nested dictionary where keys are separated by a dot.
-
-    For example, consider a nested dictionary as follows:
-
-        {
-            'foo': {
-                'bar': 'val1',
-                'grok': 'val2'
-            }
-        }
-
-    The return value would be as follows:
-        {
-            'foo.bar': 'val1',
-            'foo.grok': 'val2'
-        }
-    """
-    items = []
-    for key, value in map.items():
-        new_key = parent + separator + key if parent else key
-        if isinstance(value, MutableMapping):
-            items.extend(flatten(value, new_key, separator).items())
-        else:
-            items.append((new_key, value))
-    return dict(items)
