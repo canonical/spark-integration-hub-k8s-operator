@@ -26,7 +26,7 @@ of the application charm code:
 ```python
 import json
 
-from charms.data_platform_libs.v0.spark_service_account import (
+from charms.spark_integration_hub_k8s.v0.spark_service_account import (
     SparkServiceAccountRequirer,
     ServiceAccountGrantedEvent,
     ServiceAccountPropertyChangedEvent,
@@ -122,7 +122,7 @@ Following is an example of using the SparkServiceAccountProvider class in the co
 of the application charm code:
 
 ```python
-from charms.data_platform_libs.v0.spark_service_account import (
+from charms.spark_integration_hub_k8s.v0.spark_service_account import (
     SparkServiceAccountProvider,
     ServiceAccountRequestedEvent,
     ServiceAccountReleasedEvent,
