@@ -6,7 +6,7 @@ options:
     type: boolean
     description: |
       Enable dynamic allocation of pods for autoscaling Spark jobs.
-      Is equivalent to the following Spark configuration:
+      Is equivalent to the following Spark configurations:
 
       spark.dynamicAllocation.enabled=true
       spark.dynamicAllocation.shuffleTracking.enabled=true
