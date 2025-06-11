@@ -9,9 +9,10 @@ import logging
 from dataclasses import dataclass
 from typing import List, MutableMapping
 
+from charms.spark_integration_hub_k8s.v0.spark_service_account import (
+    SparkServiceAccountProviderData,
+)
 from ops import Application, Relation, Unit
-
-from relations.spark_sa import SparkServiceAccountProviderData
 
 logger = logging.getLogger(__name__)
 

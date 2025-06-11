@@ -49,3 +49,13 @@ class IntegrationHubWorkloadBase(AbstractWorkload):
     def ready(self) -> bool:
         """Checks that the container/snap is ready."""
         ...
+
+    @abstractmethod
+    def create_service_account(self, namespace: str, username: str) -> None:
+        """Create the service account in the given namespace."""
+        ...
+
+    @abstractmethod
+    def delete_service_account(self, namespace: str, username: str) -> None:
+        """Delete the service account in the given namespace."""
+        ...

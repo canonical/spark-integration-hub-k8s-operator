@@ -107,3 +107,27 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
         self._envs = {k: v for k, v in merged_envs.items() if v is not None}
 
         self.write("\n".join(self.to_env(self.envs)), self.ENV_FILE)
+
+    def create_service_account(self, namespace: str, username: str) -> None:
+        """Create service account in given namespace."""
+        try:
+            self.exec(
+                f"python3 -m spark8t.cli.service_account_registry create --username={username} --namespace={namespace}"
+            )
+        except Exception as e:
+            self.logger.error(e)
+            raise RuntimeError(
+                f"Impossible to create service account: {username} in namespace: {namespace}"
+            )
+
+    def delete_service_account(self, namespace: str, username: str):
+        """Delete service account in given namespace."""
+        try:
+            self.exec(
+                f"python3 -m spark8t.cli.service_account_registry delete --username={username} --namespace={namespace}"
+            )
+        except Exception as e:
+            self.logger.error(e)
+            raise RuntimeError(
+                f"Failed to delete service account: {username} in namespace: {namespace}"
+            )

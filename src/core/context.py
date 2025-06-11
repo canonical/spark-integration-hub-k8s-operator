@@ -7,6 +7,9 @@
 from enum import Enum
 
 from charms.data_platform_libs.v0.data_interfaces import RequirerData
+from charms.spark_integration_hub_k8s.v0.spark_service_account import (
+    SparkServiceAccountProviderData,
+)
 from ops import ActiveStatus, BlockedStatus, CharmBase, MaintenanceStatus, Relation
 
 from common.utils import WithLogging
@@ -24,7 +27,6 @@ from core.domain import (
     S3ConnectionInfo,
     ServiceAccount,
 )
-from relations.spark_sa import SparkServiceAccountProviderData
 
 
 class Context(WithLogging):

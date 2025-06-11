@@ -6,46 +6,22 @@ import json
 import logging
 import subprocess
 from time import sleep
-from typing import Any, Dict, MutableMapping
 
 import boto3
+import jubilant
 from botocore.client import Config
-from juju.unit import Unit
-from pytest_operator.plugin import OpsTest
 
 BUCKET_NAME = "test-bucket"
 
 logger = logging.getLogger(__name__)
 
 
-async def fetch_action_sync_s3_credentials(unit: Unit, access_key: str, secret_key: str) -> Dict:
-    """Helper to run an action to sync credentials.
-
-    Args:
-        unit: The juju unit on which to run the get-password action for credentials
-        access_key: the access_key to access the s3 compatible endpoint
-        secret_key: the secret key to access the s3 compatible endpoint
-    Returns:
-        A dictionary with the server config username and password
-    """
-    parameters = {"access-key": access_key, "secret-key": secret_key}
-    action = await unit.run_action(action_name="sync-s3-credentials", **parameters)
-    result = await action.wait()
-
-    return result.results
-
-
-async def add_juju_secret(
-    ops_test: OpsTest, charm_name: str, secret_label: str, data: Dict[str, str]
-) -> str:
-    """Add a new juju secret."""
-    key_values = " ".join([f"{key}={value}" for key, value in data.items()])
-    command = f"add-secret {secret_label} {key_values}"
-    _, stdout, _ = await ops_test.juju(*command.split())
-    secret_uri = stdout.strip()
-    command = f"grant-secret {secret_label} {charm_name}"
-    _, stdout, _ = await ops_test.juju(*command.split())
-    return secret_uri
+def sync_s3_credentials(
+    juju: jubilant.Juju, unit_name: str, access_key: str, secret_key: str
+) -> None:
+    params = {"access-key": access_key, "secret-key": secret_key}
+    task = juju.run(unit_name, "sync-s3-credentials", params=params)
+    assert task.return_code == 0
 
 
 def run_service_account_registry(*args):
@@ -88,16 +64,6 @@ def get_secret_data(namespace: str, secret_name: str):
         return e.stdout.decode(), e.stderr.decode(), e.returncode
 
 
-async def juju_sleep(ops: OpsTest, app_name: str, time: int):
-    await ops.model.wait_for_idle(
-        apps=[
-            app_name,
-        ],
-        idle_period=time,
-        timeout=300,
-    )
-
-
 def setup_s3_bucket_for_sch_server(endpoint_url: str, aws_access_key: str, aws_secret_key: str):
     config = Config(connect_timeout=60, retries={"max_attempts": 0})
     session = boto3.session.Session(
@@ -133,12 +99,11 @@ def setup_s3_bucket_for_sch_server(endpoint_url: str, aws_access_key: str, aws_s
     logger.debug(s3.list_buckets())
 
 
-async def run_action(
-    ops_test: OpsTest, action_name: str, params: Dict[str, str], app_name: str, num_unit=0
-) -> Any:
-    """Run the given charm action in given charm with given parameters."""
-    action = await ops_test.model.units.get(f"{app_name}/{num_unit}").run_action(
-        action_name, **params
-    )
-    action_result = await action.wait()
-    return action_result.results
+def get_address(juju: jubilant.Juju, unit_name: str) -> str:
+    status = juju.status()
+
+    app_name, unit_id = unit_name.split("/")
+    for name, val in status.apps[app_name].units.items():
+        if unit_name == name:
+            return val.address
+    return ""
