@@ -4,8 +4,6 @@
 
 
 import asyncio
-import base64
-import json
 import logging
 import subprocess
 from pathlib import Path
@@ -18,10 +16,8 @@ from .helpers import (
     BUCKET_NAME,
     add_juju_secret,
     fetch_action_sync_s3_credentials,
-    flatten,
     get_secret_data,
     juju_sleep,
-    run_action,
     setup_s3_bucket_for_sch_server,
 )
 
@@ -29,7 +25,6 @@ logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
-# BUCKET_NAME = "test-bucket"
 CONTAINER_NAME = "test-container"
 SECRET_NAME_PREFIX = "integrator-hub-conf-"
 
@@ -167,160 +162,6 @@ async def test_build_and_deploy(
     await ops_test.model.wait_for_idle(
         apps=[charm_versions.grafana_agent.application_name], status="blocked"
     )
-
-
-@pytest.mark.abort_on_fail
-@pytest.mark.parametrize("conf_key,conf_value", [("a", "b"), ("foo.bar.grok", "val")])
-async def test_actions(ops_test: OpsTest, namespace, service_account, conf_key, conf_value):
-    logger.info("Testing actions")
-    service_account_name = service_account[0]
-    logger.info(f"Service account name: {service_account_name}")
-    secret_data = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-    )
-    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
-    assert len(secret_data) == 0
-
-    # list config
-    res = await run_action(ops_test, "list-config", {}, APP_NAME)
-    assert res["return-code"] == 0
-    # wait for active status
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME],
-        status="active",
-        timeout=1000,
-    )
-    logger.info(f"List config action result: {res}")
-    secret_data = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-    )
-    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
-    assert len(secret_data) == 0
-
-    # add new configuration
-    res = await run_action(ops_test, "add-config", {"conf": f"{conf_key}={conf_value}"}, APP_NAME)
-    assert res["return-code"] == 0
-    # wait for active status
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME],
-        status="active",
-        timeout=1000,
-    )
-    logger.info(f"add-config action result: {res}")
-
-    await juju_sleep(ops_test, APP_NAME, 15)
-
-    secret_data = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-    )
-    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
-    # check data in secret
-    assert conf_key in secret_data
-    assert len(secret_data) > 0
-
-    # check that previously set configuration option is present
-    res = await run_action(ops_test, "list-config", {}, APP_NAME)
-    assert res["return-code"] == 0
-    # wait for active status
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME],
-        status="active",
-        timeout=1000,
-    )
-    logger.info(f"List-config action result: {res}")
-    secret_data = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-    )
-    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
-    assert len(secret_data) > 0
-    assert conf_key in flatten(json.loads(res.get("properties", {})))
-
-    # Remove inserted config
-    res = await run_action(ops_test, "remove-config", {"key": conf_key}, APP_NAME)
-    assert res["return-code"] == 0
-    # wait for active status
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME],
-        status="active",
-        timeout=1000,
-    )
-    logger.info(f"Remove-config action result: {res}")
-
-    await juju_sleep(ops_test, APP_NAME, 15)
-
-    secret_data = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-    )
-    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
-    assert len(secret_data) == 0
-
-
-@pytest.mark.abort_on_fail
-async def test_add_config_with_equal_sign(ops_test: OpsTest, namespace, service_account):
-    service_account_name = service_account[0]
-
-    # add new configuration whose value contains '=' characters
-    res = await run_action(ops_test, "add-config", {"conf": "key=iam=secret=="}, APP_NAME)
-    assert res["return-code"] == 0
-    # wait for active status
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME],
-        status="active",
-        timeout=1000,
-    )
-    logger.info(f"add-config action result: {res}")
-
-    await juju_sleep(ops_test, APP_NAME, 15)
-
-    secret_data = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-    )
-    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
-    # check data in secret
-    assert "key" in secret_data
-    assert len(secret_data) > 0
-    value = base64.b64decode(secret_data["key"]).decode()
-    assert value == "iam=secret=="
-
-
-@pytest.mark.abort_on_fail
-async def test_add_new_service_account_with_config_value_containing_equals_sign(
-    ops_test: OpsTest, namespace, service_account
-):
-    service_account_name = service_account[0]
-
-    # wait for the update of secrets
-    await juju_sleep(ops_test, APP_NAME, 15)
-
-    # check secret
-    secret_data = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-    )
-
-    # check data in secret
-    assert "key" in secret_data
-    assert len(secret_data) > 0
-    value = base64.b64decode(secret_data["key"]).decode()
-    assert value == "iam=secret=="
-
-    # clear config
-    res = await run_action(ops_test, "clear-config", {}, APP_NAME)
-    assert res["return-code"] == 0
-    # wait for active status
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME],
-        status="active",
-        timeout=1000,
-    )
-
-    await juju_sleep(ops_test, APP_NAME, 15)
-
-    secret_data = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
-    )
-    logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
-    logger.info(f"Clear-config action result: {res}")
-    assert len(secret_data) == 0
 
 
 @pytest.mark.abort_on_fail

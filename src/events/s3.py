@@ -36,7 +36,9 @@ class S3Events(BaseEventHandler, WithLogging):
         self.context = context
         self.workload = workload
 
-        self.integration_hub = IntegrationHubManager(self.workload, self.context)
+        self.integration_hub = IntegrationHubManager(
+            self.workload, self.context, self.charm.config
+        )
 
         self.s3_requirer = S3Requirer(self.charm, self.context.s3_endpoint.relation_name)
         self.framework.observe(

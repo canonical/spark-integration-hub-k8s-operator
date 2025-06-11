@@ -44,7 +44,9 @@ class LoggingEvents(BaseEventHandler, WithLogging):
         )
 
         # define integration hub manager
-        self.integration_hub = IntegrationHubManager(self.workload, self.context)
+        self.integration_hub = IntegrationHubManager(
+            self.workload, self.context, self.charm.config
+        )
 
     @compute_status
     @defer_when_not_ready

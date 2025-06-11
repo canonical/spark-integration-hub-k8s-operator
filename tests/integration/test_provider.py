@@ -98,21 +98,20 @@ async def test_integration_hub_relation(ops_test: OpsTest, namespace):
     # The service account named 'sa1' should have been created
     assert check_service_account_existance(namespace, "sa1")
 
-    # Add a spark property via configuration action of integration hub
-    await run_action(
-        ops_test=ops_test, action_name="add-config", params={"conf": "foo=bar"}, app_name=APP_NAME
-    )
+    logger.info("Enable autoscaling...")
+    await ops_test.model.applications[APP_NAME].set_config({"enable-dynamic-allocation": "true"})
+
     async with ops_test.fast_forward(fast_interval="60s"):
         await ops_test.model.wait_for_idle(
             apps=[APP_NAME, DUMMY_APP_NAME], idle_period=30, status="active", timeout=2000
         )
 
-    # The added spark property be reflected on the requirer charm
+    # The added spark properties be reflected on the requirer charm
     res = await run_action(
         ops_test=ops_test, action_name="get-properties-sa1", params={}, app_name=DUMMY_APP_NAME
     )
     properties = res.get("spark-properties", {})
-    assert "foo" in json.loads(properties)
+    assert "spark.dynamicAllocation.enabled" in json.loads(properties)
 
     # Add a new relation between dummy application charm and integration hub
     await ops_test.model.add_relation(APP_NAME, f"{DUMMY_APP_NAME}:{REL_NAME_B}")
@@ -129,7 +128,7 @@ async def test_integration_hub_relation(ops_test: OpsTest, namespace):
         ops_test=ops_test, action_name="get-properties-sa2", params={}, app_name=DUMMY_APP_NAME
     )
     properties = res.get("spark-properties", {})
-    assert "foo" in json.loads(properties)
+    assert "spark.dynamicAllocation.enabled" in json.loads(properties)
 
     # Remove the relation between dummy application charm and integration hub
     await ops_test.model.applications[APP_NAME].remove_relation(
