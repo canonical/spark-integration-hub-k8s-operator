@@ -39,7 +39,9 @@ class SparkServiceAccountProviderEvents(BaseEventHandler, WithLogging):
         self.workload = workload
 
         self.sa = SparkServiceAccountProvider(self.charm, INTEGRATION_HUB_REL)
-        self.integration_hub = IntegrationHubManager(self.workload, self.context)
+        self.integration_hub = IntegrationHubManager(
+            self.workload, self.context, self.charm.config
+        )
 
         self.framework.observe(self.sa.on.account_requested, self._on_service_account_requested)
         self.framework.observe(self.sa.on.account_released, self._on_service_account_released)

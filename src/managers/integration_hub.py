@@ -7,10 +7,10 @@
 import re
 
 from common.utils import WithLogging
+from core.config import CharmConfig
 from core.context import Context
 from core.domain import (
     AzureStorageConnectionInfo,
-    HubConfiguration,
     LokiURL,
     PushGatewayInfo,
     S3ConnectionInfo,
@@ -32,7 +32,7 @@ class IntegrationHubConfig(WithLogging):
         s3: S3ConnectionInfo | None,
         azure_storage: AzureStorageConnectionInfo | None,
         pushgateway: PushGatewayInfo | None,
-        hub_conf: HubConfiguration | None,
+        hub_conf: CharmConfig,
         loki_url: LokiURL | None,
     ):
         self.s3 = S3Manager(s3) if s3 else None
@@ -122,10 +122,18 @@ class IntegrationHubConfig(WithLogging):
         return {}
 
     @property
-    def _action_conf(self) -> dict[str, str]:
-        if a_conf := self.hub_conf:
-            return a_conf.spark_configurations
-        return {}
+    def _hub_conf(self) -> dict[str, str]:
+        hub_conf: dict[str, str] = {}
+        if self.hub_conf.enable_dynamic_allocation:
+            hub_conf.update(
+                {
+                    "spark.dynamicAllocation.enabled": "true",
+                    "spark.dynamicAllocation.shuffleTracking.enabled": "true",
+                    "spark.dynamicAllocation.minExecutors": "1",
+                }
+            )
+
+        return hub_conf
 
     def to_dict(self) -> dict[str, str]:
         """Return the dict representation of the configuration file."""
@@ -134,7 +142,7 @@ class IntegrationHubConfig(WithLogging):
             | self._s3_conf
             | self._azure_storage_conf
             | self._pushgateway_conf
-            | self._action_conf
+            | self._hub_conf
             | self._log_forwarding_conf
         )
         return to_return
@@ -156,9 +164,12 @@ class IntegrationHubConfig(WithLogging):
 class IntegrationHubManager(WithLogging):
     """Class exposing general functionalities of the IntegrationHub workload."""
 
-    def __init__(self, workload: IntegrationHubWorkloadBase, context: Context):
+    def __init__(
+        self, workload: IntegrationHubWorkloadBase, context: Context, config: CharmConfig
+    ):
         self.workload = workload
         self.context = context
+        self.config = config
 
     def _compare_and_update_file(self, content: str, file_path: str) -> bool:
         """Update the file at given file_path with given content.
@@ -199,7 +210,7 @@ class IntegrationHubManager(WithLogging):
         azure_storage = None if set_azure_storage_none else self.context.azure_storage
         pushgateway = None if set_pushgateway_none else self.context.pushgateway
         loki_url = None if set_loki_url_none else self.context.loki_url
-        hub_conf = self.context.hub_configurations
+        hub_conf = self.config
 
         self.logger.debug("Update")
 

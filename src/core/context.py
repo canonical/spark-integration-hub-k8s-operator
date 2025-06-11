@@ -17,13 +17,11 @@ from constants import (
     AZURE_RELATION_NAME,
     INTEGRATION_HUB_REL,
     LOGGING_RELATION_NAME,
-    PEER,
     PUSHGATEWAY,
     S3_RELATION_NAME,
 )
 from core.domain import (
     AzureStorageConnectionInfo,
-    HubConfiguration,
     LokiURL,
     PushGatewayInfo,
     S3ConnectionInfo,
@@ -92,16 +90,6 @@ class Context(WithLogging):
     def pushgateway(self) -> PushGatewayInfo | None:
         """The server state of the current running Unit."""
         return PushGatewayInfo(rel, rel.app) if (rel := self._pushgateway_relation) else None
-
-    @property
-    def peer_relation(self) -> Relation | None:
-        """The hub spark configuration peer relation."""
-        return self.model.get_relation(PEER)
-
-    @property
-    def hub_configurations(self) -> HubConfiguration:
-        """The spark configuration of the current running Hub."""
-        return HubConfiguration(relation=self.peer_relation, component=self.model.app)
 
     @property
     def client_relations(self) -> set[Relation]:

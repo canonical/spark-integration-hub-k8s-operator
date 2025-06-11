@@ -8,10 +8,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ops import InstallEvent, PebbleReadyEvent, RelationChangedEvent, StopEvent
+from ops import (
+    ConfigChangedEvent,
+    PebbleReadyEvent,
+    StopEvent,
+    UpdateStatusEvent,
+)
 
 from common.utils import WithLogging
-from constants import INTEGRATION_HUB_LABEL, PEER
+from constants import INTEGRATION_HUB_LABEL
 from core.context import Context
 from core.workload import IntegrationHubWorkloadBase
 from events.base import BaseEventHandler, compute_status, defer_when_not_ready
@@ -32,7 +37,9 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
         self.context = context
         self.workload = workload
 
-        self.integration_hub = IntegrationHubManager(self.workload, self.context)
+        self.integration_hub = IntegrationHubManager(
+            self.workload, self.context, self.charm.config
+        )
 
         self.framework.observe(
             self.charm.on.integration_hub_pebble_ready,
@@ -41,9 +48,7 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
         self.framework.observe(self.charm.on.update_status, self._update_event)
         self.framework.observe(self.charm.on.install, self._update_event)
         self.framework.observe(self.charm.on.stop, self._remove_resources)
-        self.framework.observe(
-            self.charm.on[PEER].relation_changed, self._on_peer_relation_changed
-        )
+        self.framework.observe(self.charm.on.config_changed, self._on_config_changed)
 
     def _remove_resources(self, _: StopEvent) -> None:
         """Handle the stop event."""
@@ -59,11 +64,11 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
 
     @compute_status
     @defer_when_not_ready
-    def _on_peer_relation_changed(self, _: RelationChangedEvent) -> None:
-        """Handle on PEER relation changed event."""
+    def _on_config_changed(self, _: ConfigChangedEvent) -> None:
+        """Handle on config changed event."""
         self.integration_hub.update()
 
     @compute_status
-    def _update_event(self, _: InstallEvent) -> None:
+    def _update_event(self, _: UpdateStatusEvent) -> None:
         # only used to trigger charm status update
         pass

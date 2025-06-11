@@ -77,17 +77,16 @@ def test_relate_charms(juju: jubilant.Juju, namespace: str) -> None:
     # The service account named 'sa1' should have been created
     assert check_service_account_existance(namespace, "sa1")
 
-    # Add a spark property via configuration action of integration hub
-    task = juju.run(f"{APP_NAME}/0", "add-config", params={"conf": "foo=bar"})
-    assert task.return_code == 0
+    logger.info("Enable autoscaling...")
+    juju.config(APP_NAME, {"enable-dynamic-allocation": "true"})
     juju.wait(jubilant.all_active, delay=3)
 
-    # The added spark property be reflected on the requirer charm
+    # The added spark properties be reflected on the requirer charm
     task = juju.run(f"{DUMMY_APP_NAME}/0", "get-properties-sa1")
     assert task.return_code == 0
     assert "spark-properties" in task.results
     properties = task.results["spark-properties"]
-    assert "foo" in json.loads(properties)
+    assert "spark.dynamicAllocation.enabled" in json.loads(properties)
 
     task = juju.run(f"{DUMMY_APP_NAME}/0", "get-resource-manifest-sa1")
     assert task.return_code == 0
@@ -110,7 +109,7 @@ def test_relate_charms(juju: jubilant.Juju, namespace: str) -> None:
     assert task.return_code == 0
     assert "spark-properties" in task.results
     properties = task.results["spark-properties"]
-    assert "foo" in json.loads(properties)
+    assert "spark.dynamicAllocation.enabled" in json.loads(properties)
 
     task = juju.run(f"{DUMMY_APP_NAME}/0", "get-resource-manifest-sa2")
     assert task.return_code == 0
@@ -150,8 +149,8 @@ def test_configure_test_charm_for_skip_creation(juju: jubilant.Juju, namespace: 
     assert not check_service_account_existance(namespace, "sa1")
 
     # Add a spark property via configuration action of integration hub
-    task = juju.run(f"{APP_NAME}/0", "add-config", {"conf": "foo=bar"})
-    assert task.return_code == 0
+    logger.info("Enable autoscaling...")
+    juju.config(APP_NAME, {"enable-dynamic-allocation": "true"})
     juju.wait(jubilant.all_active)
 
     # The added spark property be reflected on the requirer charm
@@ -159,7 +158,7 @@ def test_configure_test_charm_for_skip_creation(juju: jubilant.Juju, namespace: 
     assert task.return_code == 0
     assert "spark-properties" in task.results
     properties = task.results["spark-properties"]
-    assert "foo" in json.loads(properties)
+    assert "spark.dynamicAllocation.enabled" in json.loads(properties)
 
     task = juju.run(f"{DUMMY_APP_NAME}/0", "get-resource-manifest-sa1")
     assert task.return_code == 0
