@@ -132,6 +132,18 @@ class IntegrationHubConfig(WithLogging):
                     "spark.dynamicAllocation.minExecutors": "1",
                 }
             )
+        if dpt := self.hub_conf.driver_pod_template:
+            hub_conf.update(
+                {
+                    "spark.kubernetes.driver.podTemplateFile": dpt,
+                }
+            )
+        if ept := self.hub_conf.executor_pod_template:
+            hub_conf.update(
+                {
+                    "spark.kubernetes.executor.podTemplateFile": ept,
+                }
+            )
 
         return hub_conf
 

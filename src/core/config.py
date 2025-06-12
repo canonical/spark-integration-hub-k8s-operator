@@ -15,3 +15,5 @@ class CharmConfig(BaseConfigModel):
     """Manager for the structured configuration."""
 
     enable_dynamic_allocation: bool
+    driver_pod_template: str
+    executor_pod_template: str
