@@ -1,14 +1,27 @@
 # Copyright 2024 Canonical Limited
 # See LICENSE file for licensing details.
 
+import json
 from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+import yaml
 from ops import ActiveStatus, BlockedStatus, MaintenanceStatus
 from ops.testing import Container, Context, Relation, State
 
+from charm import SparkIntegrationHub
 from constants import CONTAINER
+
+CONFIG = yaml.safe_load(Path("./config.yaml").read_text())
+METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
+
+
+@pytest.fixture()
+def charm_configuration():
+    """Enable direct mutation on configuration dict."""
+    return json.loads(json.dumps(CONFIG))
 
 
 def parse_spark_properties(out: State, tmp_path: Path) -> dict[str, str]:
@@ -29,7 +42,7 @@ def parse_spark_properties(out: State, tmp_path: Path) -> dict[str, str]:
         )
 
 
-def test_start_integration_hub(integration_hub_ctx: Context) -> None:
+def test_start_integration_hub(integration_hub_ctx: Context[SparkIntegrationHub]) -> None:
     state = State(
         config={},
         containers=[Container(name=CONTAINER, can_connect=False)],
@@ -40,7 +53,9 @@ def test_start_integration_hub(integration_hub_ctx: Context) -> None:
 
 @patch("workload.IntegrationHub.exec")
 def test_pebble_ready(
-    exec_calls, integration_hub_ctx: Context, integration_hub_container: Container
+    exec_calls,
+    integration_hub_ctx: Context[SparkIntegrationHub],
+    integration_hub_container: Container,
 ) -> None:
     state = State(
         containers=[integration_hub_container],
@@ -61,7 +76,7 @@ def test_s3_relation_connection_ok(
     exec_calls,
     verify_call,
     tmp_path: Path,
-    integration_hub_ctx: Context,
+    integration_hub_ctx: Context[SparkIntegrationHub],
     integration_hub_container: Container,
     s3_relation: Relation,
 ) -> None:
@@ -104,7 +119,7 @@ def test_s3_relation_connection_ok_tls(
     exec_calls,
     verify_call,
     tmp_path: Path,
-    integration_hub_ctx: Context,
+    integration_hub_ctx: Context[SparkIntegrationHub],
     integration_hub_container: Container,
     s3_relation_tls: Relation,
     s3_relation: Relation,
@@ -147,7 +162,7 @@ def test_s3_relation_connection_ok_tls(
 def test_s3_relation_connection_ko(
     exec_calls,
     verify_call,
-    integration_hub_ctx: Context,
+    integration_hub_ctx: Context[SparkIntegrationHub],
     integration_hub_container: Container,
     s3_relation: Relation,
 ) -> None:
@@ -169,7 +184,7 @@ def test_s3_relation_broken(
     exec_calls,
     verify_call,
     tmp_path: Path,
-    integration_hub_ctx: Context,
+    integration_hub_ctx: Context[SparkIntegrationHub],
     integration_hub_container: Container,
     s3_relation: Relation,
 ) -> None:
@@ -205,7 +220,7 @@ def test_azure_storage_relation(
     exec_calls,
     verify_call,
     tmp_path: Path,
-    integration_hub_ctx: Context,
+    integration_hub_ctx: Context[SparkIntegrationHub],
     integration_hub_container: Container,
     azure_storage_relation: Relation,
 ) -> None:
@@ -258,7 +273,7 @@ def test_azure_storage_relation_broken(
     exec_calls,
     verify_call,
     tmp_path: Path,
-    integration_hub_ctx: Context,
+    integration_hub_ctx: Context[SparkIntegrationHub],
     integration_hub_container: Container,
     azure_storage_relation: Relation,
 ) -> None:
@@ -293,7 +308,7 @@ def test_both_azure_storage_and_s3_relation_together(
     mock_has_secrets,
     exec_calls,
     verify_call,
-    integration_hub_ctx: Context,
+    integration_hub_ctx: Context[SparkIntegrationHub],
     integration_hub_container: Container,
     s3_relation: Relation,
     azure_storage_relation: Relation,
@@ -318,7 +333,7 @@ def test_both_azure_storage_and_s3_relation_together(
 def test_logging_relation_changed(
     exec_calls,
     tmp_path: Path,
-    integration_hub_ctx: Context,
+    integration_hub_ctx: Context[SparkIntegrationHub],
     integration_hub_container: Container,
     logging_relation: Relation,
 ) -> None:
@@ -357,7 +372,7 @@ def test_logging_relation_changed(
 def test_logging_relation_broken(
     exec_calls,
     tmp_path: Path,
-    integration_hub_ctx: Context,
+    integration_hub_ctx: Context[SparkIntegrationHub],
     integration_hub_container: Container,
     logging_relation: Relation,
 ) -> None:
@@ -392,3 +407,37 @@ def test_logging_relation_broken(
     spark_properties = parse_spark_properties(out, tmp_path)
     assert "spark.executorEnv.LOKI_URL" not in spark_properties
     assert "spark.kubernetes.driverEnv.LOKI_URL" not in spark_properties
+
+
+@patch("workload.IntegrationHub.exec")
+def test_config_changed_properties_updated(
+    exec_calls, tmp_path: Path, integration_hub_container: Container, charm_configuration: dict
+) -> None:
+    """Test configuration flags."""
+    # Given
+    charm_configuration["options"]["driver-pod-template"]["default"] = "s3://my-bucket/driver.yaml"
+    charm_configuration["options"]["executor-pod-template"]["default"] = (
+        "s3://my-bucket/executor.yaml"
+    )
+    charm_configuration["options"]["enable-dynamic-allocation"]["default"] = "true"
+    ctx = Context(SparkIntegrationHub, meta=METADATA, config=charm_configuration, unit_id=0)
+    state = State(relations=[], containers=[integration_hub_container])
+
+    # When
+    with (
+        patch("managers.k8s.KubernetesManager.__init__", return_value=None),
+        patch("managers.k8s.KubernetesManager.trusted", return_value=True),
+    ):
+        out = ctx.run(ctx.on.config_changed(), state)  # relation changed
+
+    # Then
+    spark_properties = parse_spark_properties(out, tmp_path)
+    assert (
+        spark_properties.get("spark.kubernetes.driver.podTemplateFile", "")
+        == "s3://my-bucket/driver.yaml"
+    )
+    assert (
+        spark_properties.get("spark.kubernetes.executor.podTemplateFile", "")
+        == "s3://my-bucket/executor.yaml"
+    )
+    assert "spark.dynamicAllocation.enabled" in spark_properties
