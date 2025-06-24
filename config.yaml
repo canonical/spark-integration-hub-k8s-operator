@@ -1,0 +1,37 @@
+# Copyright 2025 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+options:
+  enable-dynamic-allocation:
+    type: boolean
+    description: |
+      Enable dynamic allocation of pods for autoscaling Spark jobs.
+      Is equivalent to the following Spark configurations:
+
+      spark.dynamicAllocation.enabled=true
+      spark.dynamicAllocation.shuffleTracking.enabled=true
+      spark.dynamicAllocation.minExecutors=1
+
+    default: false
+
+  driver-pod-template:
+    type: string
+    description: |
+      Define K8s driver pod from a file accessible to the `spark-submit` process.
+      Ex.: "s3a://bucket/template.yml".
+      Is equivalent to the following Spark configuration:
+
+      spark.kubernetes.driver.podTemplateFile=<driver-pod-template>
+
+    default: ""
+
+  executor-pod-template:
+    type: string
+    description: |
+      Define K8s executor pods from a file accessible to the `spark-submit` process.
+      Ex.: "s3a://bucket/template.yml".
+      Is equivalent to the following Spark configuration:
+
+      spark.kubernetes.executor.podTemplateFile=<executor-pod-template>
+
+    default: ""

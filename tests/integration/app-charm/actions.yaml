@@ -1,0 +1,14 @@
+# Copyright 2025 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+get-properties-sa1:
+  description: Get Spark properties for the service account sa1
+
+get-properties-sa2:
+  description: Get Spark properties for the service account sa2
+
+get-resource-manifest-sa1:
+  description: Get resource manifest for the service account sa1
+
+get-resource-manifest-sa2:
+  description: Get resource manifest for the service account sa2
