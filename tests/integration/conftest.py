@@ -87,13 +87,13 @@ def charm_versions() -> IntegrationTestsCharms:
         pushgateway=CharmVersion(
             **{
                 "name": "prometheus-pushgateway-k8s",
-                "channel": "stable",
+                "channel": "1/stable",
                 "base": "ubuntu@22.04",
                 "alias": "pushgateway",
             }
         ),
         grafana_agent=CharmVersion(
-            name="grafana-agent-k8s", channel="latest/stable", base="ubuntu@22.04"
+            name="grafana-agent-k8s", channel="1/stable", base="ubuntu@22.04"
         ),
     )
 
