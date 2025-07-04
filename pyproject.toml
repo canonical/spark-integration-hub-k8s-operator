@@ -7,7 +7,7 @@ requires-poetry = ">=2.0.0"
 
 [tool.poetry.dependencies]
 python = ">3.10,<4.0"
-ops = ">=2.22.0"
+ops = ">=3.0.0"
 # NOTE(boto): 1.36+ incompatible with minio because of MD5 checksum
 boto3 = ">=1.38.36,<1.39"
 lightkube = "0.17.2"
@@ -45,7 +45,7 @@ optional = true
 [tool.poetry.group.unit.dependencies]
 pytest = "<8.4.1"
 coverage = { extras = ["toml"], version = ">7.0" }
-ops = { extras = ["testing"], version = "^2.22.0" }
+ops = { extras = ["testing"], version = "^3.0.0" }
 
 [tool.poetry.group.integration]
 optional = true
