@@ -7,8 +7,8 @@
 import json
 from typing import cast
 
-import ops.pebble
-from ops.model import Container
+from ops import Container
+from ops.pebble import ConnectionError, LayerDict
 
 from common.k8s import K8sWorkload
 from common.utils import WithLogging
@@ -71,9 +71,7 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
         # Temporal fix to restart the container when the watch process fails
         layer["services"][self.INTEGRATION_HUB_SERVICE]["on-failure"] = "restart"
 
-        self.container.add_layer(
-            self.CONTAINER_LAYER, cast(ops.pebble.LayerDict, layer), combine=True
-        )
+        self.container.add_layer(self.CONTAINER_LAYER, cast(LayerDict, layer), combine=True)
 
         if not self.exists(str(self.paths.spark_properties)):
             self.logger.error(f"{self.paths.spark_properties} not found")
@@ -94,7 +92,7 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
         """Return the health of the service."""
         try:
             service = self.container.get_service(self.INTEGRATION_HUB_SERVICE)
-        except ops.pebble.ConnectionError:
+        except ConnectionError:
             self.logger.debug(f"Service {self.INTEGRATION_HUB_SERVICE} not running")
             return False
 
@@ -112,7 +110,14 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
         """Create service account in given namespace."""
         try:
             self.exec(
-                f"python3 -m spark8t.cli.service_account_registry create --username={username} --namespace={namespace}"
+                [
+                    "python3",
+                    "-m",
+                    "spark8t.cli.service_account_registry",
+                    "create",
+                    f"--username={username}",
+                    f"--namespace={namespace}",
+                ]
             )
         except Exception as e:
             self.logger.error(e)
@@ -124,7 +129,14 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
         """Delete service account in given namespace."""
         try:
             self.exec(
-                f"python3 -m spark8t.cli.service_account_registry delete --username={username} --namespace={namespace}"
+                [
+                    "python3",
+                    "-m",
+                    "spark8t.cli.service_account_registry",
+                    "delete",
+                    f"--username={username}",
+                    f"--namespace={namespace}",
+                ]
             )
         except Exception as e:
             self.logger.error(e)

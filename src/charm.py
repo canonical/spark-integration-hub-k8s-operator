@@ -4,8 +4,8 @@
 
 """Charmed Kubernetes Operator for the Spark Integration Hub Charm."""
 
-import ops
 from charms.data_platform_libs.v0.data_models import TypedCharmBase
+from ops import main
 
 from common.utils import WithLogging
 from constants import CONTAINER, PEBBLE_USER
@@ -43,4 +43,4 @@ class SparkIntegrationHub(TypedCharmBase[CharmConfig], WithLogging):
 
 
 if __name__ == "__main__":  # pragma: nocover
-    ops.main(SparkIntegrationHub)
+    main(SparkIntegrationHub)

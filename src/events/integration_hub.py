@@ -53,7 +53,7 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
     def _remove_resources(self, _: StopEvent) -> None:
         """Handle the stop event."""
         self.integration_hub.workload.exec(
-            f"kubectl delete secret -l {INTEGRATION_HUB_LABEL} --all-namespaces"
+            ["kubectl", "delete", "secret", "-l", INTEGRATION_HUB_LABEL, "--all-namespaces"]
         )
 
     @compute_status

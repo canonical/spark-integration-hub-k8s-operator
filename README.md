@@ -26,8 +26,16 @@ This implies that the charm needs to detect existing and new service accounts in
 
 ```shell
 juju add-model <my-model>
-juju deploy s3-integrator --channel latest/edge
-juju deploy spark-integration-hub-k8s --channel edge
+juju deploy spark-integration-hub-k8s --channel edge --trust
+```
+
+You can use the `spark-integration-hub` to automatically configure Spark service account. For instance, you can inject s3 credentials by deploying the `s3-integrator` and then relating with the `spark-integration-hub` 
+
+```shell
+juju deploy s3-integrator --channel 1/edge \
+  --config path=<path> \
+  --config endpoint=<s3-endpoint> \
+  --config bucket=<bucket>
 juju relate spark-integration-hub-k8s s3-integrator
 ```
 
@@ -37,10 +45,28 @@ When creating new Spark service account using the [`spark-client` snap](https://
 spark-client.service-account-registry create --username <spark-user> --namespace <namespace>
 ```
 
-The Integration Hub will take care of adding relevant configuration to the Charmed Apache Spark properties,
+The Integration Hub will take care of adding relevant configuration to the Charmed Apache Spark properties. You can check this by waiting a few seconds and then check that the Spark service account configuration have been updated to include s3 configurations, e.g. 
 
 ```shell
 spark-client.service-account-registry get-config --username <spark-user> --namespace <namespace>
+```
+
+should show something like:
+
+```shell
+spark.eventLog.dir=s3a://<bucket>/<path>
+spark.eventLog.enabled=true
+spark.hadoop.fs.s3a.access.key=<access-key>
+spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
+spark.hadoop.fs.s3a.connection.ssl.enabled=false
+spark.hadoop.fs.s3a.endpoint=<s3-endpoint>
+spark.hadoop.fs.s3a.path.style.access=true
+spark.hadoop.fs.s3a.secret.key=<secret-key>
+spark.history.fs.logDirectory=s3a://<bucket>/<path>
+spark.kubernetes.file.upload.path=s3a://<bucket>/
+spark.sql.warehouse.dir=s3a://<bucket>/warehouse
+spark.kubernetes.authenticate.driver.serviceAccountName=<spark-user>
+spark.kubernetes.namespace=<namespace>
 ```
 
 ## Contributing
