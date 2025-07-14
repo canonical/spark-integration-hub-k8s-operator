@@ -36,7 +36,7 @@ juju deploy s3-integrator --channel 1/edge \
   --config path=<path> \
   --config endpoint=<s3-endpoint> \
   --config bucket=<bucket>
-juju relate spark-integration-hub-k8s s3-integrator
+juju integrate spark-integration-hub-k8s s3-integrator
 ```
 
 When creating new Spark service account using the [`spark-client` snap](https://snapcraft.io/spark-client)
