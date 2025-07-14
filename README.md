@@ -32,7 +32,7 @@ juju deploy spark-integration-hub-k8s --channel edge --trust
 You can use the `spark-integration-hub` to automatically configure Spark service account. For instance, you can inject s3 credentials by deploying the `s3-integrator` and then relating with the `spark-integration-hub` 
 
 ```shell
-juju deploy s3-integrator --channel 1/edge \
+juju deploy s3-integrator --channel 1/stable \
   --config path=<path> \
   --config endpoint=<s3-endpoint> \
   --config bucket=<bucket>
