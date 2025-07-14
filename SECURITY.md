@@ -6,7 +6,7 @@ Credentials leakage, outdated dependencies with known vulnerabilities, and other
 
 ## Reporting a vulnerability
 
-The easiest way to report a security issue is through [GitHub](https://github.com/canonical/spark-history-server-k8s-operator/security/advisories/new). See [Privately reporting a security vulnerability](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing/privately-reporting-a-security-vulnerability) for instructions.
+The easiest way to report a security issue is through [GitHub](https://github.com/canonical/spark-integration-hub-k8s-operator/security/advisories/new). See [Privately reporting a security vulnerability](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing/privately-reporting-a-security-vulnerability) for instructions.
 
 The repository admins will be notified of the issue and will work with you to determine whether the issue qualifies as a security issue and, if so, in which component. We will then handle figuring out a fix, getting a CVE assigned and coordinating the release of the fix.
 
