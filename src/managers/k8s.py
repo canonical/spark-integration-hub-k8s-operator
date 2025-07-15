@@ -4,9 +4,11 @@
 
 """Kubernetes manager."""
 
+import lightkube
 from lightkube.core.client import Client
 from lightkube.core.exceptions import ApiError
-from lightkube.resources.core_v1 import ServiceAccount
+from lightkube.models import authorization_v1
+from lightkube.resources.authorization_v1 import SelfSubjectAccessReview
 
 from common.utils import WithLogging
 
@@ -19,9 +21,25 @@ class KubernetesManager(WithLogging):
         self.client = Client(field_manager=app_name)
 
     def trusted(self) -> bool:
-        """Check if the charm is trusted."""
+        """Check whether application is trusted."""
         try:
-            _ = self.client.list(ServiceAccount, namespace="*")
-            return True
+            return getattr(
+                lightkube.Client()
+                .create(
+                    SelfSubjectAccessReview(
+                        spec=authorization_v1.SelfSubjectAccessReviewSpec(
+                            resourceAttributes=authorization_v1.ResourceAttributes(
+                                name=self.app_name,
+                                namespace="test",
+                                resource="statefulset",
+                                verb="patch",
+                            )
+                        )
+                    )
+                )
+                .status,
+                "allowed",
+                False,
+            )
         except ApiError:
             return False
