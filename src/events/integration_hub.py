@@ -14,6 +14,7 @@ from ops import (
     StopEvent,
     UpdateStatusEvent,
 )
+from ops.pebble import ExecError
 
 from common.utils import WithLogging
 from constants import INTEGRATION_HUB_LABEL
@@ -52,9 +53,12 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
 
     def _remove_resources(self, _: StopEvent) -> None:
         """Handle the stop event."""
-        self.integration_hub.workload.exec(
-            ["kubectl", "delete", "secret", "-l", INTEGRATION_HUB_LABEL, "--all-namespaces"]
-        )
+        try:
+            self.integration_hub.workload.exec(
+                ["kubectl", "delete", "secret", "-l", INTEGRATION_HUB_LABEL, "--all-namespaces"]
+            )
+        except ExecError:
+            self.logger.error(f"Could not delete secret with label {INTEGRATION_HUB_LABEL}")
 
     @compute_status
     @defer_when_not_ready
