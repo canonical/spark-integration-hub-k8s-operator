@@ -14,7 +14,7 @@ from ops import RelationBrokenEvent, RelationChangedEvent
 from common.utils import WithLogging
 from core.context import PUSHGATEWAY, Context
 from core.workload import IntegrationHubWorkloadBase
-from events.base import BaseEventHandler, compute_status, defer_when_not_ready
+from events.base import BaseEventHandler, defer_when_not_ready
 from managers.integration_hub import IntegrationHubManager
 
 if TYPE_CHECKING:
@@ -46,7 +46,6 @@ class PushgatewayEvents(BaseEventHandler, WithLogging):
             self.charm.on[PUSHGATEWAY].relation_broken, self._on_pushgateway_gone
         )
 
-    @compute_status
     @defer_when_not_ready
     def _on_pushgateway_changed(self, _: RelationChangedEvent) -> None:
         """Handle the `RelationChanged` event from the PushGateway."""
@@ -60,11 +59,3 @@ class PushgatewayEvents(BaseEventHandler, WithLogging):
         """Handle the `RelationBroken` event for PushGateway."""
         self.logger.info("PushGateway relation broken")
         self.integration_hub.update(set_pushgateway_none=True)
-
-        self.charm.unit.status = self.get_app_status(
-            self.context.s3, self.context.azure_storage, None
-        )
-        if self.charm.unit.is_leader():
-            self.charm.app.status = self.get_app_status(
-                self.context.s3, self.context.azure_storage, None
-            )

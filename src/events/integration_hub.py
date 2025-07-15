@@ -12,7 +12,6 @@ from ops import (
     ConfigChangedEvent,
     PebbleReadyEvent,
     StopEvent,
-    UpdateStatusEvent,
 )
 from ops.pebble import ExecError
 
@@ -20,7 +19,7 @@ from common.utils import WithLogging
 from constants import INTEGRATION_HUB_LABEL
 from core.context import Context
 from core.workload import IntegrationHubWorkloadBase
-from events.base import BaseEventHandler, compute_status, defer_when_not_ready
+from events.base import BaseEventHandler, defer_when_not_ready
 from managers.integration_hub import IntegrationHubManager
 
 if TYPE_CHECKING:
@@ -46,8 +45,6 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
             self.charm.on.integration_hub_pebble_ready,
             self._on_integration_hub_pebble_ready,
         )
-        self.framework.observe(self.charm.on.update_status, self._update_event)
-        self.framework.observe(self.charm.on.install, self._update_event)
         self.framework.observe(self.charm.on.stop, self._remove_resources)
         self.framework.observe(self.charm.on.config_changed, self._on_config_changed)
 
@@ -60,19 +57,12 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
         except ExecError:
             self.logger.error(f"Could not delete secret with label {INTEGRATION_HUB_LABEL}")
 
-    @compute_status
     @defer_when_not_ready
     def _on_integration_hub_pebble_ready(self, _: PebbleReadyEvent) -> None:
         """Handle on Pebble ready event."""
         self.integration_hub.update()
 
-    @compute_status
     @defer_when_not_ready
     def _on_config_changed(self, _: ConfigChangedEvent) -> None:
         """Handle on config changed event."""
         self.integration_hub.update()
-
-    @compute_status
-    def _update_event(self, _: UpdateStatusEvent) -> None:
-        # only used to trigger charm status update
-        pass

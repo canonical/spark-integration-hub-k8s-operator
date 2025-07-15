@@ -17,7 +17,7 @@ from charms.data_platform_libs.v0.object_storage import (
 from common.utils import WithLogging
 from core.context import Context
 from core.workload import IntegrationHubWorkloadBase
-from events.base import BaseEventHandler, compute_status, defer_when_not_ready
+from events.base import BaseEventHandler, defer_when_not_ready
 from managers.integration_hub import IntegrationHubManager
 
 if TYPE_CHECKING:
@@ -52,7 +52,6 @@ class AzureStorageEvents(BaseEventHandler, WithLogging):
             self._on_azure_storage_connection_info_gone,
         )
 
-    @compute_status
     @defer_when_not_ready
     def _on_azure_storage_connection_info_changed(
         self, _: StorageConnectionInfoChangedEvent
@@ -66,11 +65,3 @@ class AzureStorageEvents(BaseEventHandler, WithLogging):
         """Handle the `StorageConnectionInfoGoneEvent` event for Object Storage integrator."""
         self.logger.info("Azure Storage connection info gone")
         self.integration_hub.update(set_azure_storage_none=True)
-
-        self.charm.unit.status = self.get_app_status(
-            self.context.s3, None, self.context.pushgateway
-        )
-        if self.charm.unit.is_leader():
-            self.charm.app.status = self.get_app_status(
-                self.context.s3, None, self.context.pushgateway
-            )
