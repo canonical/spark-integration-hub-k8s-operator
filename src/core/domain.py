@@ -9,6 +9,7 @@ import logging
 from dataclasses import dataclass
 from typing import List, MutableMapping
 
+from charms.data_platform_libs.v0.data_interfaces import PrematureDataAccessError
 from charms.spark_integration_hub_k8s.v0.spark_service_account import (
     SparkServiceAccountProviderData,
 )
@@ -229,12 +230,22 @@ class ServiceAccount:
 
     def set_service_account(self, service_account: str) -> None:
         """Set the service account name."""
-        self.relation_data.set_service_account(self.relation_id, service_account)
+        try:
+            self.relation_data.set_service_account(self.relation_id, service_account)
+        except PrematureDataAccessError:
+            logger.error(
+                "Charm tried to write relation data too early, skipping writing to relation databag for now."
+            )
 
     def set_spark_properties(self, spark_properties: dict[str, str]) -> None:
         """Set spark-properties relation field for this service account."""
         field_data = json.dumps(spark_properties)
-        self.relation_data.set_spark_properties(self.relation_id, field_data)
+        try:
+            self.relation_data.set_spark_properties(self.relation_id, field_data)
+        except PrematureDataAccessError:
+            logger.error(
+                "Charm tried to write relation data too early, skipping writing to relation databag for now."
+            )
 
 
 class LokiURL(StateBase):
