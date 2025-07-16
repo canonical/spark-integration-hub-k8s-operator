@@ -104,7 +104,7 @@ def test_new_service_account_with_s3(juju: jubilant.Juju, service_account, charm
 
     # Removing S3 <> Integration Hub relation
     juju.remove_relation(APP_NAME, charm_versions.s3.application_name)
-    juju.wait(jubilant.all_active)
+    juju.wait(jubilant.all_active, delay=10)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -196,7 +196,7 @@ def test_new_service_account_with_azure_storage(
 
     # Removing Azure Storage <> Integration Hub relation
     juju.remove_relation(APP_NAME, charm_versions.azure_storage.application_name)
-    juju.wait(jubilant.all_active)
+    juju.wait(jubilant.all_active, delay=10)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"

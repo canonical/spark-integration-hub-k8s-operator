@@ -125,7 +125,7 @@ class Status(Enum):
     WAITING_PEBBLE = MaintenanceStatus("Waiting for Pebble")
     INVALID_S3_CREDENTIALS = BlockedStatus("Invalid S3 credentials")
     NOT_RUNNING = BlockedStatus("Integration Hub is not running. Please check logs.")
-    NOT_TRUSTED = BlockedStatus("Integration Hub is not trusted! Please check logs.")
+    NOT_TRUSTED = BlockedStatus("Run `juju trust {app} --scope=cluster`. Needed to run.")
     MULTIPLE_OBJECT_STORAGE_RELATIONS = BlockedStatus(
         "Integration Hub can be related to only one storage backend at a time."
     )

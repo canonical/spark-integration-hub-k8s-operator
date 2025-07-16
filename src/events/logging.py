@@ -15,7 +15,7 @@ from common.utils import WithLogging
 from constants import LOGGING_RELATION_NAME
 from core.context import Context
 from core.workload import IntegrationHubWorkloadBase
-from events.base import BaseEventHandler, compute_status, defer_when_not_ready
+from events.base import BaseEventHandler, defer_when_not_ready
 from managers.integration_hub import IntegrationHubManager
 
 if TYPE_CHECKING:
@@ -48,7 +48,6 @@ class LoggingEvents(BaseEventHandler, WithLogging):
             self.workload, self.context, self.charm.config
         )
 
-    @compute_status
     @defer_when_not_ready
     def _on_update_loki_url(self, _: RelationChangedEvent) -> None:
         """Handle the `LoggingChangedEvent` event."""

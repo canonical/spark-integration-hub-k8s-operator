@@ -219,7 +219,7 @@ def juju(request: pytest.FixtureRequest):
 
 
 @pytest.fixture
-def deploy_hub_charm(juju: jubilant.Juju, hub_charm: Path) -> None:
+def deploy_hub_charm(juju: jubilant.Juju, hub_charm: Path) -> str:
     image_version = METADATA["resources"]["integration-hub-image"]["upstream-source"]
     logger.info(f"Image version: {image_version}")
 

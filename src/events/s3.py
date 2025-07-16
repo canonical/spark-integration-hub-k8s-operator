@@ -17,7 +17,7 @@ from charms.data_platform_libs.v0.s3 import (
 from common.utils import WithLogging
 from core.context import Context
 from core.workload import IntegrationHubWorkloadBase
-from events.base import BaseEventHandler, compute_status, defer_when_not_ready
+from events.base import BaseEventHandler, defer_when_not_ready
 from managers.integration_hub import IntegrationHubManager
 
 if TYPE_CHECKING:
@@ -46,7 +46,6 @@ class S3Events(BaseEventHandler, WithLogging):
         )
         self.framework.observe(self.s3_requirer.on.credentials_gone, self._on_s3_credential_gone)
 
-    @compute_status
     @defer_when_not_ready
     def _on_s3_credential_changed(self, _: CredentialsChangedEvent) -> None:
         """Handle the `CredentialsChangedEvent` event from S3 integrator."""
@@ -58,11 +57,3 @@ class S3Events(BaseEventHandler, WithLogging):
         """Handle the `CredentialsGoneEvent` event for S3 integrator."""
         self.logger.info("S3 Credentials gone")
         self.integration_hub.update(set_s3_none=True)
-
-        self.charm.unit.status = self.get_app_status(
-            None, self.context.azure_storage, self.context.pushgateway
-        )
-        if self.charm.unit.is_leader():
-            self.charm.app.status = self.get_app_status(
-                None, self.context.azure_storage, self.context.pushgateway
-            )
