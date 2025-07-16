@@ -5,7 +5,7 @@
 """Charmed Kubernetes Operator for the Spark Integration Hub Charm."""
 
 from charms.data_platform_libs.v0.data_models import TypedCharmBase
-from ops import main
+from ops import CollectStatusEvent, main
 
 from common.utils import WithLogging
 from constants import CONTAINER, PEBBLE_USER
@@ -42,17 +42,15 @@ class SparkIntegrationHub(TypedCharmBase[CharmConfig], WithLogging):
         self.pushgateway = PushgatewayEvents(self, self.context, self.workload)
         self.integration_hub = IntegrationHubEvents(self, self.context, self.workload)
         self.logging = LoggingEvents(self, self.context, self.workload)
-        self.logger.warning("bli")
 
         self.framework.observe(self.on.collect_unit_status, self._on_collect_status)
         self.framework.observe(self.on.collect_app_status, self._on_collect_status)
 
-    def _on_collect_status(self, event: ops.CollectStatusEvent) -> None:
-        """Set the status of the unit.
+    def _on_collect_status(self, event: CollectStatusEvent) -> None:
+        """Set the status of the app/unit.
 
-        This must be the only place in the codebase where we set the unit status.
+        This must be the only place in the codebase where we set the app/unit status.
         """
-        """Return the status of the charm."""
         if not self.workload.ready():
             event.add_status(Status.WAITING_PEBBLE.value)
             return
