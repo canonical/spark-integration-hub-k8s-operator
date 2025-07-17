@@ -8,7 +8,6 @@ requires-poetry = ">=2.0.0"
 [tool.poetry.dependencies]
 python = ">3.10,<4.0"
 ops = "^3.0"
-# NOTE(boto): 1.36+ incompatible with minio because of MD5 checksum
 boto3 = ">=1.39.4,<1.40"
 lightkube = "0.17.2"
 
