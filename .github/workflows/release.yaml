@@ -35,6 +35,7 @@ jobs:
       - name: Check consistency between metadata and release branch
         shell: bash
         run: |
+          VERSION=${{ steps.charm_metadata.outputs.version }}
           if [ "${VERSION}" != "${{ steps.branch_metadata.outputs.track }}" ]; then exit 1; fi
 
           # The publishing pipeline does not work for other risk than edge. The DP workflows below
