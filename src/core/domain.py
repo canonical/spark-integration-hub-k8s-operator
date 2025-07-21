@@ -87,6 +87,11 @@ class S3ConnectionInfo(StateBase):
         return self.relation_data["bucket"]
 
     @property
+    def region(self) -> str:
+        """Return the region of the S3 region."""
+        return self.relation_data.get("region", "")
+
+    @property
     def tls_ca_chain(self) -> List[str] | None:
         """Return the CA chain (when applicable)."""
         return (
