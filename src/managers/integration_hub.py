@@ -6,7 +6,7 @@
 
 import re
 
-from common.utils import WithLogging
+from common.utils import WithLogging, get_hub_secret_manifest
 from core.config import CharmConfig
 from core.context import Context
 from core.domain import (
@@ -210,6 +210,18 @@ class IntegrationHubManager(WithLogging):
 
         return False
 
+    def get_resource_manifest(
+        self, namespace: str, username: str, configurations: dict[str, str]
+    ) -> str:
+        """Return the K8s resource manifest of the resources to be created."""
+        spark8t_manifest = self.workload.get_spark8t_manifest(
+            namespace=namespace, username=username
+        )
+        hub_manifest = get_hub_secret_manifest(
+            namespace=namespace, username=username, configurations=configurations
+        )
+        return spark8t_manifest + "\n---\n" + hub_manifest
+
     def update(
         self,
         set_s3_none: bool = False,
@@ -239,5 +251,12 @@ class IntegrationHubManager(WithLogging):
 
         if self.context.charm.unit.is_leader():
             for sa in self.context.service_accounts:
-                if sa.spark_properties != config.to_dict():
-                    sa.set_spark_properties(config.to_dict())
+                if not sa.service_account:
+                    continue
+                props = config.to_dict()
+                sa.set_spark_properties(spark_properties=props)
+                namespace, username = sa.service_account.split(":")
+                manifest = self.get_resource_manifest(
+                    namespace=namespace, username=username, configurations=props
+                )
+                sa.set_resource_manifest(manifest)

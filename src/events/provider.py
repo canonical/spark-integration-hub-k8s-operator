@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import yaml
 from charms.spark_integration_hub_k8s.v0.spark_service_account import (
     ServiceAccountReleasedEvent,
     ServiceAccountRequestedEvent,
@@ -66,9 +65,6 @@ class SparkServiceAccountProviderEvents(BaseEventHandler, WithLogging):
             self.workload.create_service_account(namespace=namespace, username=username)
 
         self.sa.set_service_account(relation_id, event.service_account)  # type: ignore
-
-        # TODO: Add logic for generation of resource manifest
-        self.sa.set_resource_manifest(relation_id, resource_manifest=yaml.dump({}))
 
         self.integration_hub.update()
 

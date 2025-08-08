@@ -143,3 +143,24 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
             raise RuntimeError(
                 f"Failed to delete service account: {username} in namespace: {namespace}"
             )
+
+    def get_spark8t_manifest(self, namespace: str, username: str) -> str:
+        """Return the K8s resource manifest for the resources that are to be created."""
+        try:
+            manifest = self.exec(
+                [
+                    "python3",
+                    "-m",
+                    "spark8t.cli.service_account_registry",
+                    "get-manifest",
+                    f"--username={username}",
+                    f"--namespace={namespace}",
+                    "--backend=lightkube",
+                ]
+            )
+            return manifest
+        except Exception as e:
+            self.logger.error(e)
+            raise RuntimeError(
+                f"Impossible to create service account: {username} in namespace: {namespace}"
+            )

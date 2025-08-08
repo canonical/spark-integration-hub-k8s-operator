@@ -252,6 +252,17 @@ class ServiceAccount:
                 "Charm tried to write relation data too early, skipping writing to relation databag for now."
             )
 
+    def set_resource_manifest(self, resource_manifest: str) -> None:
+        """Set resource-manifest relation field for this service account."""
+        try:
+            self.relation_data.set_resource_manifest(
+                self.relation_id, resource_manifest=resource_manifest
+            )
+        except PrematureDataAccessError:
+            logger.error(
+                "Charm tried to write relation data too early, skipping writing to relation databag for now."
+            )
+
 
 class LokiURL(StateBase):
     """Class representing the Loki URL managed by the Spark Integration Hub charm."""
