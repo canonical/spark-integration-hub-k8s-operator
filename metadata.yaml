@@ -32,6 +32,7 @@ resources:
     type: oci-image
     description: OCI image for the Spark Integration Hub Charm
     # upstream-source: ghcr.io/canonical/spark-integration-hub@sha256:fa5e73d6339b2eb137b5917771caa62bd6605284b8dfab3dafb7d6026a9a3b1a # 3-22.04
+    # TODO: Replace this with updated hub rock image after spark8t is released
     upstream-source: docker.io/bikalpadhakalcanonical/integration-hub-rock:4
 
 

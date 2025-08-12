@@ -216,10 +216,7 @@ def test_skip_creation_of_resources(juju: jubilant.Juju, namespace: str) -> None
         f"--namespace={namespace}",
     ]
     print(" ".join(command))
-    import time
 
-    print("sleeping for some time")
-    time.sleep(120)
     get_config_process = subprocess.run(command, check=True, capture_output=True)
     assert get_config_process.returncode == 0
 
