@@ -155,12 +155,11 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
                     "get-manifest",
                     f"--username={username}",
                     f"--namespace={namespace}",
-                    "--backend=lightkube",
                 ]
             )
             return manifest
         except Exception as e:
             self.logger.error(e)
             raise RuntimeError(
-                f"Impossible to create service account: {username} in namespace: {namespace}"
+                f"Failed to fetch manifest for the service account: {username} in namespace: {namespace}"
             )

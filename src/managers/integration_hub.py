@@ -220,7 +220,7 @@ class IntegrationHubManager(WithLogging):
         hub_manifest = get_hub_secret_manifest(
             namespace=namespace, username=username, configurations=configurations
         )
-        return spark8t_manifest + "\n---\n" + hub_manifest
+        return spark8t_manifest.strip() + "\n---\n" + hub_manifest.strip()
 
     def update(
         self,

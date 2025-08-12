@@ -10,7 +10,7 @@ python = ">3.10,<4.0"
 ops = "^3.0"
 boto3 = ">=1.39.4,<1.40"
 lightkube = "0.17.2"
-spark8t = { git = "https://github.com/canonical/spark-k8s-toolkit-py", rev = "resource-manifest" }
+spark8t = {git = "https://github.com/canonical/spark-k8s-toolkit-py", rev = "resource-manifest"}
 
 
 [tool.poetry.group.charm-libs.dependencies]
