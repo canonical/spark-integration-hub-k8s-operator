@@ -11,7 +11,7 @@ ops = "^3.0"
 boto3 = ">=1.39.4,<1.40"
 lightkube = "0.17.2"
 # TODO: Replace this with pypi release after spark8t is released.
-spark8t = {git = "https://github.com/canonical/spark-k8s-toolkit-py", rev = "resource-manifest"}
+spark8t = {git = "https://github.com/canonical/spark-k8s-toolkit-py", rev = "main"}
 
 
 [tool.poetry.group.charm-libs.dependencies]

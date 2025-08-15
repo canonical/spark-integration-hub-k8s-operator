@@ -960,12 +960,13 @@ develop = false
 envyaml = ">=1.10.211231"
 jinja2 = ">=3.1.2"
 lightkube = ">=0.11"
+typing-extensions = "^4.14.1"
 
 [package.source]
 type = "git"
 url = "https://github.com/canonical/spark-k8s-toolkit-py"
-reference = "resource-manifest"
-resolved_reference = "573515157bb16c09fa509aa63b7bbfbda1666ece"
+reference = "main"
+resolved_reference = "99fe3bbcfab5e03f061b90a19e97578a42b8da6d"
 
 [[package]]
 name = "tenacity"
@@ -1593,4 +1594,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">3.10,<4.0"
-content-hash = "8c6922ef3f5bf27bad57a84a14e99a9e3d0d53575be16961e37922a4951e5aff"
+content-hash = "3858667a1470d0fa162633eb54ffd16373f337c911ac2ad73452b9e6e913f59f"
