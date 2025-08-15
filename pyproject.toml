@@ -53,7 +53,7 @@ optional = true
 pytest = ">=8.4.1"
 coverage = { extras = ["toml"], version = ">7.0" }
 tenacity = "^9.1.2"
-spark8t = "^0.0.12"
+spark8t = "^1.0.0"
 jubilant = "^1.2.0"
 
 [tool.ruff]
