@@ -948,25 +948,21 @@ files = [
 
 [[package]]
 name = "spark8t"
-version = "1.0.0"
+version = "1.1.0"
 description = "This project provides some utilities function and CLI commands to run Spark on K8s."
 optional = false
-python-versions = ">=3.10,<4.0"
+python-versions = "<4.0,>=3.10"
 groups = ["main"]
-files = []
-develop = false
+files = [
+    {file = "spark8t-1.1.0-py3-none-any.whl", hash = "sha256:99dcfa46afed9cccf7c7a3c07fc43f805ff4c9fd41b48de79950e3565534ee3f"},
+    {file = "spark8t-1.1.0.tar.gz", hash = "sha256:2f61232f3c4b328b05affab5872fedc28ae5b7a0fe225aadab3cec24f590fc42"},
+]
 
 [package.dependencies]
 envyaml = ">=1.10.211231"
 jinja2 = ">=3.1.2"
 lightkube = ">=0.11"
-typing-extensions = "^4.14.1"
-
-[package.source]
-type = "git"
-url = "https://github.com/canonical/spark-k8s-toolkit-py"
-reference = "main"
-resolved_reference = "99fe3bbcfab5e03f061b90a19e97578a42b8da6d"
+typing-extensions = ">=4.14.1,<5.0.0"
 
 [[package]]
 name = "tenacity"
@@ -1594,4 +1590,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">3.10,<4.0"
-content-hash = "3858667a1470d0fa162633eb54ffd16373f337c911ac2ad73452b9e6e913f59f"
+content-hash = "65ccc72066ee540cf3808e8b1e85b70021918a8c21c15b68844e574e18ff99d2"
