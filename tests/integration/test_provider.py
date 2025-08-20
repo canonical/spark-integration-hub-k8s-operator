@@ -6,6 +6,8 @@ from pathlib import Path
 import jubilant
 import yaml
 
+from .helpers import umask_named_temporary_file
+
 logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
@@ -21,7 +23,6 @@ def check_service_account_existance(namespace: str, service_account_name) -> boo
     command = ["kubectl", "get", "sa", "-n", namespace, "--output", "json"]
     try:
         output = subprocess.run(command, check=True, capture_output=True)
-        # output.stdout.decode(), output.stderr.decode(), output.returncode
         result = output.stdout.decode()
         logger.info(f"Command: {command}")
         logger.info(f"Service accounts for namespace: {namespace}")
@@ -60,7 +61,9 @@ def test_build_and_deploy_charms(juju: jubilant.Juju, hub_charm: Path, test_char
     logger.info("Deploying test application charm")
     juju.deploy(charm=test_charm, app=DUMMY_APP_NAME, num_units=1, base="ubuntu@22.04")
 
-    juju.wait(jubilant.all_active)
+    juju.wait(
+        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
+    )
 
 
 def test_relate_charms(juju: jubilant.Juju, namespace: str) -> None:
@@ -68,18 +71,24 @@ def test_relate_charms(juju: jubilant.Juju, namespace: str) -> None:
 
     logger.info(f"Setting config for test application charm: {configuration_parameters}...")
     juju.config(DUMMY_APP_NAME, configuration_parameters)
-    juju.wait(jubilant.all_active)
+    juju.wait(
+        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
+    )
 
     logger.info("Integrating integration hub with test application for service account sa1")
     juju.integrate(APP_NAME, f"{DUMMY_APP_NAME}:{REL_NAME_A}")
-    juju.wait(jubilant.all_active)
+    juju.wait(
+        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
+    )
 
     # The service account named 'sa1' should have been created
     assert check_service_account_existance(namespace, "sa1")
 
     logger.info("Enable autoscaling...")
     juju.config(APP_NAME, {"enable-dynamic-allocation": "true"})
-    juju.wait(jubilant.all_active, delay=3)
+    juju.wait(
+        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
+    )
 
     # The added spark properties be reflected on the requirer charm
     task = juju.run(f"{DUMMY_APP_NAME}/0", "get-properties-sa1")
@@ -93,13 +102,15 @@ def test_relate_charms(juju: jubilant.Juju, namespace: str) -> None:
     assert "resource-manifest" in task.results
     manifest = task.results["resource-manifest"]
     assert manifest is not None
-    assert manifest.strip() == "{}"
+    assert manifest.strip() != ""
 
     # Add a new relation between dummy application charm and integration hub
     logger.info("Integrating integration hub with test application for service account sa2")
     juju.integrate(APP_NAME, f"{DUMMY_APP_NAME}:{REL_NAME_B}")
 
-    juju.wait(jubilant.all_active)
+    juju.wait(
+        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
+    )
 
     # The service account named 'sa2' should have been created
     assert check_service_account_existance(namespace, "sa2")
@@ -116,7 +127,7 @@ def test_relate_charms(juju: jubilant.Juju, namespace: str) -> None:
     assert "resource-manifest" in task.results
     manifest = task.results["resource-manifest"]
     assert manifest is not None
-    assert manifest.strip() == "{}"
+    assert manifest.strip() != ""
 
 
 def test_remove_relation(juju: jubilant.Juju, namespace: str) -> None:
@@ -125,7 +136,9 @@ def test_remove_relation(juju: jubilant.Juju, namespace: str) -> None:
     )
     juju.remove_relation(APP_NAME, f"{DUMMY_APP_NAME}:{REL_NAME_A}")
 
-    juju.wait(jubilant.all_active)
+    juju.wait(
+        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
+    )
     assert not check_service_account_existance(namespace=namespace, service_account_name="sa1")
 
     logger.info(
@@ -133,25 +146,34 @@ def test_remove_relation(juju: jubilant.Juju, namespace: str) -> None:
     )
     juju.remove_relation(APP_NAME, f"{DUMMY_APP_NAME}:{REL_NAME_B}")
 
-    juju.wait(jubilant.all_active)
+    juju.wait(
+        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
+    )
     assert not check_service_account_existance(namespace=namespace, service_account_name="sa2")
 
 
-def test_configure_test_charm_for_skip_creation(juju: jubilant.Juju, namespace: str) -> None:
-    configuration_parameters = {"skip-creation": "true"}
+def test_skip_creation_of_resources(juju: jubilant.Juju, namespace: str) -> None:
+    """Test the behavior of passing skip-creation flag in the spark-service-account relation."""
+    configuration_parameters = {"skip-creation": "true", "namespace": namespace}
     juju.config(DUMMY_APP_NAME, configuration_parameters)
-    juju.wait(jubilant.all_active)
+    juju.wait(
+        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
+    )
 
     logger.info("Integrating integration hub with test application for service account sa1")
     juju.integrate(APP_NAME, f"{DUMMY_APP_NAME}:{REL_NAME_A}")
-    juju.wait(jubilant.all_active)
+    juju.wait(
+        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
+    )
 
     assert not check_service_account_existance(namespace, "sa1")
 
     # Add a spark property via configuration action of integration hub
     logger.info("Enable autoscaling...")
     juju.config(APP_NAME, {"enable-dynamic-allocation": "true"})
-    juju.wait(jubilant.all_active)
+    juju.wait(
+        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
+    )
 
     # The added spark property be reflected on the requirer charm
     task = juju.run(f"{DUMMY_APP_NAME}/0", "get-properties-sa1")
@@ -165,4 +187,45 @@ def test_configure_test_charm_for_skip_creation(juju: jubilant.Juju, namespace: 
     assert "resource-manifest" in task.results
     manifest = task.results["resource-manifest"]
     assert manifest is not None
-    assert manifest.strip() == "{}"
+
+    # Write the manifest to a temporary file
+    with umask_named_temporary_file(mode="w+", prefix="manifest-", suffix=".yaml") as tmp:
+        tmp.write(manifest)
+        tmp.flush()
+
+        # Now try applying the manifest file
+        apply_result = subprocess.run(
+            ["kubectl", "apply", "-f", tmp.name],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        assert apply_result.returncode == 0
+
+    # Now the service account should have been created there
+    assert check_service_account_existance(namespace, "sa1")
+
+    # Once the resource manifest is applied, the service account config should be
+    # readable by `spark8t.cli.service_account_registry get-config` command
+    command = [
+        "python3",
+        "-m",
+        "spark8t.cli.service_account_registry",
+        "get-config",
+        "--username=sa1",
+        f"--namespace={namespace}",
+    ]
+    print(" ".join(command))
+
+    get_config_process = subprocess.run(command, check=True, capture_output=True)
+    assert get_config_process.returncode == 0
+
+    actual_config_lines = get_config_process.stdout.decode().strip().splitlines()
+    expected_config_lines = [
+        "spark.dynamicAllocation.enabled=true",
+        "spark.dynamicAllocation.shuffleTracking.enabled=true",
+        "spark.dynamicAllocation.minExecutors=1",
+    ]
+
+    # Assert that the config injected by integration hub is there
+    assert all(line in actual_config_lines for line in expected_config_lines)

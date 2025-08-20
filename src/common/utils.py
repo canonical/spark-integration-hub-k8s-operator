@@ -6,7 +6,11 @@
 
 import os
 from logging import Logger, getLogger
-from typing import Any, Callable, Literal, TypedDict, Union
+from typing import Any, Callable, Literal, TypedDict, Union, cast
+
+from lightkube.codecs import AnyResource, dump_all_yaml
+from lightkube.resources.core_v1 import Secret
+from spark8t.literals import HUB_LABEL
 
 PathLike = Union[str, "os.PathLike[str]"]
 
@@ -69,3 +73,26 @@ class WithLogging:
             return x
 
         return wrap
+
+
+def get_hub_secret_manifest(
+    namespace: str, username: str, configurations: dict[str, str] | None
+) -> str:
+    """Return the K8s resource manifest corresponding to Hub configuration secret."""
+    secret_name = f"{HUB_LABEL}-{username}"
+    if configurations is None:
+        configurations = {}
+    secret = Secret.from_dict(
+        {
+            "apiVersion": "v1",
+            "kind": "Secret",
+            "metadata": {
+                "name": secret_name,
+                "namespace": namespace,
+                "labels": {"app.kubernetes.io/generated-by": "integration-hub"},
+            },
+            "stringData": configurations,
+        }
+    )
+    manifest = dump_all_yaml([cast(AnyResource, secret)]) or ""
+    return manifest

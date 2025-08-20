@@ -15,10 +15,11 @@ from pydantic import BaseModel
 
 from .helpers import BUCKET_NAME, run_service_account_registry, setup_s3_bucket_for_sch_server
 
-logger = logging.getLogger(__name__)
-
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
+
+logger = logging.getLogger(__name__)
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
 def pytest_addoption(parser):

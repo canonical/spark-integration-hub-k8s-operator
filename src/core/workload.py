@@ -59,3 +59,8 @@ class IntegrationHubWorkloadBase(AbstractWorkload):
     def delete_service_account(self, namespace: str, username: str) -> None:
         """Delete the service account in the given namespace."""
         ...
+
+    @abstractmethod
+    def get_spark8t_manifest(self, namespace: str, username: str) -> str:
+        """Return the K8s resource manifest for the resources that are to be created."""
+        ...

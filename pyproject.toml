@@ -10,6 +10,7 @@ python = ">3.10,<4.0"
 ops = "^3.0"
 boto3 = ">=1.39.4,<1.40"
 lightkube = "0.17.2"
+spark8t = "^1.1.0"
 
 [tool.poetry.group.charm-libs.dependencies]
 ops = "^3.0"
@@ -53,7 +54,6 @@ optional = true
 pytest = ">=8.4.1"
 coverage = { extras = ["toml"], version = ">7.0" }
 tenacity = "^9.1.2"
-spark8t = "^0.0.12"
 jubilant = "^1.2.0"
 
 [tool.ruff]
@@ -89,6 +89,7 @@ module = [
   "charms.prometheus_pushgateway_k8s.*",
   "charms.loki_k8s.*",
   "charms.spark_integration_hub_k8s.*",
+  "spark8t.*"
 ]
 ignore_missing_imports = true
 

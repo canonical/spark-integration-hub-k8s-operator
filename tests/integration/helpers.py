@@ -4,7 +4,9 @@
 
 import json
 import logging
+import os
 import subprocess
+from tempfile import NamedTemporaryFile
 from time import sleep
 
 import boto3
@@ -107,3 +109,12 @@ def get_address(juju: jubilant.Juju, unit_name: str) -> str:
         if unit_name == name:
             return val.address
     return ""
+
+
+def umask_named_temporary_file(*args, **kargs):
+    """Return a temporary file descriptor readable by all users."""
+    file_desc = NamedTemporaryFile(*args, **kargs)
+    mask = os.umask(0o666)
+    os.umask(mask)
+    os.chmod(file_desc.name, 0o666 & ~mask)
+    return file_desc
