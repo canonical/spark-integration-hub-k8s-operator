@@ -7,11 +7,8 @@ import logging
 import os
 import subprocess
 from tempfile import NamedTemporaryFile
-from time import sleep
 
-import boto3
 import jubilant
-from botocore.client import Config
 
 BUCKET_NAME = "test-bucket"
 
@@ -64,41 +61,6 @@ def get_secret_data(namespace: str, secret_name: str):
         return data
     except subprocess.CalledProcessError as e:
         return e.stdout.decode(), e.stderr.decode(), e.returncode
-
-
-def setup_s3_bucket_for_sch_server(endpoint_url: str, aws_access_key: str, aws_secret_key: str):
-    config = Config(connect_timeout=60, retries={"max_attempts": 0})
-    session = boto3.session.Session(
-        aws_access_key_id=aws_access_key, aws_secret_access_key=aws_secret_key
-    )
-    s3 = session.client("s3", endpoint_url=endpoint_url, config=config)
-    # delete test bucket and its content if it already exist
-    buckets = s3.list_buckets()
-    for bucket in buckets["Buckets"]:
-        bucket_name = bucket["Name"]
-        if bucket_name == BUCKET_NAME:
-            logger.info(f"Deleting bucket: {bucket_name}")
-            objects = s3.list_objects_v2(Bucket=BUCKET_NAME)["Contents"]
-            objs = [{"Key": x["Key"]} for x in objects]
-            s3.delete_objects(Bucket=BUCKET_NAME, Delete={"Objects": objs})
-            s3.delete_bucket(Bucket=BUCKET_NAME)
-
-    logger.info("create bucket in minio")
-    for i in range(0, 30):
-        try:
-            s3.create_bucket(Bucket=BUCKET_NAME)
-            break
-        except Exception as e:
-            if i >= 30:
-                logger.error(f"create bucket failed....exiting....\n{str(e)}")
-                raise
-            else:
-                logger.warning(f"create bucket failed....retrying in 10 secs.....\n{str(e)}")
-                sleep(10)
-                continue
-
-    s3.put_object(Bucket=BUCKET_NAME, Key=("spark-events/"))
-    logger.debug(s3.list_buckets())
 
 
 def get_address(juju: jubilant.Juju, unit_name: str) -> str:

@@ -55,6 +55,7 @@ pytest = ">=8.4.2"
 coverage = { extras = ["toml"], version = ">7.0" }
 tenacity = "^9.1.2"
 jubilant = "^1.4.0"
+python-dotenv = "^1.2.1"
 
 [tool.ruff]
 line-length = 99

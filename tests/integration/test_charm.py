@@ -10,9 +10,8 @@ from pathlib import Path
 import jubilant
 import yaml
 
-from .helpers import (
-    get_secret_data,
-)
+from .helpers import get_secret_data
+from .types import AzureInfo, IntegrationTestsCharms
 
 logger = logging.getLogger(__name__)
 
@@ -22,18 +21,18 @@ CONTAINER_NAME = "test-container"
 SECRET_NAME_PREFIX = "integrator-hub-conf-"
 
 
-def test_build_and_deploy_hub_charm(juju: jubilant.Juju, deploy_hub_charm) -> None:
+def test_build_and_deploy_hub_charm(juju: jubilant.Juju, deploy_hub_charm: str) -> None:
     juju.wait(lambda status: jubilant.all_active(status, APP_NAME))
 
 
 def test_deploy_s3_integrator(
-    juju: jubilant.Juju, charm_versions, deploy_s3_integrator_charm
+    juju: jubilant.Juju, charm_versions, deploy_s3_integrator_charm: str
 ) -> None:
     juju.wait(lambda status: jubilant.all_active(status, charm_versions.s3.application_name))
 
 
 def test_deploy_azure_storage_integrator(
-    juju: jubilant.Juju, charm_versions, azure_credentials: dict[str, str]
+    juju: jubilant.Juju, charm_versions, azure_credentials: AzureInfo
 ) -> None:
     juju.deploy(**charm_versions.azure_storage.deploy_dict())
     juju.wait(jubilant.all_agents_idle)
@@ -59,7 +58,9 @@ def test_deploy_azure_storage_integrator(
     juju.wait(jubilant.all_active)
 
 
-def test_relation_with_s3(juju: jubilant.Juju, service_account, charm_versions) -> None:
+def test_relation_with_s3(
+    juju: jubilant.Juju, service_account: tuple[str, str], charm_versions: IntegrationTestsCharms
+) -> None:
     service_account_name = service_account[0]
     namespace = service_account[1]
     logger.info(f"Service account: {service_account_name}, namespace: {namespace}")
@@ -86,7 +87,9 @@ def test_relation_with_s3(juju: jubilant.Juju, service_account, charm_versions) 
     assert "spark.hadoop.fs.s3a.access.key" in secret_data
 
 
-def test_new_service_account_with_s3(juju: jubilant.Juju, service_account, charm_versions) -> None:
+def test_new_service_account_with_s3(
+    juju: jubilant.Juju, service_account: tuple[str, str], charm_versions: IntegrationTestsCharms
+) -> None:
     service_account_name = service_account[0]
     namespace = service_account[1]
     logger.info(f"Service account: {service_account_name}, namespace: {namespace}")
@@ -126,7 +129,9 @@ def test_new_service_account_with_s3(juju: jubilant.Juju, service_account, charm
     assert "spark.hadoop.fs.s3a.access.key" in secret_data
 
 
-def test_both_s3_and_azure_storage_integration(juju: jubilant.Juju, charm_versions) -> None:
+def test_both_s3_and_azure_storage_integration(
+    juju: jubilant.Juju, charm_versions: IntegrationTestsCharms
+) -> None:
     logger.info(
         "Relating spark integration hub charm with azure-storage-integrator along with existing relation with s3-integrator charm"
     )
@@ -142,7 +147,10 @@ def test_both_s3_and_azure_storage_integration(juju: jubilant.Juju, charm_versio
 
 
 def test_relation_with_azure_storage(
-    juju: jubilant.Juju, service_account, charm_versions, azure_credentials
+    juju: jubilant.Juju,
+    service_account: tuple[str, str],
+    charm_versions: IntegrationTestsCharms,
+    azure_credentials: AzureInfo,
 ) -> None:
     service_account_name = service_account[0]
     namespace = service_account[1]
@@ -174,7 +182,10 @@ def test_relation_with_azure_storage(
 
 
 def test_new_service_account_with_azure_storage(
-    juju: jubilant.Juju, service_account, charm_versions, azure_credentials
+    juju: jubilant.Juju,
+    service_account: tuple[str, str],
+    charm_versions: IntegrationTestsCharms,
+    azure_credentials: AzureInfo,
 ) -> None:
     service_account_name = service_account[0]
     namespace = service_account[1]
@@ -222,7 +233,9 @@ def test_new_service_account_with_azure_storage(
 
 
 def test_remove_application(
-    juju: jubilant.Juju, service_account, charm_versions, azure_credentials
+    juju: jubilant.Juju,
+    service_account: tuple[str, str],
+    azure_credentials: AzureInfo,
 ) -> None:
     service_account_name = service_account[0]
     namespace = service_account[1]

@@ -18,6 +18,7 @@ from .helpers import (
     get_address,
     get_secret_data,
 )
+from .types import IntegrationTestsCharms
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,10 @@ def check_metrics(address: str) -> None:
 
 
 def test_deploy_hub_with_s3_relation(
-    juju: jubilant.Juju, charm_versions, deploy_hub_charm, deploy_s3_integrator_charm
+    juju: jubilant.Juju,
+    charm_versions: IntegrationTestsCharms,
+    deploy_hub_charm: str,
+    deploy_s3_integrator_charm: str,
 ) -> None:
     juju.wait(
         lambda status: jubilant.all_active(status, APP_NAME, charm_versions.s3.application_name)
@@ -57,7 +61,7 @@ def test_deploy_hub_with_s3_relation(
 
 def test_deploy_cos_charms(
     juju: jubilant.Juju,
-    charm_versions,
+    charm_versions: IntegrationTestsCharms,
 ) -> None:
     logger.info("Deploying the grafana-agent-k8s charm")
     juju.deploy(**charm_versions.grafana_agent.deploy_dict())
@@ -72,7 +76,9 @@ def test_deploy_cos_charms(
     )
 
 
-def test_relation_with_pushgateway(juju: jubilant.Juju, charm_versions, service_account) -> None:
+def test_relation_with_pushgateway(
+    juju: jubilant.Juju, charm_versions: IntegrationTestsCharms, service_account: tuple[str, str]
+) -> None:
     """Test relation with prometheus pushgateway.
 
     Assert on the unit status and on the presence/absence of the metrics.
@@ -161,7 +167,9 @@ def test_relation_with_pushgateway(juju: jubilant.Juju, charm_versions, service_
     assert not any("spark.metrics.conf" in key for key in secret_data.keys())
 
 
-def test_relation_with_logging(juju: jubilant.Juju, service_account, charm_versions) -> None:
+def test_relation_with_logging(
+    juju: jubilant.Juju, service_account: tuple[str, str], charm_versions: IntegrationTestsCharms
+) -> None:
     service_account_name, namespace = service_account
     setup_spark_output = subprocess.check_output(
         f"./tests/integration/setup/setup_spark.sh {service_account_name} {namespace}",

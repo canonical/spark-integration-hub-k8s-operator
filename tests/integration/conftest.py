@@ -2,22 +2,29 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 import logging
+import os
 import shutil
 import subprocess
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import Iterable
 
+import boto3.session
 import jubilant
 import pytest
 import yaml
-from pydantic import BaseModel
+from botocore.client import Config
+from dotenv import load_dotenv
 
-from .helpers import BUCKET_NAME, run_service_account_registry, setup_s3_bucket_for_sch_server
+from .helpers import run_service_account_registry
+from .types import AzureInfo, CharmVersion, IntegrationTestsCharms, S3Info
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
+BUCKET_NAME = "test-bucket"
+PATH_NAME = "spark-events"
 
+load_dotenv()
 logger = logging.getLogger(__name__)
 logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
@@ -31,67 +38,21 @@ def pytest_addoption(parser):
     )
 
 
-class CharmVersion(BaseModel):
-    """Identifiable for specifying a version of a charm to be deployed.
-
-    Attrs:
-        name: str, representing the charm to be deployed
-        channel: str, representing the channel to be used
-        series: str, representing the series of the system for the container where the charm
-            is deployed to
-        num_units: int, number of units for the deployment
-    """
-
-    name: str
-    channel: str
-    base: str
-    num_units: int = 1
-    alias: Optional[str] = None
-    trust: bool = False
-
-    @property
-    def application_name(self) -> str:
-        return self.alias or self.name
-
-    def deploy_dict(self):
-        return {
-            "charm": self.name,
-            "channel": self.channel,
-            "base": self.base,
-            "num_units": self.num_units,
-            "app": self.application_name,
-            "trust": self.trust,
-        }
-
-
-class IntegrationTestsCharms(BaseModel):
-    s3: CharmVersion
-    pushgateway: CharmVersion
-    azure_storage: CharmVersion
-    grafana_agent: CharmVersion
-
-
 @pytest.fixture
 def charm_versions() -> IntegrationTestsCharms:
     return IntegrationTestsCharms(
-        s3=CharmVersion(
-            **{"name": "s3-integrator", "channel": "edge", "base": "ubuntu@22.04", "alias": "s3"}
-        ),
+        s3=CharmVersion(name="s3-integrator", channel="edge", base="ubuntu@22.04", alias="s3"),
         azure_storage=CharmVersion(
-            **{
-                "name": "azure-storage-integrator",
-                "channel": "edge",
-                "base": "ubuntu@22.04",
-                "alias": "azure-storage",
-            }
+            name="azure-storage-integrator",
+            channel="edge",
+            base="ubuntu@22.04",
+            alias="azure-storage",
         ),
         pushgateway=CharmVersion(
-            **{
-                "name": "prometheus-pushgateway-k8s",
-                "channel": "1/stable",
-                "base": "ubuntu@22.04",
-                "alias": "pushgateway",
-            }
+            name="prometheus-pushgateway-k8s",
+            channel="1/stable",
+            base="ubuntu@22.04",
+            alias="pushgateway",
         ),
         grafana_agent=CharmVersion(
             name="grafana-agent-k8s", channel="1/stable", base="ubuntu@22.04"
@@ -127,7 +88,7 @@ def copy_data_interfaces_library_into_charm():
 
 
 @pytest.fixture(scope="module")
-def azure_credentials():
+def azure_credentials() -> AzureInfo:
     return {
         "container": "test-container",
         "path": "spark-events",
@@ -138,33 +99,78 @@ def azure_credentials():
 
 
 @pytest.fixture(scope="module")
-def s3_credentials():
-    logger.info("Setting up minio.....")
-    setup_minio_output = (
-        subprocess.check_output(
-            "./tests/integration/setup/setup_minio.sh | tail -n 1", shell=True, stderr=None
+def s3_credentials(request: pytest.FixtureRequest) -> Iterable[S3Info]:
+    keep_models = bool(request.config.getoption("--keep-models"))
+
+    if any(
+        (
+            (access_key := os.environ.get("S3_ACCESS_KEY", None)) is None,
+            (secret_key := os.environ.get("S3_SECRET_KEY", None)) is None,
+            (endpoint_url := os.environ.get("S3_SERVER_URL", None)) is None,
         )
-        .decode("utf-8")
-        .strip()
+    ):
+        logger.info("Setting up minio.....")
+        setup_minio_output = (
+            subprocess.check_output(
+                "./tests/integration/setup/setup_minio.sh | tail -n 1", shell=True, stderr=None
+            )
+            .decode("utf-8")
+            .strip()
+        )
+
+        logger.info(f"Minio output:\n{setup_minio_output}")
+
+        s3_params = setup_minio_output.strip().split(",")
+        endpoint_url = s3_params[0]
+        access_key = s3_params[1]
+        secret_key = s3_params[2]
+
+    session = boto3.session.Session(aws_access_key_id=access_key, aws_secret_access_key=secret_key)
+    s3 = session.resource(
+        service_name="s3",
+        endpoint_url=endpoint_url,
+        verify=False,
+        config=Config(
+            connect_timeout=60,
+            retries={"max_attempts": 4},
+            request_checksum_calculation="when_supported",
+            response_checksum_validation="when_supported",
+        ),
     )
+    test_bucket = s3.Bucket(BUCKET_NAME)
 
-    logger.info(f"Minio output:\n{setup_minio_output}")
+    # Delete test bucket if it exists
+    if test_bucket in s3.buckets.all():
+        logger.info(f"The bucket {BUCKET_NAME} already exists. Deleting it...")
+        for obj in test_bucket.objects.all():
+            # We need to iterate over keys because delete_objects (plural) has mandatory checksum
+            obj.delete()
+        test_bucket.delete()
 
-    s3_params = setup_minio_output.strip().split(",")
-    endpoint_url = s3_params[0]
-    access_key = s3_params[1]
-    secret_key = s3_params[2]
+    # Create the test bucket
+    s3.create_bucket(Bucket=BUCKET_NAME)
+    logger.info(f"Created bucket: {BUCKET_NAME}")
+    test_bucket.put_object(Key=os.path.join(PATH_NAME, "touch"))
+    yield {
+        "endpoint": str(endpoint_url),
+        "access_key": str(access_key),
+        "secret_key": str(secret_key),
+        "bucket": BUCKET_NAME,
+        "path": PATH_NAME,
+        "ca_bundle_path": os.environ.get("S3_CA_BUNDLE_PATH", ""),
+    }
 
-    logger.info(
-        f"Setting up s3 bucket with endpoint_url={endpoint_url}, access_key={access_key}, secret_key={secret_key}"
-    )
-    setup_s3_bucket_for_sch_server(endpoint_url, access_key, secret_key)
-    logger.info("Bucket setup complete")
-    return {"endpoint": endpoint_url, "access-key": access_key, "secret-key": secret_key}
+    if not keep_models:
+        logger.info("Tearing down test bucket...")
+        for obj in test_bucket.objects.all():
+            # We need to iterate over keys because delete_objects (plural) has mandatory checksum
+            obj.delete()
+
+        test_bucket.delete()
 
 
 @pytest.fixture()
-def service_account(namespace):
+def service_account(namespace) -> tuple[str, str]:
     """A fixture that creates a service account that has the permission to run spark jobs."""
     username = str(uuid.uuid4())
 
@@ -236,15 +242,13 @@ def deploy_hub_charm(juju: jubilant.Juju, hub_charm: Path) -> str:
 
 
 @pytest.fixture
-def deploy_s3_integrator_charm(
-    juju: jubilant.Juju, charm_versions, s3_credentials: dict[str, str]
-) -> None:
+def deploy_s3_integrator_charm(juju: jubilant.Juju, charm_versions, s3_credentials: S3Info) -> str:
     juju.deploy(**charm_versions.s3.deploy_dict())
     juju.wait(jubilant.all_agents_idle)
 
     endpoint_url = s3_credentials["endpoint"]
-    access_key = s3_credentials["access-key"]
-    secret_key = s3_credentials["secret-key"]
+    access_key = s3_credentials["access_key"]
+    secret_key = s3_credentials["secret_key"]
     juju.config(
         charm_versions.s3.application_name,
         {

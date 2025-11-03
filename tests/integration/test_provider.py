@@ -18,7 +18,7 @@ REL_NAME_A = "spark-account-a"
 REL_NAME_B = "spark-account-b"
 
 
-def check_service_account_existance(namespace: str, service_account_name) -> bool:
+def check_service_account_existance(namespace: str, service_account_name: str) -> bool:
     """Retrieve secret data for a given namespace and secret."""
     command = ["kubectl", "get", "sa", "-n", namespace, "--output", "json"]
     try:
