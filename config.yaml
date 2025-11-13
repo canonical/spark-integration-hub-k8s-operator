@@ -35,3 +35,12 @@ options:
       spark.kubernetes.executor.podTemplateFile=<executor-pod-template>
 
     default: ""
+
+  monitored-service-accounts:
+    type: string
+    description: |
+      Comma-separated patterns for namespaces and service accounts to monitor and update in
+      addition to the ones managed by the charm's relations.
+      Ex.: "namespace1:sa1,namespace2:*".
+
+    default: ""
