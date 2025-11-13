@@ -81,6 +81,8 @@ def test_relation_with_s3(
     service_account_name = service_account[0]
     namespace = service_account[1]
     logger.info(f"Service account: {service_account_name}, namespace: {namespace}")
+    juju.config(APP_NAME, {"monitored-service-accounts": f"{namespace}:{service_account_name}"})
+    juju.wait(jubilant.all_active, delay=5)
 
     # Verify that secret data is empty before S3 relation is added.
     secret_data = get_secret_data(
@@ -111,9 +113,8 @@ def test_new_service_account_with_s3(
     namespace = service_account[1]
     logger.info(f"Service account: {service_account_name}, namespace: {namespace}")
 
-    # Wait for some time for the secrets to be reflected
-    logger.info("Waiting for 10 seconds...")
-    time.sleep(10)
+    juju.config(APP_NAME, {"monitored-service-accounts": f"{namespace}:{service_account_name}"})
+    juju.wait(jubilant.all_active, delay=5)
 
     # check secret
     secret_data = get_secret_data(
@@ -173,6 +174,8 @@ def test_relation_with_azure_storage(
     namespace = service_account[1]
     logger.info(f"Service account: {service_account_name}, namespace: {namespace}")
 
+    juju.config(APP_NAME, {"monitored-service-accounts": f"{namespace}:{service_account_name}"})
+    juju.wait(jubilant.all_active, delay=5)
     # Verify that secret data is empty before S3 relation is added.
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -208,9 +211,8 @@ def test_new_service_account_with_azure_storage(
     namespace = service_account[1]
     logger.info(f"Service account: {service_account_name}, namespace: {namespace}")
 
-    # Wait for some time for the secrets to be reflected
-    logger.info("Waiting for 10 seconds...")
-    time.sleep(10)
+    juju.config(APP_NAME, {"monitored-service-accounts": f"{namespace}:{service_account_name}"})
+    juju.wait(jubilant.all_active, delay=5)
 
     # check secret
     secret_data = get_secret_data(
@@ -258,9 +260,8 @@ def test_remove_application(
     namespace = service_account[1]
     logger.info(f"Service account: {service_account_name}, namespace: {namespace}")
 
-    # Wait for some time for the changes in secrets to be reflected
-    logger.info("Waiting for 10 seconds...")
-    time.sleep(10)
+    juju.config(APP_NAME, {"monitored-service-accounts": f"{namespace}:{service_account_name}"})
+    juju.wait(jubilant.all_active, delay=5)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
@@ -274,7 +275,7 @@ def test_remove_application(
 
     # Removing Spark Integration Hub application
     juju.remove_application(APP_NAME)
-    juju.wait(jubilant.all_active)
+    juju.wait(jubilant.all_active, delay=5)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"

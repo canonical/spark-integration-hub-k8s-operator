@@ -84,6 +84,12 @@ def test_relation_with_pushgateway(
     Assert on the unit status and on the presence/absence of the metrics.
     """
     service_account_name, namespace = service_account
+    juju.config(APP_NAME, {"monitored-service-accounts": f"{namespace}:{service_account_name}"})
+    juju.wait(
+        lambda status: jubilant.all_active(status, APP_NAME),
+        delay=5,
+    )
+
     setup_spark_output = subprocess.check_output(
         f"./tests/integration/setup/setup_spark.sh {service_account_name} {namespace}",
         shell=True,
@@ -171,6 +177,13 @@ def test_relation_with_logging(
     juju: jubilant.Juju, service_account: tuple[str, str], charm_versions: IntegrationTestsCharms
 ) -> None:
     service_account_name, namespace = service_account
+
+    juju.config(APP_NAME, {"monitored-service-accounts": f"{namespace}:{service_account_name}"})
+    juju.wait(
+        lambda status: jubilant.all_active(status, APP_NAME),
+        delay=5,
+    )
+
     setup_spark_output = subprocess.check_output(
         f"./tests/integration/setup/setup_spark.sh {service_account_name} {namespace}",
         shell=True,
