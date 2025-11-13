@@ -63,6 +63,20 @@ def get_secret_data(namespace: str, secret_name: str):
         return e.stdout.decode(), e.stderr.decode(), e.returncode
 
 
+def does_secret_exist(namespace: str, secret_name: str) -> bool:
+    """Check secret existence for a given namespace and secret name."""
+    command = ["kubectl", "get", "secret", "-n", namespace, "--output", "json"]
+    output = subprocess.run(command, check=True, capture_output=True)
+    result = output.stdout.decode()
+    secrets = json.loads(result)
+    for secret in secrets["items"]:
+        name = secret["metadata"]["name"]
+        logger.info(f"\t secretName: {name}")
+        if name == secret_name:
+            return True
+    return False
+
+
 def get_address(juju: jubilant.Juju, unit_name: str) -> str:
     status = juju.status()
 

@@ -10,7 +10,7 @@ from pathlib import Path
 import jubilant
 import yaml
 
-from .helpers import get_secret_data
+from .helpers import does_secret_exist, get_secret_data
 from .types import AzureInfo, IntegrationTestsCharms
 
 logger = logging.getLogger(__name__)
@@ -56,6 +56,23 @@ def test_deploy_azure_storage_integrator(
     )
     # juju.wait(lambda status: jubilant.all_active(status, charm_versions.azure_storage.application_name))
     juju.wait(jubilant.all_active)
+
+
+def test_external_service_account_not_monitored(
+    juju: jubilant.Juju, service_account: tuple[str, str]
+) -> None:
+    """Check that service accounts are not monitored by default.
+
+    This test makes sure that we only inject spark properties into a secret *after* we configure the
+    integration hub to monitor a specific service account.
+    """
+    name, namespace = service_account
+    juju.wait(jubilant.all_active, delay=5)
+    assert not does_secret_exist(namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{name}")
+
+    juju.config(APP_NAME, {"monitored-service-accounts": f"{namespace}:{name}"})
+    juju.wait(jubilant.all_active, delay=5)
+    assert does_secret_exist(namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{name}")
 
 
 def test_relation_with_s3(
