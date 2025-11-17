@@ -31,7 +31,6 @@ class CharmConfig(BaseConfigModel):
         for sa in value.split(","):
             if sa.count(":") == 1:
                 key, val = sa.split(":", 1)
-                # pattern = "^[a-z](?:[a-z0-9\\-]{0,61}[a-z0-9])?$"
                 pattern = r"[a-z0-9A-Z\*](?:[a-z0-9\-\*]{0,61}[a-z0-9\*])?$"
                 if not (re.match(pattern, key) and re.match(pattern, val)):
                     raise ValueError(f"Malformed service accounts: {key}:{val}")
