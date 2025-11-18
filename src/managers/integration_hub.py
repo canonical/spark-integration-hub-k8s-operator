@@ -242,10 +242,27 @@ class IntegrationHubManager(WithLogging):
 
         if self._compare_and_update_file(
             config.contents, str(self.workload.paths.spark_properties)
+        ) or self._compare_and_update_file(
+            "\n".join(
+                sorted(
+                    [
+                        *self.config.monitored_service_accounts,
+                        *[
+                            sa.service_account
+                            for sa in self.context.service_accounts
+                            if sa.service_account
+                        ],
+                    ]
+                )
+            ),
+            str(self.workload.paths.allowlist),
         ):
             self.logger.info("Updating integration hub config...")
             self.workload.set_environment(
-                {"SPARK_PROPERTIES_FILE": str(self.workload.paths.spark_properties)}
+                {
+                    "SPARK_PROPERTIES_FILE": str(self.workload.paths.spark_properties),
+                    "SA_ALLOWLIST": str(self.workload.paths.allowlist),
+                },
             )
             self.workload.restart()
 

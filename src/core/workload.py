@@ -23,6 +23,11 @@ class IntegrationHubPaths:
         """Return the path of the spark-properties file."""
         return self.conf_path / "spark-properties.conf"
 
+    @property
+    def allowlist(self) -> Path:
+        """Return the path of the allowlist file."""
+        return self.conf_path / "allowlist"
+
 
 class IntegrationHubWorkloadBase(AbstractWorkload):
     """Base interface for common workload operations."""
