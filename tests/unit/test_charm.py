@@ -420,6 +420,9 @@ def test_config_changed_properties_updated(
         "s3://my-bucket/executor.yaml"
     )
     charm_configuration["options"]["enable-dynamic-allocation"]["default"] = "true"
+    charm_configuration["options"]["spark-image"]["default"] = (
+        "ghcr.io/canonical/charmed-spark:3.5-22.04_edge"
+    )
     ctx = Context(SparkIntegrationHub, meta=METADATA, config=charm_configuration, unit_id=0)
     state = State(relations=[], containers=[integration_hub_container])
 
@@ -441,3 +444,7 @@ def test_config_changed_properties_updated(
         == "s3://my-bucket/executor.yaml"
     )
     assert "spark.dynamicAllocation.enabled" in spark_properties
+    assert (
+        spark_properties.get("spark.kubernetes.container.image", "")
+        == "ghcr.io/canonical/charmed-spark:3.5-22.04_edge"
+    )

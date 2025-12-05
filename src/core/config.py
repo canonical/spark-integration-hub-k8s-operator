@@ -17,3 +17,4 @@ class CharmConfig(BaseConfigModel):
     enable_dynamic_allocation: bool
     driver_pod_template: str
     executor_pod_template: str
+    spark_image: str
