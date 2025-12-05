@@ -20,6 +20,7 @@ class CharmConfig(BaseConfigModel):
     driver_pod_template: str
     executor_pod_template: str
     monitored_service_accounts: list[str] = Field(default="")
+    spark_image: str
 
     @validator("monitored_service_accounts", pre=True)
     @classmethod
