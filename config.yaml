@@ -50,6 +50,6 @@ options:
     description: |
       Define a custom Spark image to be used for driver and executor pods.
       If this option is set, the integration hub will supply the related application with an additional Spark
-      property to use this image for drivers and executors. If not set, it's upto the related application to 
+      property to use this image for drivers and executors. If not set, it's up to the related application to 
       choose what image to use for the driver and executor pods.
     default: ""
