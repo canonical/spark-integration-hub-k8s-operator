@@ -144,6 +144,12 @@ class IntegrationHubConfig(WithLogging):
                     "spark.kubernetes.executor.podTemplateFile": ept,
                 }
             )
+        if spark_image := self.hub_conf.spark_image:
+            hub_conf.update(
+                {
+                    "spark.kubernetes.container.image": spark_image,
+                }
+            )
 
         return hub_conf
 
