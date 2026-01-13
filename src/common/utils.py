@@ -11,6 +11,7 @@ from typing import Any, Callable, Literal, TypedDict, Union, cast
 from lightkube.codecs import AnyResource, dump_all_yaml
 from lightkube.resources.core_v1 import Secret
 from spark8t.literals import HUB_LABEL
+from spark8t.utils import PercentEncodingSerializer
 
 PathLike = Union[str, "os.PathLike[str]"]
 
@@ -82,6 +83,9 @@ def get_hub_secret_manifest(
     secret_name = f"{HUB_LABEL}-{username}"
     if configurations is None:
         configurations = {}
+    serialized_config = {
+        PercentEncodingSerializer().serialize(key): value for key, value in configurations.items()
+    }
     secret = Secret.from_dict(
         {
             "apiVersion": "v1",
@@ -91,7 +95,7 @@ def get_hub_secret_manifest(
                 "namespace": namespace,
                 "labels": {"app.kubernetes.io/generated-by": "integration-hub"},
             },
-            "stringData": configurations,
+            "stringData": serialized_config,
         }
     )
     manifest = dump_all_yaml([cast(AnyResource, secret)]) or ""

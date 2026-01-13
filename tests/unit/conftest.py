@@ -8,7 +8,7 @@ from ops import pebble
 from ops.testing import Container, Context, Model, Mount, Relation
 
 from charm import SparkIntegrationHub
-from constants import CONTAINER, LOGGING_RELATION_NAME
+from constants import CONTAINER, INTEGRATION_HUB_REL, LOGGING_RELATION_NAME, PUSHGATEWAY
 from core.context import AZURE_RELATION_NAME, S3_RELATION_NAME
 
 
@@ -149,6 +149,48 @@ def logging_relation():
         remote_units_data={
             0: {
                 "endpoint": '{"url": "http://grafana-agent-k8s-0.grafana-agent-k8s-endpoints.spark.svc.cluster.local:3500/loki/api/v1/push"}'
+            }
+        },
+    )
+
+
+@pytest.fixture
+def pushgateway_relation():
+    """Provide fixture for the pushgateway relation."""
+    return Relation(
+        endpoint=PUSHGATEWAY,
+        interface="pushgateway",
+        remote_app_name="pushgateway",
+        remote_app_data={
+            "push-endpoint": '{"url": "http://pushgateway-0.pushgateway-endpoints.spark.svc.cluster.local:9091/"}'
+        },
+        remote_units_data={
+            0: {
+                "egress-subnets": "10.0.144.240/32",
+                "ingress-address": "10.0.144.240",
+                "private-address": "10.0.144.240",
+            }
+        },
+    )
+
+
+@pytest.fixture
+def spark_service_account_provider_relation():
+    """Provide fixture for the spark-service-account provider relation."""
+    return Relation(
+        endpoint=INTEGRATION_HUB_REL,
+        interface="spark_service_account",
+        remote_app_name="remote-app",
+        remote_app_data={
+            "skip-creation": "true",
+            "requested-secrets": '["foobar"]',
+            "service-account": "foo:bar",
+        },
+        remote_units_data={
+            0: {
+                "egress-subnets": "10.0.144.240/32",
+                "ingress-address": "10.0.144.240",
+                "private-address": "10.0.144.240",
             }
         },
     )
