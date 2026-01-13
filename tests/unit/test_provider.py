@@ -23,9 +23,11 @@ def charm_configuration():
     return json.loads(json.dumps(CONFIG))
 
 
+@patch("managers.s3.S3Manager.verify", return_value=True)
 @patch("workload.IntegrationHub.exec", return_value="")
 def test_props_serialization_in_resource_manifest(
     mock_exec_calls,
+    mock_s3_verify,
     integration_hub_ctx: Context[SparkIntegrationHub],
     integration_hub_container: Container,
     pushgateway_relation: Relation,
@@ -51,9 +53,13 @@ def test_props_serialization_in_resource_manifest(
     relations = list(out.relations)
     relations.append(pushgateway_relation)
     state_in = dataclasses.replace(out, relations=relations)
-    state_out = integration_hub_ctx.run(
-        integration_hub_ctx.on.relation_changed(pushgateway_relation), state_in
-    )
+    with (
+        patch("managers.k8s.KubernetesManager.__init__", return_value=None),
+        patch("managers.k8s.KubernetesManager.trusted", return_value=True),
+    ):
+        state_out = integration_hub_ctx.run(
+            integration_hub_ctx.on.relation_changed(pushgateway_relation), state_in
+        )
 
     assert state_out.unit_status == ActiveStatus("")
 
