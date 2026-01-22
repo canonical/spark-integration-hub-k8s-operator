@@ -168,7 +168,7 @@ def service_account(namespace) -> tuple[str, str]:
     return username, namespace
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def platform() -> str:
     """Fixture to provide the platform architecture for testing."""
     platforms = {
