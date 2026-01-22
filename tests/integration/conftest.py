@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import uuid
 from pathlib import Path
+from platform import machine
 from typing import Iterable
 
 import boto3.session
@@ -167,19 +168,31 @@ def service_account(namespace) -> tuple[str, str]:
     return username, namespace
 
 
+@pytest.fixture
+def platform() -> str:
+    """Fixture to provide the platform architecture for testing."""
+    platforms = {
+        "x86_64": "amd64",
+        "aarch64": "arm64",
+    }
+    return platforms.get(machine(), "amd64")
+
+
 @pytest.fixture(scope="module")
-def hub_charm() -> Path:
+def hub_charm(platform: str) -> Path:
     """Path to the packed integration hub charm."""
-    if not (path := next(iter(Path.cwd().glob("*.charm")), None)):
+    if not (path := next(iter(Path.cwd().glob(f"*-{platform}.charm")), None)):
         raise FileNotFoundError("Could not find packed integration hub charm.")
 
     return path
 
 
 @pytest.fixture(scope="module")
-def test_charm() -> Path:
+def test_charm(platform: str) -> Path:
     if not (
-        path := next(iter((Path.cwd() / "tests/integration/app-charm").glob("*.charm")), None)
+        path := next(
+            iter((Path.cwd() / "tests/integration/app-charm").glob(f"*-{platform}.charm")), None
+        )
     ):
         raise FileNotFoundError("Could not find packed test charm.")
 
