@@ -68,7 +68,7 @@ jobs:
           - integration-provider
           - integration-observability
           - integration-trust
-    name: ${{ matrix.tox-environments }}
+    name: ${{ matrix.tox-environments }} ${{ matrix.system.arch }}
     needs:
       - lint
       - unit-test
