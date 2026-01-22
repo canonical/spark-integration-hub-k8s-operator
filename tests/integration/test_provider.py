@@ -39,7 +39,9 @@ def check_service_account_existance(namespace: str, service_account_name: str) -
         return False
 
 
-def test_build_and_deploy_charms(juju: jubilant.Juju, hub_charm: Path, test_charm: Path) -> None:
+def test_build_and_deploy_charms(
+    juju: jubilant.Juju, hub_charm: Path, test_charm: Path, platform: str
+) -> None:
     """Build the charm-under-test and deploy it together with related charms.
 
     Assert on the unit status before any relations/configurations take place.
@@ -56,10 +58,17 @@ def test_build_and_deploy_charms(juju: jubilant.Juju, hub_charm: Path, test_char
         resources=resources,
         base="ubuntu@22.04",
         trust=True,
+        constraints={"arch": platform},
     )
 
     logger.info("Deploying test application charm")
-    juju.deploy(charm=test_charm, app=DUMMY_APP_NAME, num_units=1, base="ubuntu@24.04")
+    juju.deploy(
+        charm=test_charm,
+        app=DUMMY_APP_NAME,
+        num_units=1,
+        base="ubuntu@24.04",
+        constraints={"arch": platform},
+    )
 
     juju.wait(
         lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
