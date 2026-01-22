@@ -68,7 +68,13 @@ jobs:
           - integration-provider
           - integration-observability
           - integration-trust
-    name: ${{ matrix.tox-environments }} ${{ matrix.system.arch }}
+        exclude:
+          - tox-environments: integration-observability # No ARM build for obs charms
+            system:
+              os: ubuntu-22.04-arm
+              arch: arm64
+
+    name: ${{ matrix.tox-environments }} (${{ matrix.system.arch }})
     needs:
       - lint
       - unit-test
