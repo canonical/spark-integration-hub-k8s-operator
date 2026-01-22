@@ -101,29 +101,9 @@ def azure_credentials() -> AzureInfo:
 @pytest.fixture(scope="module")
 def s3_credentials(request: pytest.FixtureRequest) -> Iterable[S3Info]:
     keep_models = bool(request.config.getoption("--keep-models"))
-
-    if any(
-        (
-            (access_key := os.environ.get("S3_ACCESS_KEY", None)) is None,
-            (secret_key := os.environ.get("S3_SECRET_KEY", None)) is None,
-            (endpoint_url := os.environ.get("S3_SERVER_URL", None)) is None,
-        )
-    ):
-        logger.info("Setting up minio.....")
-        setup_minio_output = (
-            subprocess.check_output(
-                "./tests/integration/setup/setup_minio.sh | tail -n 1", shell=True, stderr=None
-            )
-            .decode("utf-8")
-            .strip()
-        )
-
-        logger.info(f"Minio output:\n{setup_minio_output}")
-
-        s3_params = setup_minio_output.strip().split(",")
-        endpoint_url = s3_params[0]
-        access_key = s3_params[1]
-        secret_key = s3_params[2]
+    access_key = os.environ["S3_ACCESS_KEY"]
+    secret_key = os.environ["S3_SECRET_KEY"]
+    endpoint_url = os.environ["S3_SERVER_URL"]
 
     session = boto3.session.Session(aws_access_key_id=access_key, aws_secret_access_key=secret_key)
     s3 = session.resource(
