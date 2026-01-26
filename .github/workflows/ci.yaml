@@ -49,25 +49,37 @@ jobs:
           - .
           - tests/integration/app-charm
     name: Build charm | ${{ matrix.path }}
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v40.0.2
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v41.1.0
     with:
       path-to-charm-directory: ${{ matrix.path }}
+      cache: false
 
   integration-test:
     strategy:
       fail-fast: false
       matrix:
+        system:
+          - os: ubuntu-22.04
+            arch: amd64
+          - os: ubuntu-22.04-arm
+            arch: arm64
         tox-environments:
           - integration-charm
           - integration-provider
           - integration-observability
           - integration-trust
-    name: ${{ matrix.tox-environments }}
+        exclude:
+          - tox-environments: integration-observability # No ARM build for obs charms
+            system:
+              os: ubuntu-22.04-arm
+              arch: arm64
+
+    name: ${{ matrix.tox-environments }} (${{ matrix.system.arch }})
     needs:
       - lint
       - unit-test
       - build
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.system.os }}
     timeout-minutes: 120
     steps:
       - name: Checkout

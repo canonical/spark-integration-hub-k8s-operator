@@ -17,7 +17,7 @@ website:
   - https://canonical.com/data/docs/spark/k8s
   - https://charmhub.io/spark-integration-hub-k8s
   - https://github.com/canonical/spark-integration-hub-k8s-operator
-  - https://matrix.to/#/%23charmhub-data-platform%3Aubuntu.com
+  - https://matrix.to/#/#charmhub-analytics:ubuntu.com
 maintainers:
   - Canonical Data Platform <data-platform@lists.launchpad.net>
 assumes:
@@ -32,7 +32,7 @@ resources:
   integration-hub-image:
     type: oci-image
     description: OCI image for the Spark Integration Hub Charm
-    upstream-source: ghcr.io/canonical/spark-integration-hub@sha256:dbcd4bce247df35483bb94606fa11d3316d9d529e1476efa95ef333b78c9f414 # 3-22.04 2025-11-17
+    upstream-source: ghcr.io/canonical/spark-integration-hub@sha256:d41c40f3e5d561ce80cce1906af5bd5e1497a878468fde1e06a8aad8cca18b7d # 3-22.04 2026-01-21
 
 requires:
   s3-credentials:

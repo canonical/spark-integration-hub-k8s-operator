@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import uuid
 from pathlib import Path
+from platform import machine
 from typing import Iterable
 
 import boto3.session
@@ -101,29 +102,9 @@ def azure_credentials() -> AzureInfo:
 @pytest.fixture(scope="module")
 def s3_credentials(request: pytest.FixtureRequest) -> Iterable[S3Info]:
     keep_models = bool(request.config.getoption("--keep-models"))
-
-    if any(
-        (
-            (access_key := os.environ.get("S3_ACCESS_KEY", None)) is None,
-            (secret_key := os.environ.get("S3_SECRET_KEY", None)) is None,
-            (endpoint_url := os.environ.get("S3_SERVER_URL", None)) is None,
-        )
-    ):
-        logger.info("Setting up minio.....")
-        setup_minio_output = (
-            subprocess.check_output(
-                "./tests/integration/setup/setup_minio.sh | tail -n 1", shell=True, stderr=None
-            )
-            .decode("utf-8")
-            .strip()
-        )
-
-        logger.info(f"Minio output:\n{setup_minio_output}")
-
-        s3_params = setup_minio_output.strip().split(",")
-        endpoint_url = s3_params[0]
-        access_key = s3_params[1]
-        secret_key = s3_params[2]
+    access_key = os.environ["S3_ACCESS_KEY"]
+    secret_key = os.environ["S3_SECRET_KEY"]
+    endpoint_url = os.environ["S3_SERVER_URL"]
 
     session = boto3.session.Session(aws_access_key_id=access_key, aws_secret_access_key=secret_key)
     s3 = session.resource(
@@ -188,18 +169,30 @@ def service_account(namespace) -> tuple[str, str]:
 
 
 @pytest.fixture(scope="module")
-def hub_charm() -> Path:
+def platform() -> str:
+    """Fixture to provide the platform architecture for testing."""
+    platforms = {
+        "x86_64": "amd64",
+        "aarch64": "arm64",
+    }
+    return platforms.get(machine(), "amd64")
+
+
+@pytest.fixture(scope="module")
+def hub_charm(platform: str) -> Path:
     """Path to the packed integration hub charm."""
-    if not (path := next(iter(Path.cwd().glob("*.charm")), None)):
+    if not (path := next(iter(Path.cwd().glob(f"*-{platform}.charm")), None)):
         raise FileNotFoundError("Could not find packed integration hub charm.")
 
     return path
 
 
 @pytest.fixture(scope="module")
-def test_charm() -> Path:
+def test_charm(platform: str) -> Path:
     if not (
-        path := next(iter((Path.cwd() / "tests/integration/app-charm").glob("*.charm")), None)
+        path := next(
+            iter((Path.cwd() / "tests/integration/app-charm").glob(f"*-{platform}.charm")), None
+        )
     ):
         raise FileNotFoundError("Could not find packed test charm.")
 
@@ -207,11 +200,12 @@ def test_charm() -> Path:
 
 
 @pytest.fixture(scope="module")
-def juju(request: pytest.FixtureRequest):
+def juju(request: pytest.FixtureRequest, platform: str):
     keep_models = bool(request.config.getoption("--keep-models"))
 
     with jubilant.temp_model(keep=keep_models) as juju:
         juju.wait_timeout = 10 * 60
+        juju.cli("set-model-constraints", f"arch={platform}")
 
         yield juju  # run the test
 
