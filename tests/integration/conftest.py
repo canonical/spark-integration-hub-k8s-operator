@@ -219,7 +219,7 @@ def juju(request: pytest.FixtureRequest):
 
 
 @pytest.fixture
-def deploy_hub_charm(juju: jubilant.Juju, hub_charm: Path, platform: str) -> str:
+def deploy_hub_charm(juju: jubilant.Juju, hub_charm: Path) -> str:
     image_version = METADATA["resources"]["integration-hub-image"]["upstream-source"]
     logger.info(f"Image version: {image_version}")
 
@@ -228,23 +228,15 @@ def deploy_hub_charm(juju: jubilant.Juju, hub_charm: Path, platform: str) -> str
         "Deploying Spark Integration hub charm, s3-integrator charm and azure-storage-integrator charm"
     )
     juju.deploy(
-        hub_charm,
-        app=APP_NAME,
-        resources=resources,
-        num_units=1,
-        base="ubuntu@22.04",
-        trust=True,
-        constraints={"arch": platform},
+        hub_charm, app=APP_NAME, resources=resources, num_units=1, base="ubuntu@22.04", trust=True
     )
     juju.wait(lambda status: jubilant.all_active(status, APP_NAME))
     return APP_NAME
 
 
 @pytest.fixture
-def deploy_s3_integrator_charm(
-    juju: jubilant.Juju, charm_versions, s3_credentials: S3Info, platform: str
-) -> str:
-    juju.deploy(**charm_versions.s3.deploy_dict(), constraints={"arch": platform})
+def deploy_s3_integrator_charm(juju: jubilant.Juju, charm_versions, s3_credentials: S3Info) -> str:
+    juju.deploy(**charm_versions.s3.deploy_dict())
     juju.wait(jubilant.all_agents_idle)
 
     endpoint_url = s3_credentials["endpoint"]

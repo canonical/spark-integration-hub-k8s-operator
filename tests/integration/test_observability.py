@@ -60,16 +60,17 @@ def test_deploy_hub_with_s3_relation(
 
 
 def test_deploy_cos_charms(
-    juju: jubilant.Juju, charm_versions: IntegrationTestsCharms, platform: str
+    juju: jubilant.Juju,
+    charm_versions: IntegrationTestsCharms,
 ) -> None:
     logger.info("Deploying the grafana-agent-k8s charm")
-    juju.deploy(**charm_versions.grafana_agent.deploy_dict(), constraints={"arch": platform})
+    juju.deploy(**charm_versions.grafana_agent.deploy_dict())
     juju.wait(
         lambda status: jubilant.all_blocked(status, charm_versions.grafana_agent.application_name)
     )
 
     logger.info("Deploying the prometheus-pushgateway-k8s charm")
-    juju.deploy(**charm_versions.pushgateway.deploy_dict(), constraints={"arch": platform})
+    juju.deploy(**charm_versions.pushgateway.deploy_dict())
     juju.wait(
         lambda status: jubilant.all_active(status, charm_versions.pushgateway.application_name)
     )

@@ -31,9 +31,9 @@ def test_deploy_s3_integrator(
 
 
 def test_deploy_azure_storage_integrator(
-    juju: jubilant.Juju, charm_versions, azure_credentials: AzureInfo, platform: str
+    juju: jubilant.Juju, charm_versions, azure_credentials: AzureInfo
 ) -> None:
-    juju.deploy(**charm_versions.azure_storage.deploy_dict(), constraints={"arch": platform})
+    juju.deploy(**charm_versions.azure_storage.deploy_dict())
     juju.wait(jubilant.all_agents_idle)
 
     secret_uri = juju.add_secret(
