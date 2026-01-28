@@ -60,8 +60,8 @@ jobs:
         system:
           - os: ubuntu-22.04
             arch: amd64
-          - os: ubuntu-22.04-arm
-            arch: arm64
+          # - os: ubuntu-22.04-arm
+          #   arch: arm64
         tox-environments:
           - integration-charm
           - integration-provider

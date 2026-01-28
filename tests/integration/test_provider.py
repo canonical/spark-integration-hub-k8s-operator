@@ -2,6 +2,7 @@ import json
 import logging
 import subprocess
 from pathlib import Path
+from typing import cast
 
 import jubilant
 import yaml
@@ -59,7 +60,12 @@ def test_build_and_deploy_charms(juju: jubilant.Juju, hub_charm: Path, test_char
     )
 
     logger.info("Deploying test application charm")
-    juju.deploy(charm=test_charm, app=DUMMY_APP_NAME, num_units=1, base="ubuntu@24.04")
+    juju.deploy(
+        charm=test_charm,
+        app=DUMMY_APP_NAME,
+        num_units=1,
+        base="ubuntu@24.04",
+    )
 
     juju.wait(
         lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
@@ -67,6 +73,7 @@ def test_build_and_deploy_charms(juju: jubilant.Juju, hub_charm: Path, test_char
 
 
 def test_relate_charms(juju: jubilant.Juju, namespace: str) -> None:
+    namespace = cast(str, juju.model)
     configuration_parameters = {"namespace": namespace}
 
     logger.info(f"Setting config for test application charm: {configuration_parameters}...")
@@ -131,6 +138,7 @@ def test_relate_charms(juju: jubilant.Juju, namespace: str) -> None:
 
 
 def test_remove_relation(juju: jubilant.Juju, namespace: str) -> None:
+    namespace = cast(str, juju.model)
     logger.info(
         "Removing relation between integration hub and test application for service account sa1"
     )
@@ -153,6 +161,7 @@ def test_remove_relation(juju: jubilant.Juju, namespace: str) -> None:
 
 
 def test_skip_creation_of_resources(juju: jubilant.Juju, namespace: str) -> None:
+    namespace = cast(str, juju.model)
     """Test the behavior of passing skip-creation flag in the spark-service-account relation."""
     configuration_parameters = {"skip-creation": "true", "namespace": namespace}
     juju.config(DUMMY_APP_NAME, configuration_parameters)
