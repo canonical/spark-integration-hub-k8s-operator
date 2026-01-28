@@ -52,7 +52,6 @@ jobs:
     uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v41.1.0
     with:
       path-to-charm-directory: ${{ matrix.path }}
-      cache: false
 
   integration-test:
     strategy:
@@ -89,7 +88,6 @@ jobs:
         uses: charmed-kubernetes/actions-operator@main
         with:
           juju-channel: 3.6/stable
-          bootstrap-options: "--agent-version 3.6.9"
           provider: microk8s
           channel: 1.32-strict/stable
           microk8s-group: snap_microk8s
