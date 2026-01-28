@@ -22,7 +22,9 @@ maintainers:
   - Canonical Data Platform <data-platform@lists.launchpad.net>
 assumes:
   - k8s-api
-  - juju < 3.6.10
+  - any-of:
+      - juju < 3.6.10
+      - juju >= 3.6.13
 
 containers:
   integration-hub:
