@@ -48,6 +48,7 @@ def charm_versions() -> IntegrationTestsCharms:
             channel="edge",
             base="ubuntu@22.04",
             alias="azure-storage",
+            revision=89,
         ),
         pushgateway=CharmVersion(
             name="prometheus-pushgateway-k8s",
