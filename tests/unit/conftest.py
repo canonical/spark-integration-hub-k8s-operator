@@ -109,6 +109,7 @@ def azure_storage_relation():
             "storage-account": "test-storage-account",
             "connection-protocol": "abfss",
             "secret-key": "some-secret",
+            "version": "1",
         },
     )
 

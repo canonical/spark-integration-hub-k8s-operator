@@ -7,6 +7,7 @@
 from enum import Enum
 
 from charms.data_platform_libs.v0.data_interfaces import RequirerData
+from charms.data_platform_libs.v0.object_storage import AzureStorageRequirer
 from charms.spark_integration_hub_k8s.v0.spark_service_account import (
     SparkServiceAccountProviderData,
 )
@@ -37,9 +38,7 @@ class Context(WithLogging):
         self.model = charm.model
 
         self.s3_endpoint = RequirerData(self.charm.model, S3_RELATION_NAME)
-        self.azure_storage_endpoint = RequirerData(
-            self.charm.model, AZURE_RELATION_NAME, additional_secret_fields=["secret-key"]
-        )
+        self.azure_storage_endpoint = AzureStorageRequirer(self.charm, AZURE_RELATION_NAME)
         self.spark_service_account_provider_data = SparkServiceAccountProviderData(
             self.model, INTEGRATION_HUB_REL
         )
