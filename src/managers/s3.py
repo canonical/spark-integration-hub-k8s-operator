@@ -4,13 +4,15 @@
 
 """S3 manager."""
 
+import os
 import tempfile
 from functools import cached_property
 
 import boto3
+from botocore.client import Config
 from botocore.exceptions import ClientError, SSLError
 
-from common.utils import WithLogging
+from common.utils import WithLogging, is_proxy_skipped
 from core.domain import S3ConnectionInfo
 
 
@@ -30,6 +32,14 @@ class S3Manager(WithLogging):
 
     def verify(self) -> bool:
         """Verify S3 credentials."""
+        proxy_config: dict[str, str] = {}
+
+        if not is_proxy_skipped(self.connection_info.endpoint or ""):
+            if os.environ.get("JUJU_CHARM_HTTPS_PROXY"):
+                proxy_config["https"] = os.environ["JUJU_CHARM_HTTPS_PROXY"]
+            if os.environ.get("JUJU_CHARM_HTTP_PROXY"):
+                proxy_config["http"] = os.environ["JUJU_CHARM_HTTP_PROXY"]
+
         with tempfile.NamedTemporaryFile() as ca_file:
             if tls_ca_chain := self.connection_info.tls_ca_chain:
                 ca_file.write("\n".join(tls_ca_chain).encode())
@@ -40,6 +50,11 @@ class S3Manager(WithLogging):
                 region_name=self.connection_info.region or "us-east-1",
                 endpoint_url=self.connection_info.endpoint or "https://s3.amazonaws.com",
                 verify=ca_file.name if self.connection_info.tls_ca_chain else None,
+                config=Config(
+                    request_checksum_calculation="when_supported",
+                    response_checksum_validation="when_supported",
+                    proxies=proxy_config,
+                ),
             )
 
             try:
