@@ -31,8 +31,8 @@ class S3Manager(WithLogging):
     def verify(self) -> bool:
         """Verify S3 credentials."""
         with tempfile.NamedTemporaryFile() as ca_file:
-            if config := self.connection_info.tls_ca_chain:
-                ca_file.write("\n".join(config).encode())
+            if tls_ca_chain := self.connection_info.tls_ca_chain:
+                ca_file.write("\n".join(tls_ca_chain).encode())
                 ca_file.flush()
 
             s3 = self.session.client(
