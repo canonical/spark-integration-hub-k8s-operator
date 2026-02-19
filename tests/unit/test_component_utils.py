@@ -52,6 +52,7 @@ from common.utils import is_proxy_skipped
     ],
 )
 def test_skip_proxy(no_proxy_env, endpoint, expected, monkeypatch):
+    """Test that we are properly detecting that we should skip domains given a NO_PROXY env var."""
     # Given
     # Patch JUJU_CHARM_NO_PROXY env var
     monkeypatch.setenv("JUJU_CHARM_NO_PROXY", no_proxy_env)
