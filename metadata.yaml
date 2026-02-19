@@ -22,7 +22,9 @@ maintainers:
   - Canonical Data Platform <data-platform@lists.launchpad.net>
 assumes:
   - k8s-api
-  - juju < 3.6.10
+  - any-of:
+      - juju < 3.6.10
+      - juju >= 3.6.13
 
 containers:
   integration-hub:
@@ -32,7 +34,7 @@ resources:
   integration-hub-image:
     type: oci-image
     description: OCI image for the Spark Integration Hub Charm
-    upstream-source: ghcr.io/canonical/spark-integration-hub@sha256:d41c40f3e5d561ce80cce1906af5bd5e1497a878468fde1e06a8aad8cca18b7d # 3-22.04 2026-01-21
+    upstream-source: ghcr.io/canonical/spark-integration-hub@sha256:2e31e78ac9eb9509d2cbbc233fbb62efe34966b8f9bcf5d862e17e7182637c7e # 3-22.04 2026-02-18
 
 requires:
   s3-credentials:
