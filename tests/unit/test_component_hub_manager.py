@@ -11,7 +11,7 @@ from managers.integration_hub import IntegrationHubConfig
 
 @dataclass
 class S3InfoTester:
-    endpoint: str = "https://192.168.1.1"
+    endpoint: str = "http://192.168.1.1"
     access_key: str = "foo"
     secret_key: str = "bar"
     bucket: str = "bucket"
@@ -29,7 +29,8 @@ def test_s3_proxy_credentials(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("JUJU_CHARM_HTTP_PROXY", "http://username:password@10.152.193.234:80")
 
     with mock.patch("managers.integration_hub.S3Manager", mock.MagicMock()) as mocked_s3_manager:
-        mocked_s3_manager.connection_info = S3InfoTester()
+        instance = mocked_s3_manager.return_value
+        instance.connection_info = S3InfoTester()
         config = IntegrationHubConfig(object(), None, None, None, None)  # type: ignore
 
         # When
@@ -47,10 +48,11 @@ def test_s3_proxy_plain_ip(monkeypatch: MonkeyPatch) -> None:
     """
     # Given
     proxy_host = "10.152.193.234"
-    monkeypatch.setenv("JUJU_CHARM_HTTPS_PROXY", f"http://{proxy_host}")
+    monkeypatch.setenv("JUJU_CHARM_HTTP_PROXY", f"http://{proxy_host}")
 
     with mock.patch("managers.integration_hub.S3Manager", mock.MagicMock()) as mocked_s3_manager:
-        mocked_s3_manager.connection_info = S3InfoTester()
+        instance = mocked_s3_manager.return_value
+        instance.connection_info = S3InfoTester()
         config = IntegrationHubConfig(object(), None, None, None, None)  # type: ignore
 
         # When
