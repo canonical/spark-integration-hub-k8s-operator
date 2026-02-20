@@ -9,7 +9,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from charms.data_platform_libs.v0.object_storage import (
-    AzureStorageRequires,
     StorageConnectionInfoChangedEvent,
     StorageConnectionInfoGoneEvent,
 )
@@ -40,9 +39,7 @@ class AzureStorageEvents(BaseEventHandler, WithLogging):
             self.workload, self.context, self.charm.config
         )
 
-        self.azure_storage_requirer = AzureStorageRequires(
-            self.charm, self.context.azure_storage_endpoint.relation_name
-        )
+        self.azure_storage_requirer = self.context.azure_storage_endpoint
         self.framework.observe(
             self.azure_storage_requirer.on.storage_connection_info_changed,
             self._on_azure_storage_connection_info_changed,
