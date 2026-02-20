@@ -4,9 +4,11 @@
 
 """Utilities."""
 
+import ipaddress
 import os
 from logging import Logger, getLogger
 from typing import Any, Callable, Literal, TypedDict, Union, cast
+from urllib.parse import urlparse
 
 from lightkube.codecs import AnyResource, dump_all_yaml
 from lightkube.resources.core_v1 import Secret
@@ -100,3 +102,35 @@ def get_hub_secret_manifest(
     )
     manifest = dump_all_yaml([cast(AnyResource, secret)]) or ""
     return manifest
+
+
+def is_proxy_skipped(endpoint: str) -> bool:
+    """Determine if proxy should not be applied for the given endpoint."""
+    no_proxy_list = os.environ.get("JUJU_CHARM_NO_PROXY", "")
+    if not no_proxy_list:
+        return False
+
+    host = urlparse(endpoint).hostname
+    if not host:
+        return False
+    no_proxy_entries = [
+        entry.strip().lower() for entry in no_proxy_list.split(",") if entry.strip()
+    ]
+    for entry in no_proxy_entries:
+        if host == entry:
+            return True
+        elif entry.startswith(".") and host.endswith(
+            entry
+        ):  # abc.example.com matches .example.com
+            return True
+        elif host.endswith("." + entry):  # abc.example.com matches example.com
+            return True
+        try:
+            if ipaddress.ip_address(host) in ipaddress.ip_network(
+                entry, strict=False
+            ):  # CIDR match
+                return True
+        except (AttributeError, ValueError):
+            continue
+
+    return False
