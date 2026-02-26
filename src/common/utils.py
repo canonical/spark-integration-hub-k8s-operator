@@ -104,6 +104,28 @@ def get_hub_secret_manifest(
     return manifest
 
 
+def get_hub_truststore_secret_manifest(
+    namespace: str, secret_name: str, truststore_filename: str, truststore_content: bytes
+) -> str:
+    """Return the K8s resource manifest corresponding to Hub truststore secret."""
+    secret = Secret.from_dict(
+        {
+            "apiVersion": "v1",
+            "kind": "Secret",
+            "metadata": {
+                "name": secret_name,
+                "namespace": namespace,
+                "labels": {"app.kubernetes.io/generated-by": "integration-hub"},
+            },
+            "data": {
+                truststore_filename: truststore_content.decode("utf-8"),
+            },
+        }
+    )
+    manifest = dump_all_yaml([cast(AnyResource, secret)]) or ""
+    return manifest
+
+
 def is_proxy_skipped(endpoint: str) -> bool:
     """Determine if proxy should not be applied for the given endpoint."""
     no_proxy_list = os.environ.get("JUJU_CHARM_NO_PROXY", "")

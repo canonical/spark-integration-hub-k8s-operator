@@ -9,11 +9,16 @@ import logging
 from dataclasses import dataclass
 from typing import List, MutableMapping
 
-from charms.data_platform_libs.v0.data_interfaces import PrematureDataAccessError
+from charms.data_platform_libs.v0.data_interfaces import DataPeerData, PrematureDataAccessError
 from charms.spark_integration_hub_k8s.v0.spark_service_account import (
     SparkServiceAccountProviderData,
 )
 from ops import Application, Relation, Unit
+from spark8t.literals import HUB_LABEL
+from typing_extensions import override
+
+from common.domain import RelationState
+from constants import TRUSTSTORE_PASSWORD_KEY, TRUSTSTORE_PATH_KEY, TRUSTSTORE_SECRET_NAME_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -280,3 +285,53 @@ class LokiURL(StateBase):
 
         logger.warning("Loki URL was not found in relation data")
         return None
+
+
+class HubCluster(RelationState):
+    """State collection metadata for the charm application."""
+
+    def __init__(
+        self,
+        relation: Relation | None,
+        data_interface: DataPeerData,
+        component: Application,
+    ):
+        super().__init__(relation, data_interface, component)
+        self.data_interface = data_interface
+        self.app = component
+
+    @override
+    def update(self, items: dict[str, str]) -> None:
+        """Overridden update to allow for same interface, but writing to local app bag."""
+        if not self.relation:
+            return
+
+        self.data_interface.update_relation_data(self.relation.id, items)
+
+    # -- TLS --
+    @property
+    def truststore_password(self) -> str:
+        """The truststore password for the cluster."""
+        return self.relation_data.get(TRUSTSTORE_PASSWORD_KEY, "")
+
+    def set_truststore_password(self, password: str) -> None:
+        """Update the truststore password in peer app databag with given content."""
+        self.update({TRUSTSTORE_PASSWORD_KEY: password})
+
+    @property
+    def truststore_path(self) -> str:
+        """The truststore path for the cluster."""
+        return self.relation_data.get(TRUSTSTORE_PATH_KEY, "")
+
+    def set_truststore_path(self, path: str) -> None:
+        """Update the truststore path in peer app databag with given content."""
+        self.update({TRUSTSTORE_PATH_KEY: path})
+
+    @property
+    def truststore_secret_name(self) -> str:
+        """The truststore secret name for the cluster jobs."""
+        return self.relation_data.get(TRUSTSTORE_SECRET_NAME_KEY, f"{HUB_LABEL}-truststore")
+
+    def set_truststore_secret_name(self, secret_name: str) -> None:
+        """Update the truststore secret name in peer app databag with given content."""
+        self.update({TRUSTSTORE_SECRET_NAME_KEY: secret_name})

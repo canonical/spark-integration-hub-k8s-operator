@@ -6,7 +6,7 @@
 
 from enum import Enum
 
-from charms.data_platform_libs.v0.data_interfaces import RequirerData
+from charms.data_platform_libs.v0.data_interfaces import DataPeerData, RequirerData
 from charms.spark_integration_hub_k8s.v0.spark_service_account import (
     SparkServiceAccountProviderData,
 )
@@ -17,11 +17,13 @@ from constants import (
     AZURE_RELATION_NAME,
     INTEGRATION_HUB_REL,
     LOGGING_RELATION_NAME,
+    PEER_REL,
     PUSHGATEWAY,
     S3_RELATION_NAME,
 )
 from core.domain import (
     AzureStorageConnectionInfo,
+    HubCluster,
     LokiURL,
     PushGatewayInfo,
     S3ConnectionInfo,
@@ -42,6 +44,10 @@ class Context(WithLogging):
         )
         self.spark_service_account_provider_data = SparkServiceAccountProviderData(
             self.model, INTEGRATION_HUB_REL
+        )
+
+        self.peer_app_interface = DataPeerData(
+            self.model, relation_name=PEER_REL, additional_secret_fields=[]
         )
 
     # --------------
@@ -68,6 +74,20 @@ class Context(WithLogging):
     def _pushgateway_relation(self) -> Relation | None:
         """The Pushgateway relation."""
         return self.charm.model.get_relation(PUSHGATEWAY)
+
+    @property
+    def _peer_relation(self) -> Relation | None:
+        """The cluster peer relation."""
+        return self.model.get_relation(PEER_REL)
+
+    @property
+    def cluster(self) -> HubCluster:
+        """The cluster state of the current running App."""
+        return HubCluster(
+            relation=self._peer_relation,
+            data_interface=self.peer_app_interface,
+            component=self.model.app,
+        )
 
     # --- DOMAIN OBJECTS ---
 

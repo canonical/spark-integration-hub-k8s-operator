@@ -8,7 +8,11 @@ import os
 import re
 from urllib.parse import ParseResult, urlparse
 
-from common.utils import WithLogging, get_hub_secret_manifest, is_proxy_skipped
+from common.utils import (
+    WithLogging,
+    get_hub_secret_manifest,
+    is_proxy_skipped,
+)
 from core.config import CharmConfig
 from core.context import Context
 from core.domain import (
@@ -20,6 +24,7 @@ from core.domain import (
 from core.workload import IntegrationHubWorkloadBase
 from managers.azure_storage import AzureStorageManager
 from managers.s3 import S3Manager
+from managers.tls import TLSManager
 
 
 class IntegrationHubConfig(WithLogging):
@@ -31,12 +36,14 @@ class IntegrationHubConfig(WithLogging):
 
     def __init__(
         self,
+        context: Context,
         s3: S3ConnectionInfo | None,
         azure_storage: AzureStorageConnectionInfo | None,
         pushgateway: PushGatewayInfo | None,
         hub_conf: CharmConfig,
         loki_url: LokiURL | None,
     ):
+        self.context = context
         self.s3 = S3Manager(s3) if s3 else None
         self.azure_storage = AzureStorageManager(azure_storage) if azure_storage else None
         self.pushgateway = pushgateway
@@ -85,6 +92,26 @@ class IntegrationHubConfig(WithLogging):
             "spark.kubernetes.file.upload.path": s3.connection_info.file_upload_path,
             "spark.sql.warehouse.dir": s3.connection_info.warehouse_path,
         }
+
+        # TODO: put right paths and configurations.
+        if s3.connection_info.tls_ca_chain:
+            truststore_password = self.context.cluster.truststore_password
+            truststore_filename = self.context.cluster.truststore_path
+            truststore_secret_name = self.context.cluster.truststore_secret_name
+
+            base_s3_conf["spark.driver.extraJavaOptions"] = (
+                f"-Djavax.net.ssl.trustStore=/spark-truststore/{truststore_filename} -Djavax.net.ssl.trustStorePassword={truststore_password}"
+            )
+            base_s3_conf["spark.executor.extraJavaOptions"] = (
+                f"-Djavax.net.ssl.trustStore=/spark-truststore/{truststore_filename} -Djavax.net.ssl.trustStorePassword={truststore_password}"
+            )
+            base_s3_conf["spark.kubernetes.executor.secrets.spark-truststore"] = (
+                truststore_secret_name
+            )
+            base_s3_conf["spark.kubernetes.driver.secrets.spark-truststore"] = (
+                truststore_secret_name
+            )
+            base_s3_conf["spark.hadoop.fs.s3a.connection.ssl.enabled"] = "true"
 
         s3_scheme = urlparse(s3.connection_info.endpoint).scheme
         proxy_url = {
@@ -241,6 +268,7 @@ class IntegrationHubManager(WithLogging):
         self.workload = workload
         self.context = context
         self.config = config
+        self.tls = TLSManager(context, workload)
 
     def _compare_and_update_file(self, content: str, file_path: str) -> bool:
         """Update the file at given file_path with given content.
@@ -279,7 +307,20 @@ class IntegrationHubManager(WithLogging):
         hub_manifest = get_hub_secret_manifest(
             namespace=namespace, username=username, configurations=configurations
         )
-        return spark8t_manifest.strip() + "\n---\n" + hub_manifest.strip()
+
+        tls_manifest = ""
+        if self.context.s3 and self.context.s3.tls_ca_chain:
+            # TODO: fix the logic her
+            # tls_manifest = get_hub_truststore_secret_manifest(  # TODO. This could eventually go in a peer relation databag when/if it will be implemented
+            #     namespace=namespace, secret_name=f"{HUB_LABEL}-truststore", truststore_filename="truststore.jks", truststore_content=b""
+            # )
+            tls_manifest = ""
+        return (
+            spark8t_manifest.strip()
+            + "\n---\n"
+            + hub_manifest.strip()
+            + ("\n---\n" + tls_manifest.strip() if tls_manifest else "")
+        )
 
     def update(
         self,
@@ -297,7 +338,9 @@ class IntegrationHubManager(WithLogging):
 
         self.logger.debug("Update")
 
-        config = IntegrationHubConfig(s3, azure_storage, pushgateway, hub_conf, loki_url)
+        config = IntegrationHubConfig(
+            self.context, s3, azure_storage, pushgateway, hub_conf, loki_url
+        )
 
         if self._compare_and_update_file(
             config.contents, str(self.workload.paths.spark_properties)
@@ -317,12 +360,15 @@ class IntegrationHubManager(WithLogging):
             str(self.workload.paths.allowlist),
         ):
             self.logger.info("Updating integration hub config...")
+            self.tls.reset()
             self.workload.set_environment(
                 {
                     "SPARK_PROPERTIES_FILE": str(self.workload.paths.spark_properties),
                     "SA_ALLOWLIST": str(self.workload.paths.allowlist),
                 },
             )
+            if s3 and s3.tls_ca_chain:
+                self.tls.import_ca("\n".join(s3.tls_ca_chain))
             self.workload.restart()
 
         if self.context.charm.unit.is_leader():

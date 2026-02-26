@@ -34,7 +34,12 @@ resources:
   integration-hub-image:
     type: oci-image
     description: OCI image for the Spark Integration Hub Charm
-    upstream-source: ghcr.io/canonical/spark-integration-hub@sha256:c04d2d95874612883f6ead105d5f1dd74230370b23a08ea81175df81ba2e06fa # 3-22.04 2026-03-02
+    # upstream-source: ghcr.io/canonical/spark-integration-hub@sha256:2e31e78ac9eb9509d2cbbc233fbb62efe34966b8f9bcf5d862e17e7182637c7e # 3-22.04 2026-02-18
+    upstream-source: ghcr.io/welpaolo/charmed-spark-integration-hub:3
+
+peers:
+  hub-peers:
+    interface: hub-peers
 
 requires:
   s3-credentials:
