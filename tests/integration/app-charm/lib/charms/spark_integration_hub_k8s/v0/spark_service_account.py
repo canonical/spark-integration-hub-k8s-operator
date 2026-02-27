@@ -184,7 +184,7 @@ from ops import (
     RelationChangedEvent,
     RelationEvent,
     EventSource,
-    ObjectEvents
+    ObjectEvents,
 )
 
 from charms.data_platform_libs.v0.data_interfaces import (
