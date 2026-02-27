@@ -49,7 +49,7 @@ jobs:
           - .
           - tests/integration/app-charm
     name: Build charm | ${{ matrix.path }}
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v40.0.2
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v42.0.1
     with:
       path-to-charm-directory: ${{ matrix.path }}
 
