@@ -31,7 +31,7 @@ def test_s3_proxy_credentials(monkeypatch: MonkeyPatch) -> None:
     with mock.patch("managers.integration_hub.S3Manager", mock.MagicMock()) as mocked_s3_manager:
         instance = mocked_s3_manager.return_value
         instance.connection_info = S3InfoTester()
-        config = IntegrationHubConfig(object(), None, None, None, None)  # type: ignore
+        config = IntegrationHubConfig(None, object(), None, None, None, None)  # type: ignore
 
         # When
         s3_proxy_conf = config._s3_conf
@@ -53,7 +53,7 @@ def test_s3_proxy_plain_ip(monkeypatch: MonkeyPatch) -> None:
     with mock.patch("managers.integration_hub.S3Manager", mock.MagicMock()) as mocked_s3_manager:
         instance = mocked_s3_manager.return_value
         instance.connection_info = S3InfoTester()
-        config = IntegrationHubConfig(object(), None, None, None, None)  # type: ignore
+        config = IntegrationHubConfig(None, object(), None, None, None, None)  # type: ignore
 
         # When
         s3_proxy_conf = config._s3_conf
