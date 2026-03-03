@@ -9,7 +9,7 @@ description: |
   charmed components and allows simple configuration of Spark jobs and
   integration with client applications, abstracting low-level configuration
   option settings.
-docs: https://discourse.charmhub.io/t/integration-hub-for-apache-spark-documentation/16751
+docs: https://canonical-charmed-spark.readthedocs-hosted.com/main/how-to/manage-service-accounts/using-integration-hub
 source: https://github.com/canonical/spark-integration-hub-k8s-operator
 issues: https://github.com/canonical/spark-integration-hub-k8s-operator/issues
 website:
@@ -34,7 +34,7 @@ resources:
   integration-hub-image:
     type: oci-image
     description: OCI image for the Spark Integration Hub Charm
-    upstream-source: ghcr.io/canonical/spark-integration-hub@sha256:2e31e78ac9eb9509d2cbbc233fbb62efe34966b8f9bcf5d862e17e7182637c7e # 3-22.04 2026-02-18
+    upstream-source: ghcr.io/canonical/spark-integration-hub@sha256:c04d2d95874612883f6ead105d5f1dd74230370b23a08ea81175df81ba2e06fa # 3-22.04 2026-03-02
 
 requires:
   s3-credentials:
