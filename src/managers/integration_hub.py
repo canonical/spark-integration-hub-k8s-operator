@@ -6,6 +6,7 @@
 
 import os
 import re
+from pathlib import Path
 from urllib.parse import ParseResult, urlparse
 
 from common.utils import (
@@ -96,19 +97,19 @@ class IntegrationHubConfig(WithLogging):
         # TODO: put right paths and configurations.
         if s3.connection_info.tls_ca_chain:
             truststore_password = self.context.cluster.truststore_password
-            truststore_filename = self.context.cluster.truststore_path
+            truststore_filename = os.path.basename(Path(self.context.cluster.truststore_path))
             truststore_secret_name = self.context.cluster.truststore_secret_name
 
             base_s3_conf["spark.driver.extraJavaOptions"] = (
-                f"-Djavax.net.ssl.trustStore=/spark-truststore/{truststore_filename} -Djavax.net.ssl.trustStorePassword={truststore_password}"
+                f"-Djavax.net.ssl.trustStore=/{truststore_secret_name}/{truststore_filename} -Djavax.net.ssl.trustStorePassword={truststore_password}"
             )
             base_s3_conf["spark.executor.extraJavaOptions"] = (
-                f"-Djavax.net.ssl.trustStore=/spark-truststore/{truststore_filename} -Djavax.net.ssl.trustStorePassword={truststore_password}"
+                f"-Djavax.net.ssl.trustStore=/{truststore_secret_name}/{truststore_filename} -Djavax.net.ssl.trustStorePassword={truststore_password}"
             )
-            base_s3_conf["spark.kubernetes.executor.secrets.spark-truststore"] = (
+            base_s3_conf[f"spark.kubernetes.executor.secrets.{truststore_secret_name}"] = (
                 truststore_secret_name
             )
-            base_s3_conf["spark.kubernetes.driver.secrets.spark-truststore"] = (
+            base_s3_conf[f"spark.kubernetes.driver.secrets.{truststore_secret_name}"] = (
                 truststore_secret_name
             )
             base_s3_conf["spark.hadoop.fs.s3a.connection.ssl.enabled"] = "true"
@@ -338,37 +339,49 @@ class IntegrationHubManager(WithLogging):
 
         self.logger.debug("Update")
 
+        # update TLS configuration if needed. This is needed to be done before generating the config file since the presence of TLS configuration can impact the generated config (e.g., presence of truststore related properties in case of S3 with TLS).
+        if s3 and s3.tls_ca_chain:
+            self.logger.info("Updating TLS configuration...")
+            self.tls.reset()
+            self.tls.import_ca("\n".join(s3.tls_ca_chain))
+
         config = IntegrationHubConfig(
             self.context, s3, azure_storage, pushgateway, hub_conf, loki_url
         )
 
-        if self._compare_and_update_file(
-            config.contents, str(self.workload.paths.spark_properties)
-        ) or self._compare_and_update_file(
-            "\n".join(
-                sorted(
-                    [
-                        *self.config.monitored_service_accounts,
-                        *[
-                            sa.service_account
-                            for sa in self.context.service_accounts
-                            if sa.service_account
-                        ],
-                    ]
-                )
-            ),
-            str(self.workload.paths.allowlist),
+        if any(
+            [
+                self._compare_and_update_file(
+                    config.contents, str(self.workload.paths.spark_properties)
+                ),
+                self._compare_and_update_file(
+                    "\n".join(
+                        sorted(
+                            [
+                                *self.config.monitored_service_accounts,
+                                *[
+                                    sa.service_account
+                                    for sa in self.context.service_accounts
+                                    if sa.service_account
+                                ],
+                            ]
+                        )
+                    ),
+                    str(self.workload.paths.allowlist),
+                ),
+            ]
         ):
             self.logger.info("Updating integration hub config...")
-            self.tls.reset()
+
             self.workload.set_environment(
                 {
                     "SPARK_PROPERTIES_FILE": str(self.workload.paths.spark_properties),
                     "SA_ALLOWLIST": str(self.workload.paths.allowlist),
+                    "TRUSTSTORE_PATH": str(self.workload.paths.truststore),
+                    "TRUSTSTORE_SECRET_NAME": str(self.context.cluster.truststore_secret_name),
                 },
             )
-            if s3 and s3.tls_ca_chain:
-                self.tls.import_ca("\n".join(s3.tls_ca_chain))
+
             self.workload.restart()
 
         if self.context.charm.unit.is_leader():

@@ -76,6 +76,7 @@ class TLSManager(WithLogging):
             )
             self.workload.exec(["chmod", "-R", "660", str(self.workload.paths.truststore)])
             self.context.cluster.set_truststore_path(str(self.workload.paths.truststore))
+            self.logger.info("Certificate imported to truststore successfully")
 
         except (subprocess.CalledProcessError, ExecError) as e:
             # in case this reruns and fails
@@ -86,5 +87,6 @@ class TLSManager(WithLogging):
 
     def reset(self):
         """Remove all files related to TLS configuration."""
+        self.logger.info("Deleting TLS files...")
         self.workload.exec(["rm", "-f", str(self.workload.paths.truststore)])
         self.workload.exec(["rm", "-f", str(self.workload.paths.cert)])
