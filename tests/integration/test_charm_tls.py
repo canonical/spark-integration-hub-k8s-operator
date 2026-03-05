@@ -352,7 +352,7 @@ def test_relation_with_s3(
     assert "spark.hadoop.fs.s3a.access.key" in secret_data
 
     secret_data_truststore = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}truststore-{service_account_name}"
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}truststore"
     )
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data_truststore}")
     assert len(secret_data_truststore) > 0
@@ -400,7 +400,7 @@ def test_new_service_account_with_s3(
     assert "spark.hadoop.fs.s3a.access.key" in secret_data
 
     secret_data_truststore = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}truststore-{service_account_name}"
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}truststore"
     )
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data_truststore}")
     assert len(secret_data_truststore) > 0
