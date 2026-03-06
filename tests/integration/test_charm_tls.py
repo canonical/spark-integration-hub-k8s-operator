@@ -138,9 +138,18 @@ def microceph_credentials(host_ip: str, certs_path: Path) -> Iterable[dict[str, 
         ],
     )
 
+    try:
+        subprocess.run(
+            ["sudo", "snap", "remove", "microceph", "--purge"],
+            check=True,
+            stderr=subprocess.PIPE,
+        )
+    except subprocess.CalledProcessError as ex:
+        logger.error(ex.stderr.decode())
+
     logger.info("Setting up microceph")
     subprocess.run(
-        ["sudo", "snap", "install", "microceph", "--revision", str(MICROCEPH_REVISION)],
+        ["sudo", "snap", "install", "microceph"],
         check=True,
     )
     try:
