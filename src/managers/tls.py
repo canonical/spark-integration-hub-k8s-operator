@@ -90,3 +90,4 @@ class TLSManager(WithLogging):
         self.logger.info("Deleting TLS files...")
         self.workload.exec(["rm", "-f", str(self.workload.paths.truststore)])
         self.workload.exec(["rm", "-f", str(self.workload.paths.cert)])
+        self.context.cluster.set_truststore_path("")

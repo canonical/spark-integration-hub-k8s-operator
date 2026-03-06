@@ -389,7 +389,7 @@ def test_new_service_account_with_s3(
     logger.info(f"Service account: {service_account_name}, namespace: {namespace}")
 
     juju.config(APP_NAME, {"monitored-service-accounts": f"{namespace}:{service_account_name}"})
-    juju.wait(jubilant.all_active, delay=10)
+    juju.wait(jubilant.all_active, delay=10, timeout=120)
 
     # check secret
     secret_data = get_secret_data(
@@ -405,28 +405,42 @@ def test_new_service_account_with_s3(
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data_truststore}")
     assert len(secret_data_truststore) > 0
 
+    logger.info(
+        "Remove integration with S3 to check that secrets are properly deleted and recreated..."
+    )
     # Removing S3 <> Integration Hub relation
     juju.remove_relation(APP_NAME, charm_versions.s3.application_name)
-    juju.wait(jubilant.all_active, delay=10)
+    juju.wait(jubilant.all_active, delay=10, timeout=120)
 
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
+    secret_data_truststore = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}truststore"
+    )
+    logger.info(f"namespace: {namespace} -> secret_data: {secret_data_truststore}")
+
     assert len(secret_data) == 0
+    assert len(secret_data_truststore) == 0
 
     # Re-integrate S3 integrator with Spark Integration Hub
     juju.integrate(
         APP_NAME,
         charm_versions.s3.application_name,
     )
-    juju.wait(jubilant.all_active, delay=5)
-
+    juju.wait(jubilant.all_active, delay=5, timeout=120)
     secret_data = get_secret_data(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data}")
     assert len(secret_data) > 0
     assert "spark.hadoop.fs.s3a.access.key" in secret_data
+
+    secret_data_truststore = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}truststore"
+    )
+    logger.info(f"namespace: {namespace} -> secret_data: {secret_data_truststore}")
+    assert len(secret_data_truststore) > 0
 
 
 def test_remove_application(
@@ -456,3 +470,8 @@ def test_remove_application(
     )
     logger.info(f"secret data: {secret_data}")
     assert len(secret_data) == 0
+    secret_data_truststore = get_secret_data(
+        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}truststore"
+    )
+    logger.info(f"namespace: {namespace} -> secret_data: {secret_data_truststore}")
+    assert len(secret_data_truststore) > 0

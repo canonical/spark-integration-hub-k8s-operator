@@ -340,9 +340,14 @@ class IntegrationHubManager(WithLogging):
         self.logger.debug("Update")
 
         # update TLS configuration if needed. This is needed to be done before generating the config file since the presence of TLS configuration can impact the generated config (e.g., presence of truststore related properties in case of S3 with TLS).
+        try:
+            self.tls.reset()
+        except Exception as e:
+            self.logger.warning(f"Failed to reset truststore path: {e}.")
+        finally:
+            self.context.cluster.set_truststore_path("")
         if s3 and s3.tls_ca_chain:
             self.logger.info("Updating TLS configuration...")
-            self.tls.reset()
             self.tls.import_ca("\n".join(s3.tls_ca_chain))
 
         config = IntegrationHubConfig(
@@ -377,7 +382,7 @@ class IntegrationHubManager(WithLogging):
                 {
                     "SPARK_PROPERTIES_FILE": str(self.workload.paths.spark_properties),
                     "SA_ALLOWLIST": str(self.workload.paths.allowlist),
-                    "TRUSTSTORE_PATH": str(self.workload.paths.truststore),
+                    "TRUSTSTORE_PATH": str(self.context.cluster.truststore_path),
                     "TRUSTSTORE_SECRET_NAME": str(self.context.cluster.truststore_secret_name),
                 },
             )
