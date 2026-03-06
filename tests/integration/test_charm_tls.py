@@ -491,4 +491,4 @@ def test_remove_application(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}truststore"
     )
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data_truststore}")
-    assert len(secret_data_truststore) > 0
+    assert len(secret_data_truststore) == 0
