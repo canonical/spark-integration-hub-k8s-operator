@@ -366,6 +366,14 @@ def test_relation_with_s3(
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data_truststore}")
     assert len(secret_data_truststore) > 0
 
+    logger.info("Setup spark-client snap.")
+    setup_spark_output = subprocess.check_output(
+        f"./tests/integration/setup/setup_spark.sh {service_account_name} {namespace}",
+        shell=True,
+        stderr=None,
+    ).decode("utf-8")
+    logger.info(f"Setup spark output:\n{setup_spark_output}")
+
     logger.info("Executing Spark job...")
     proc = subprocess.Popen(
         ["./tests/integration/setup/run_spark_job.sh", service_account_name, namespace],
