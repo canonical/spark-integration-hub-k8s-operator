@@ -12,6 +12,7 @@ from urllib.parse import ParseResult, urlparse
 from common.utils import (
     WithLogging,
     get_hub_secret_manifest,
+    get_hub_truststore_secret_manifest,
     is_proxy_skipped,
 )
 from core.config import CharmConfig
@@ -302,6 +303,7 @@ class IntegrationHubManager(WithLogging):
         self, namespace: str, username: str, configurations: dict[str, str]
     ) -> str:
         """Return the K8s resource manifest of the resources to be created."""
+        self.logger.info("Generating manifest!")
         spark8t_manifest = self.workload.get_spark8t_manifest(
             namespace=namespace, username=username
         )
@@ -311,11 +313,13 @@ class IntegrationHubManager(WithLogging):
 
         tls_manifest = ""
         if self.context.s3 and self.context.s3.tls_ca_chain:
-            # TODO: fix the logic her
-            # tls_manifest = get_hub_truststore_secret_manifest(  # TODO. This could eventually go in a peer relation databag when/if it will be implemented
-            #     namespace=namespace, secret_name=f"{HUB_LABEL}-truststore", truststore_filename="truststore.jks", truststore_content=b""
-            # )
-            tls_manifest = ""
+            tls_manifest = get_hub_truststore_secret_manifest(
+                namespace=namespace,
+                truststore_filename=Path(self.context.cluster.truststore_path).name,
+                truststore_content=self.workload.read_bytes(self.context.cluster.truststore_path),
+                secret_name=self.context.cluster.truststore_secret_name,
+            )
+            self.logger.info(f"TLS manifest generated: {tls_manifest}")
         return (
             spark8t_manifest.strip()
             + "\n---\n"

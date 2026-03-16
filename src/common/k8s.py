@@ -49,6 +49,25 @@ class K8sWorkload(AbstractWorkload, ABC):
             return f.read().split("\n")
 
     @override
+    def read_bytes(self, path: str) -> bytes:
+        """Read from a file.
+
+        Args:
+            path: the full filepath to be read
+
+        Returns:
+            content of the file
+
+        Raises:
+            FileNotFound if the file does not exist
+        """
+        if not self.container.exists(path):
+            raise FileNotFoundError
+
+        with self.container.pull(path, encoding=None) as f:
+            return f.read()
+
+    @override
     def write(self, content: str, path: str, mode: str = "w") -> None:
         """Writes content to a workload file.
 

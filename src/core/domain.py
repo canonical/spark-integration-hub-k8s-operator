@@ -4,6 +4,7 @@
 
 """Domain object of the Spark Integration Hub charm."""
 
+import hashlib
 import json
 import logging
 from dataclasses import dataclass
@@ -295,10 +296,12 @@ class HubCluster(RelationState):
         relation: Relation | None,
         data_interface: DataPeerData,
         component: Application,
+        model_name: str = "",
     ):
         super().__init__(relation, data_interface, component)
         self.data_interface = data_interface
         self.app = component
+        self.model_name = model_name
 
     @override
     def update(self, items: dict[str, str]) -> None:
@@ -328,9 +331,17 @@ class HubCluster(RelationState):
         self.update({TRUSTSTORE_PATH_KEY: path})
 
     @property
+    def _default_truststore_secret_name(self) -> str:
+        """The default truststore secret name, incorporating a hash of model and app name."""
+        suffix = hashlib.sha256(f"{self.model_name}|{self.app.name}".encode()).hexdigest()[:8]
+        return f"{HUB_LABEL}-truststore-{suffix}"
+
+    @property
     def truststore_secret_name(self) -> str:
-        """The truststore secret name for the cluster jobs."""
-        return self.relation_data.get(TRUSTSTORE_SECRET_NAME_KEY, f"{HUB_LABEL}-truststore")
+        """The truststore secret name for the cluster."""
+        return self.relation_data.get(
+            TRUSTSTORE_SECRET_NAME_KEY, self._default_truststore_secret_name
+        )
 
     def set_truststore_secret_name(self, secret_name: str) -> None:
         """Update the truststore secret name in peer app databag with given content."""

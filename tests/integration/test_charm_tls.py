@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 
+import hashlib
 import json
 import logging
 import os
@@ -33,6 +34,10 @@ SECRET_NAME_PREFIX = "integrator-hub-conf-"
 
 BUCKET_NAME = "test-bucket"
 PATH_NAME = "spark-events"
+DUMMY_APP_NAME = "app"
+
+REL_NAME_A = "spark-account-a"
+REL_NAME_B = "spark-account-b"
 
 MICROCEPH_REVISION = 1169
 
@@ -279,6 +284,12 @@ def configure_s3_bucket(s3_endpoint: str, s3_access_key: str, s3_secret_key: str
     test_bucket.put_object(Key=os.path.join(PATH_NAME, "touch"))
 
 
+def get_truststore_secret_name(model_name: str, app_name: str) -> str:
+    """The default truststore secret name, incorporating a hash of model and app name."""
+    suffix = hashlib.sha256(f"{model_name}|{app_name}".encode()).hexdigest()[:8]
+    return f"{SECRET_NAME_PREFIX}truststore-{suffix}"
+
+
 def test_build_and_deploy_hub_charm(juju: jubilant.Juju, deploy_hub_charm: str) -> None:
     juju.wait(lambda status: jubilant.all_active(status, APP_NAME))
 
@@ -360,8 +371,10 @@ def test_relation_with_s3(
     assert len(secret_data) > 0
     assert "spark.hadoop.fs.s3a.access.key" in secret_data
 
+    truststore_secret_name = get_truststore_secret_name(model_name=juju.model, app_name=APP_NAME)
+    logger.info(f"Truststore secret name: {truststore_secret_name}")
     secret_data_truststore = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}truststore"
+        namespace=namespace, secret_name=truststore_secret_name
     )
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data_truststore}")
     assert len(secret_data_truststore) > 0
@@ -416,8 +429,9 @@ def test_new_service_account_with_s3(
     assert len(secret_data) > 0
     assert "spark.hadoop.fs.s3a.access.key" in secret_data
 
+    truststore_secret_name = get_truststore_secret_name(model_name=juju.model, app_name=APP_NAME)
     secret_data_truststore = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}truststore"
+        namespace=namespace, secret_name=truststore_secret_name
     )
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data_truststore}")
     assert len(secret_data_truststore) > 0
@@ -433,7 +447,7 @@ def test_new_service_account_with_s3(
         namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
     secret_data_truststore = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}truststore"
+        namespace=namespace, secret_name=truststore_secret_name
     )
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data_truststore}")
 
@@ -454,10 +468,63 @@ def test_new_service_account_with_s3(
     assert "spark.hadoop.fs.s3a.access.key" in secret_data
 
     secret_data_truststore = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}truststore"
+        namespace=namespace, secret_name=truststore_secret_name
     )
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data_truststore}")
     assert len(secret_data_truststore) > 0
+
+
+def test_correct_tls_in_manifest(
+    juju: jubilant.Juju,
+    test_charm: Path,
+    namespace: str,
+) -> None:
+    """Test that the TLS secret manifest is correctly generated and contains the expected content."""
+    logger.info("Deploying test application charm")
+    juju.deploy(charm=test_charm, app=DUMMY_APP_NAME, num_units=1, base="ubuntu@24.04")
+
+    juju.wait(
+        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
+    )
+
+    configuration_parameters = {"namespace": namespace}
+
+    logger.info(f"Setting config for test application charm: {configuration_parameters}...")
+    juju.config(DUMMY_APP_NAME, configuration_parameters)
+    juju.wait(
+        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
+    )
+
+    logger.info("Integrating integration hub with test application for service account sa1")
+    juju.integrate(APP_NAME, f"{DUMMY_APP_NAME}:{REL_NAME_A}")
+    juju.wait(
+        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status),
+        delay=5,
+        timeout=120,
+    )
+
+    logger.info("Enable autoscaling...")
+    juju.config(APP_NAME, {"enable-dynamic-allocation": "true"})
+    juju.wait(
+        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
+    )
+
+    # The added spark properties be reflected on the requirer charm
+    task = juju.run(f"{DUMMY_APP_NAME}/0", "get-properties-sa1")
+    assert task.return_code == 0
+    assert "spark-properties" in task.results
+    properties = task.results["spark-properties"]
+    assert "spark.dynamicAllocation.enabled" in json.loads(properties)
+
+    task = juju.run(f"{DUMMY_APP_NAME}/0", "get-resource-manifest-sa1")
+    assert task.return_code == 0
+    assert "resource-manifest" in task.results
+    manifest = task.results["resource-manifest"]
+    assert manifest is not None
+    assert manifest.strip() != ""
+    logger.info(f"Generated manifest:\n{manifest}")
+
+    assert "truststore.jks" in manifest
 
 
 def test_remove_application(
@@ -487,8 +554,9 @@ def test_remove_application(
     )
     logger.info(f"secret data: {secret_data}")
     assert len(secret_data) == 0
+    truststore_secret_name = get_truststore_secret_name(model_name=juju.model, app_name=APP_NAME)
     secret_data_truststore = get_secret_data(
-        namespace=namespace, secret_name=f"{SECRET_NAME_PREFIX}truststore"
+        namespace=namespace, secret_name=truststore_secret_name
     )
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data_truststore}")
     assert len(secret_data_truststore) == 0

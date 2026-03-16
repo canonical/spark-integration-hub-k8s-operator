@@ -4,13 +4,18 @@
 
 """Kubernetes manager."""
 
+import fnmatch
+import re
+
 import lightkube
-from lightkube.core.client import Client
+from lightkube.core.client import Client, LabelValue
 from lightkube.core.exceptions import ApiError
 from lightkube.models import authorization_v1
 from lightkube.resources.authorization_v1 import SelfSubjectAccessReview
+from lightkube.resources.core_v1 import Namespace, Secret
 
 from common.utils import WithLogging
+from constants import INTEGRATION_HUB_LABEL
 
 
 class KubernetesManager(WithLogging):
@@ -43,3 +48,53 @@ class KubernetesManager(WithLogging):
             )
         except ApiError:
             return False
+
+    @staticmethod
+    def get_allowed_namespaces(allowlist: list[str]) -> set[str]:
+        """Build shell-style patterns from allowlist."""
+        allowed_namespaces = set()
+        for entry in allowlist:
+            ns, _, _ = entry.partition(":")
+            allowed_namespaces.add(fnmatch.translate(ns))
+
+        return allowed_namespaces
+
+    @staticmethod
+    def is_allowed(namespace: str, patterns: set[str]) -> bool:
+        """Compare a service account against a list of shell-style patterns."""
+        return any(re.match(namespace_patterns, namespace) for namespace_patterns in patterns)
+
+    def delete_secrets(self, monitor_service_accounts: list[str]) -> None:
+        """Delete a secret."""
+        try:
+            namespaces = self.client.list(Namespace)
+
+            patterns = self.get_allowed_namespaces(monitor_service_accounts)
+            label: dict[str, LabelValue] = {
+                INTEGRATION_HUB_LABEL.split("=")[0]: INTEGRATION_HUB_LABEL.split("=")[1]
+            }
+            for ns in namespaces:
+                namespace_name = ns.metadata.name if ns.metadata and ns.metadata.name else ""
+
+                if self.is_allowed(namespace_name, patterns) and namespace_name:
+                    self.logger.info(f"Deleting secrets in namespace {namespace_name}...")
+
+                    for secret in self.client.list(Secret, namespace=namespace_name, labels=label):
+                        secret_name = (
+                            secret.metadata.name
+                            if secret.metadata and secret.metadata.name
+                            else ""
+                        )
+                        self.logger.info(
+                            f"Deleting secret {secret_name} in namespace {namespace_name}..."
+                        )
+                        self.client.delete(
+                            Secret,
+                            name=secret_name,
+                            namespace=namespace_name,
+                        ) if secret_name else self.logger.warning(
+                            f"Secret in namespace {namespace_name} has no name, skipping deletion."
+                        )
+
+        except ApiError as e:
+            self.logger.error(f"Failed to delete secrets associated to integration-hub: {e}")

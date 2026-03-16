@@ -4,6 +4,7 @@
 
 """Utilities."""
 
+import base64
 import ipaddress
 import os
 from logging import Logger, getLogger
@@ -108,6 +109,7 @@ def get_hub_truststore_secret_manifest(
     namespace: str, secret_name: str, truststore_filename: str, truststore_content: bytes
 ) -> str:
     """Return the K8s resource manifest corresponding to Hub truststore secret."""
+    encoded_content = base64.b64encode(truststore_content).decode("utf-8")
     secret = Secret.from_dict(
         {
             "apiVersion": "v1",
@@ -118,7 +120,7 @@ def get_hub_truststore_secret_manifest(
                 "labels": {"app.kubernetes.io/generated-by": "integration-hub"},
             },
             "data": {
-                truststore_filename: truststore_content.decode("utf-8"),
+                truststore_filename: encoded_content,
             },
         }
     )

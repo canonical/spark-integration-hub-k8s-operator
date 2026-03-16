@@ -87,6 +87,7 @@ class Context(WithLogging):
             relation=self._peer_relation,
             data_interface=self.peer_app_interface,
             component=self.model.app,
+            model_name=self.model.name,
         )
 
     # --- DOMAIN OBJECTS ---
