@@ -6,8 +6,8 @@
 
 import fnmatch
 import re
+from functools import cached_property
 
-import lightkube
 from lightkube.core.client import Client, LabelValue
 from lightkube.core.exceptions import ApiError
 from lightkube.models import authorization_v1
@@ -23,14 +23,17 @@ class KubernetesManager(WithLogging):
 
     def __init__(self, app_name: str):
         self.app_name = app_name
-        self.client = Client(field_manager=app_name)
+
+    @cached_property
+    def client(self) -> Client:
+        """Return the lightkube client."""
+        return Client(field_manager=self.app_name)
 
     def trusted(self) -> bool:
         """Check whether application is trusted."""
         try:
             return getattr(
-                lightkube.Client()
-                .create(
+                self.client.create(
                     SelfSubjectAccessReview(
                         spec=authorization_v1.SelfSubjectAccessReviewSpec(
                             resourceAttributes=authorization_v1.ResourceAttributes(
@@ -41,8 +44,7 @@ class KubernetesManager(WithLogging):
                             )
                         )
                     )
-                )
-                .status,
+                ).status,
                 "allowed",
                 False,
             )
