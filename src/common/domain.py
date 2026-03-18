@@ -15,12 +15,8 @@ class RelationState:
         """Initialize class for relation data."""
         self.relation = relation
         self.data_interface = data_interface
-        self.component = (
-            component  # FIXME: remove, and use _fetch_my_relation_data defaults wheren needed
-        )
-        self.relation_data = (
-            self.data_interface.as_dict(self.relation.id) if self.relation else {}
-        )  # FIXME: mappingproxytype?
+        self.component = component
+        self.relation_data = self.data_interface.as_dict(self.relation.id) if self.relation else {}
 
     def __bool__(self) -> bool:
         """Boolean evaluation based on the existence of self.relation."""

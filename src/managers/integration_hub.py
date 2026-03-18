@@ -95,7 +95,6 @@ class IntegrationHubConfig(WithLogging):
             "spark.sql.warehouse.dir": s3.connection_info.warehouse_path,
         }
 
-        # TODO: put right paths and configurations.
         if s3.connection_info.tls_ca_chain:
             truststore_password = self.context.cluster.truststore_password
             truststore_filename = os.path.basename(Path(self.context.cluster.truststore_path))
