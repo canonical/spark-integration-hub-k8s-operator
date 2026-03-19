@@ -319,11 +319,12 @@ class IntegrationHubManager(WithLogging):
                 secret_name=self.context.cluster.truststore_secret_name,
             )
             self.logger.info(f"TLS manifest generated: {tls_manifest}")
-        return (
-            spark8t_manifest.strip()
-            + "\n---\n"
-            + hub_manifest.strip()
-            + ("\n---\n" + tls_manifest.strip() if tls_manifest else "")
+        return "\n---\n".join(
+            [
+                manifest.strip()
+                for manifest in (spark8t_manifest, hub_manifest, tls_manifest)
+                if manifest is not None
+            ]
         )
 
     def update(
