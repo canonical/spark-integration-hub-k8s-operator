@@ -323,7 +323,7 @@ class IntegrationHubManager(WithLogging):
             [
                 manifest.strip()
                 for manifest in (spark8t_manifest, hub_manifest, tls_manifest)
-                if manifest is not None
+                if manifest
             ]
         )
 
