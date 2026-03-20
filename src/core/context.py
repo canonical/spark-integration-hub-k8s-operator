@@ -150,4 +150,7 @@ class Status(Enum):
     MULTIPLE_OBJECT_STORAGE_RELATIONS = BlockedStatus(
         "Integration Hub can be related to only one storage backend at a time."
     )
+    MULTIPLE_UNITS = BlockedStatus(
+        "Multiple units deployed, this charm is designed to run with a single unit. Please scale down to 1 unit."
+    )
     ACTIVE = ActiveStatus("")

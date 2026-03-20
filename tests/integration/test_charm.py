@@ -250,6 +250,18 @@ def test_new_service_account_with_azure_storage(
     )
 
 
+def test_multiple_units_status(
+    juju: jubilant.Juju, charm_versions: IntegrationTestsCharms
+) -> None:
+    logger.info("Testing that deploying multiple units sets the appropriate status")
+    juju.wait(lambda status: jubilant.all_active(status, APP_NAME), delay=5)
+    juju.add_unit(APP_NAME)
+    juju.wait(lambda status: jubilant.all_blocked(status, APP_NAME), delay=5)
+    logger.info("Remove unit and check for active status again.")
+    juju.remove_unit(APP_NAME)
+    juju.wait(lambda status: jubilant.all_active(status, APP_NAME), delay=5)
+
+
 def test_remove_application(
     juju: jubilant.Juju,
     service_account: tuple[str, str],
