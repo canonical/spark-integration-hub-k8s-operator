@@ -13,14 +13,15 @@ from ops import (
     PebbleReadyEvent,
     StopEvent,
 )
-from ops.pebble import ExecError
 
 from common.utils import WithLogging
 from constants import INTEGRATION_HUB_LABEL
+from core.config import CharmConfig
 from core.context import Context
 from core.workload import IntegrationHubWorkloadBase
 from events.base import BaseEventHandler, defer_when_not_ready
 from managers.integration_hub import IntegrationHubManager
+from managers.k8s import KubernetesManager
 
 if TYPE_CHECKING:
     from charm import SparkIntegrationHub
@@ -40,6 +41,7 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
         self.integration_hub = IntegrationHubManager(
             self.workload, self.context, self.charm.config
         )
+        self.k8s_manager = KubernetesManager(self.model.app.name)
 
         self.framework.observe(
             self.charm.on.integration_hub_pebble_ready,
@@ -51,10 +53,9 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
     def _remove_resources(self, _: StopEvent) -> None:
         """Handle the stop event."""
         try:
-            self.integration_hub.workload.exec(
-                ["kubectl", "delete", "secret", "-l", INTEGRATION_HUB_LABEL, "--all-namespaces"]
-            )
-        except ExecError:
+            hub_conf: CharmConfig = self.charm.config  # type: ignore
+            self.k8s_manager.delete_secrets(hub_conf.monitored_service_accounts)
+        except Exception:
             self.logger.error(f"Could not delete secret with label {INTEGRATION_HUB_LABEL}")
 
     @defer_when_not_ready

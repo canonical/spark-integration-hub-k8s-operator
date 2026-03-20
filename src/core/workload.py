@@ -28,6 +28,16 @@ class IntegrationHubPaths:
         """Return the path of the allowlist file."""
         return self.conf_path / "allowlist"
 
+    @property
+    def cert(self):
+        """Return the path of the certificate file."""
+        return self.conf_path / "ca.pem"
+
+    @property
+    def truststore(self):
+        """Return the path of the truststore."""
+        return self.conf_path / "truststore.jks"
+
 
 class IntegrationHubWorkloadBase(AbstractWorkload):
     """Base interface for common workload operations."""

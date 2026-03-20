@@ -43,6 +43,21 @@ class AbstractWorkload(ABC):
         ...
 
     @abstractmethod
+    def read_bytes(self, path: str) -> bytes:
+        """Reads a file from the workload.
+
+        Args:
+            path: the full filepath to read from
+
+        Returns:
+            Bytes from the specified path
+
+        Raises:
+            FileNotFound if the file does not exist
+        """
+        ...
+
+    @abstractmethod
     def write(self, content: str, path: str, mode: str = "w") -> None:
         """Writes content to a workload file.
 
