@@ -258,7 +258,7 @@ def test_multiple_units_status(
     juju.add_unit(APP_NAME)
     juju.wait(lambda status: jubilant.all_blocked(status, APP_NAME), delay=5)
     logger.info("Remove unit and check for active status again.")
-    juju.remove_unit(APP_NAME)
+    juju.remove_unit(APP_NAME, num_units=1)
     juju.wait(lambda status: jubilant.all_active(status, APP_NAME), delay=5)
 
 
