@@ -34,7 +34,8 @@ resources:
   integration-hub-image:
     type: oci-image
     description: OCI image for the Spark Integration Hub Charm
-    upstream-source: ghcr.io/canonical/spark-integration-hub@sha256:f8b03ee32b4883e30b3f9f47f804e29d5b3ff310c370efd2026a1f58b2b6953a # 3-22.04 2026-03-19
+    # 3-22.04, release date 19/03/2026
+    upstream-source: ghcr.io/canonical/spark-integration-hub@sha256:a0439da3e6a9433a0db9501c8ea7b28ba3652af9a9ec22fcc2ad1b0197d48134
 
 peers:
   hub-peers:
