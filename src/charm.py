@@ -61,6 +61,9 @@ class SparkIntegrationHub(TypedCharmBase[CharmConfig], WithLogging):
             status.message = status.message.format(app=str(self.model.app.name))
             event.add_status(status)
 
+        if self.model.app.planned_units() > 1:
+            event.add_status(Status.MULTIPLE_UNITS.value)
+
         if self.context.s3 and self.context.azure_storage:
             event.add_status(Status.MULTIPLE_OBJECT_STORAGE_RELATIONS.value)
 
