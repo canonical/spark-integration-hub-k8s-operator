@@ -11,6 +11,7 @@ ops = "^3.7.0"
 boto3 = ">=1.43.1,<1.44"
 lightkube = "0.19.1"
 spark8t = "^1.4.0"
+object-storage-charmlib = "^1.0.0"
 
 [tool.poetry.group.charm-libs.dependencies]
 ops = "^3.0"
