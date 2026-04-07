@@ -42,10 +42,10 @@ def pytest_addoption(parser):
 @pytest.fixture
 def charm_versions() -> IntegrationTestsCharms:
     return IntegrationTestsCharms(
-        s3=CharmVersion(name="s3-integrator", channel="edge", base="ubuntu@22.04", alias="s3"),
+        s3=CharmVersion(name="s3-integrator", channel="1/edge", base="ubuntu@22.04", alias="s3"),
         azure_storage=CharmVersion(
             name="azure-storage-integrator",
-            channel="edge",
+            channel="1/edge",
             base="ubuntu@22.04",
             alias="azure-storage",
         ),
