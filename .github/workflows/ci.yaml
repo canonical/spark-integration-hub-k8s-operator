@@ -52,8 +52,6 @@ jobs:
     uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v48.0.2
     with:
       path-to-charm-directory: ${{ matrix.path }}
-      # TODO: Unpin once https://github.com/canonical/charmcraft/issues/2620 gets fixed
-      charmcraft-snap-revisions: '{"amd64": "7517", "arm64": "7519"}' 
 
   integration-test:
     strategy:
