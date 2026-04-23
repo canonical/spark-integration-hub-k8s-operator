@@ -43,7 +43,7 @@ types-pygments = "^2.19.0.20250305"
 optional = true
 
 [tool.poetry.group.unit.dependencies]
-pytest = "<8.4.3"
+pytest = "^9.0.3"
 coverage = { extras = ["toml"], version = ">7.0" }
 ops = { extras = ["testing"], version = "^3.5.2" }
 
@@ -51,7 +51,7 @@ ops = { extras = ["testing"], version = "^3.5.2" }
 optional = true
 
 [tool.poetry.group.integration.dependencies]
-pytest = ">=8.4.2"
+pytest = "^9.0.3"
 coverage = { extras = ["toml"], version = ">7.0" }
 tenacity = "^9.1.4"
 jubilant = "^1.7.0"
