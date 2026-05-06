@@ -4,4 +4,4 @@
 summary: integration-trust
 execute: |
   cd "$SPREAD_PATH"
-  tox run -e integration-trust -- -x
+  tox run -e integration-trust -- -x --model testing --keep-models
