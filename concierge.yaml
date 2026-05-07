@@ -4,6 +4,7 @@
 juju:
   model-defaults:
     logging-config: <root>=INFO; unit=DEBUG
+
 providers:
   microk8s:
     enable: true
@@ -13,6 +14,7 @@ providers:
       - dns
       - hostpath-storage
       - rbac
+
 host:
   packages:
     - pipx
