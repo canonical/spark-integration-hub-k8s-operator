@@ -57,16 +57,49 @@ class S3Manager(WithLogging):
                 ),
             )
 
-            try:
-                s3.list_buckets()
-            except ClientError as client_error:
-                self.logger.error(f"Invalid S3 credentials... {client_error}")
-                return False
-            except SSLError as ssl_error:
-                self.logger.error(f"SSL validation failed... {ssl_error}")
-                return False
-            except Exception as e:
-                self.logger.error(f"S3 related error {e}")
-                return False
-
-        return True
+            for attempt in range(2):
+                try:
+                    response = s3.list_objects_v2(
+                        Bucket=self.connection_info.bucket,
+                        Prefix=f"{self.connection_info.path}/",
+                        MaxKeys=1,
+                    )
+                    if response.get("KeyCount", 0) != 1:
+                        s3.put_object(
+                            Bucket=self.connection_info.bucket,
+                            Key=f"{self.connection_info.path}/",
+                            Body=b"",
+                        )
+                        continue
+                    return True
+                except ClientError as client_error:
+                    error_message = client_error.response["Error"]["Code"]
+                    if error_message == "NoSuchBucket":
+                        try:
+                            region = self.connection_info.region or "us-east-1"
+                            if region == "us-east-1":
+                                s3.create_bucket(Bucket=self.connection_info.bucket)
+                            else:
+                                s3.create_bucket(
+                                    Bucket=self.connection_info.bucket,
+                                    CreateBucketConfiguration={"LocationConstraint": region},
+                                )
+                            continue
+                        except ClientError as create_error:
+                            self.logger.error(f"Failed to create bucket... {create_error}")
+                            return False
+                    elif error_message == "PermanentRedirect":
+                        self.logger.error(
+                            f"S3 endpoint/region mismatch: bucket exists in a different region. "
+                            f"Update the endpoint or region configuration. {client_error}"
+                        )
+                    else:
+                        self.logger.error(f"Invalid S3 credentials... {client_error}")
+                    return False
+                except SSLError as ssl_error:
+                    self.logger.error(f"SSL validation failed... {ssl_error}")
+                    return False
+                except Exception as e:
+                    self.logger.error(f"S3 related error {e}")
+                    return False
+            return True
