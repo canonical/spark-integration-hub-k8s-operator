@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Limited
+# Copyright 2026 Canonical Limited
 # See LICENSE file for licensing details.
 
 from dataclasses import dataclass
@@ -59,7 +59,7 @@ def test_verify_bucket_missing_creates_bucket_and_path():
     manager, mock_s3 = _make_manager(S3ConnectionInfoTester())
     mock_s3.list_objects_v2.side_effect = [
         _client_error("NoSuchBucket"),  # attempt 0: bucket missing
-        {},                              # attempt 1: bucket now exists
+        {},  # attempt 1: bucket now exists
     ]
 
     assert manager.verify() is True
@@ -93,9 +93,7 @@ def test_verify_composite_path():
     mock_s3.list_objects_v2.assert_called_once_with(
         Bucket="my-bucket", Prefix="logs/dev1/dev2/", MaxKeys=1
     )
-    mock_s3.put_object.assert_called_once_with(
-        Bucket="my-bucket", Key="logs/dev1/dev2/", Body=b""
-    )
+    mock_s3.put_object.assert_called_once_with(Bucket="my-bucket", Key="logs/dev1/dev2/", Body=b"")
 
 
 def test_verify_read_but_no_write():
