@@ -77,18 +77,16 @@ class S3Manager(WithLogging):
 
             for attempt in range(2):
                 try:
-                    response = s3.list_objects_v2(
+                    s3.list_objects_v2(
                         Bucket=self.connection_info.bucket,
                         Prefix=f"{self.connection_info.path}/",
                         MaxKeys=1,
                     )
-                    if response.get("KeyCount", 0) != 1:
-                        s3.put_object(
-                            Bucket=self.connection_info.bucket,
-                            Key=f"{self.connection_info.path}/",
-                            Body=b"",
-                        )
-                        continue
+                    s3.put_object(
+                        Bucket=self.connection_info.bucket,
+                        Key=f"{self.connection_info.path}/",
+                        Body=b"",
+                    )
                     return True
                 except ClientError as client_error:
                     error_code = client_error.response["Error"]["Code"]
