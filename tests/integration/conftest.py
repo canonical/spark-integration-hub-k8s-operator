@@ -236,9 +236,9 @@ def deploy_hub_charm(juju: jubilant.Juju, hub_charm: Path) -> str:
 
 
 @pytest.fixture
-def charm_name(deploy_hub_charm: str) -> str:
+def charm_name() -> str:
     """Return the name of the deployed charm."""
-    return deploy_hub_charm
+    return APP_NAME
 
 
 @pytest.fixture
