@@ -236,6 +236,12 @@ def deploy_hub_charm(juju: jubilant.Juju, hub_charm: Path) -> str:
 
 
 @pytest.fixture
+def charm_name(deploy_hub_charm: str) -> str:
+    """Return the name of the deployed charm."""
+    return deploy_hub_charm
+
+
+@pytest.fixture
 def deploy_s3_integrator_charm(juju: jubilant.Juju, charm_versions, s3_credentials: S3Info) -> str:
     juju.deploy(**charm_versions.s3.deploy_dict())
     juju.wait(jubilant.all_agents_idle)
