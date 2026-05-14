@@ -227,6 +227,7 @@ def test_azure_storage_relation(
     state = State(
         relations=[azure_storage_relation],
         containers=[integration_hub_container],
+        leader=True,
     )
     with (
         patch("managers.k8s.KubernetesManager.__init__", return_value=None),
@@ -280,6 +281,7 @@ def test_azure_storage_relation_broken(
     state = State(
         relations=[azure_storage_relation],
         containers=[integration_hub_container],
+        leader=True,
     )
     with (
         patch("managers.k8s.KubernetesManager.__init__", return_value=None),

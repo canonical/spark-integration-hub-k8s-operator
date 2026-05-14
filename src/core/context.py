@@ -10,6 +10,7 @@ from charms.data_platform_libs.v0.data_interfaces import DataPeerData, RequirerD
 from charms.spark_integration_hub_k8s.v0.spark_service_account import (
     SparkServiceAccountProviderData,
 )
+from object_storage import AzureStorageRequirer
 from ops import ActiveStatus, BlockedStatus, CharmBase, MaintenanceStatus, Relation
 
 from common.utils import WithLogging
@@ -39,8 +40,9 @@ class Context(WithLogging):
         self.model = charm.model
 
         self.s3_endpoint = RequirerData(self.charm.model, S3_RELATION_NAME)
-        self.azure_storage_endpoint = RequirerData(
-            self.charm.model, AZURE_RELATION_NAME, additional_secret_fields=["secret-key"]
+        self.azure_storage_requirer = AzureStorageRequirer(
+            self.charm,
+            AZURE_RELATION_NAME,
         )
         self.spark_service_account_provider_data = SparkServiceAccountProviderData(
             self.model, INTEGRATION_HUB_REL
@@ -101,7 +103,7 @@ class Context(WithLogging):
     def azure_storage(self) -> AzureStorageConnectionInfo | None:
         """The server state of the current running Unit."""
         relation_data = (
-            self.azure_storage_endpoint.fetch_relation_data()[self._azure_storage_relation.id]
+            self.azure_storage_requirer.get_storage_connection_info(self._azure_storage_relation)
             if self._azure_storage_relation
             else None
         )
