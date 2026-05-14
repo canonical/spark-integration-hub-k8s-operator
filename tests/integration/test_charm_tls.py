@@ -296,7 +296,7 @@ def test_build_and_deploy_hub_charm(juju: jubilant.Juju, deploy_hub_charm: str) 
 
 def test_deploy_s3_integrator(juju: jubilant.Juju, charm_versions, microceph_credentials) -> None:
     """Deploy an extra instance of s3-integrator, this time for creating Postgresql (metastore) backup."""
-    juju.deploy("s3-integrator", app=charm_versions.s3.application_name, channel="edge")
+    juju.deploy("s3-integrator", app=charm_versions.s3.application_name, channel=charm_versions.s3.channel)
     juju.wait(lambda status: jubilant.all_blocked(status, charm_versions.s3.application_name))
 
     s3_endpoint = microceph_credentials["endpoint"]
