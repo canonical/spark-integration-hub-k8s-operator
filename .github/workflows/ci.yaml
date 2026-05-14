@@ -49,7 +49,7 @@ jobs:
           - .
           - tests/integration/app-charm
     name: Build charm | ${{ matrix.path }}
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v48.0.2
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v49.0.1
     with:
       path-to-charm-directory: ${{ matrix.path }}
 
@@ -101,6 +101,7 @@ jobs:
           sudo microceph cluster bootstrap
           sudo microceph disk add loop,1G,3
           sudo microceph enable rgw
+          sleep 15
           sudo microceph.radosgw-admin user create --uid test --display-name test --access-key=foo --secret-key=bar
           echo -e "S3_SERVER_URL=http://$(ip -4 -j route get 2.2.2.2 | jq -r '.[] | .prefsrc'):80/\nS3_ACCESS_KEY=foo\nS3_SECRET_KEY=bar" > .env
 
