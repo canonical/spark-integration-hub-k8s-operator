@@ -303,7 +303,10 @@ def test_deploy_s3_integrator(juju: jubilant.Juju, charm_versions, microceph_cre
     s3_access_key = microceph_credentials["access-key"]
     s3_secret_key = microceph_credentials["secret-key"]
     s3_tls_ca = microceph_credentials["tls-ca"]
-
+    creds_secret_uri = juju.add_secret(
+        "s3-creds", {"access-key": s3_access_key, "secret-key": s3_secret_key}
+    )
+    juju.grant_secret(creds_secret_uri, charm_versions.s3.application_name)
     juju.config(
         charm_versions.s3.application_name,
         {
@@ -313,12 +316,8 @@ def test_deploy_s3_integrator(juju: jubilant.Juju, charm_versions, microceph_cre
             "s3-uri-style": "path",
             "path": f"{PATH_NAME}/",
             "tls-ca-chain": s3_tls_ca,
+            "credentials": creds_secret_uri,
         },
-    )
-    juju.run(
-        f"{charm_versions.s3.application_name}/0",
-        "sync-s3-credentials",
-        {"access-key": s3_access_key, "secret-key": s3_secret_key},
     )
     juju.wait(lambda status: jubilant.all_active(status, charm_versions.s3.application_name))
     configure_s3_bucket(s3_endpoint, s3_access_key, s3_secret_key)

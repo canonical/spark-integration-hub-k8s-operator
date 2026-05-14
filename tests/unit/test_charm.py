@@ -197,16 +197,13 @@ def test_s3_relation_broken(
         patch("managers.k8s.KubernetesManager.__init__", return_value=None),
         patch("managers.k8s.KubernetesManager.trusted", return_value=True),
     ):
-        state_after_relation_changed = integration_hub_ctx.run(
-            integration_hub_ctx.on.relation_changed(s3_relation), initial_state
-        )
-        state_after_relation_broken = integration_hub_ctx.run(
-            integration_hub_ctx.on.relation_broken(s3_relation), state_after_relation_changed
+        state_out = integration_hub_ctx.run(
+            integration_hub_ctx.on.relation_broken(s3_relation), initial_state
         )
 
-        assert state_after_relation_broken.unit_status == ActiveStatus("")
+        assert state_out.unit_status == ActiveStatus("")
 
-        spark_properties = parse_spark_properties(state_after_relation_broken, tmp_path)
+        spark_properties = parse_spark_properties(state_out, tmp_path)
 
         # Assert one of the keys
         assert "spark.hadoop.fs.s3a.endpoint" not in spark_properties

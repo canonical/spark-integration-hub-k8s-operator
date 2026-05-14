@@ -48,7 +48,7 @@ def pytest_addoption(parser):
 @pytest.fixture
 def charm_versions() -> IntegrationTestsCharms:
     return IntegrationTestsCharms(
-        s3=CharmVersion(name="s3-integrator", channel="1/edge", base="ubuntu@22.04", alias="s3"),
+        s3=CharmVersion(name="s3-integrator", channel="2/edge", base="ubuntu@24.04", alias="s3"),
         azure_storage=CharmVersion(
             name="azure-storage-integrator",
             channel="1/edge",
@@ -257,19 +257,19 @@ def deploy_s3_integrator_charm(juju: jubilant.Juju, charm_versions, s3_credentia
     endpoint_url = s3_credentials["endpoint"]
     access_key = s3_credentials["access_key"]
     secret_key = s3_credentials["secret_key"]
+
+    creds_secret_uri = juju.add_secret(
+        "s3-creds", {"access-key": access_key, "secret-key": secret_key}
+    )
+    juju.grant_secret(creds_secret_uri, charm_versions.s3.application_name)
     juju.config(
         charm_versions.s3.application_name,
         {
             "bucket": BUCKET_NAME,
             "path": "spark-events",
             "endpoint": endpoint_url,
+            "credentials": creds_secret_uri,
         },
     )
-    task = juju.run(
-        f"{charm_versions.s3.application_name}/0",
-        "sync-s3-credentials",
-        params={"secret-key": secret_key, "access-key": access_key},
-    )
-    assert task.return_code == 0
     juju.wait(lambda status: jubilant.all_active(status, charm_versions.s3.application_name))
     return charm_versions.s3.application_name

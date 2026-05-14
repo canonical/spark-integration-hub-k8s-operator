@@ -6,11 +6,11 @@
 
 from enum import Enum
 
-from charms.data_platform_libs.v0.data_interfaces import DataPeerData, RequirerData
+from charms.data_platform_libs.v0.data_interfaces import DataPeerData
 from charms.spark_integration_hub_k8s.v0.spark_service_account import (
     SparkServiceAccountProviderData,
 )
-from object_storage import AzureStorageRequirer
+from object_storage import AzureStorageRequirer, S3Requirer
 from ops import ActiveStatus, BlockedStatus, CharmBase, MaintenanceStatus, Relation
 
 from common.utils import WithLogging
@@ -39,7 +39,7 @@ class Context(WithLogging):
         self.charm = charm
         self.model = charm.model
 
-        self.s3_endpoint = RequirerData(self.charm.model, S3_RELATION_NAME)
+        self.s3_requirer = S3Requirer(self.charm, S3_RELATION_NAME)
         self.azure_storage_requirer = AzureStorageRequirer(
             self.charm,
             AZURE_RELATION_NAME,
@@ -97,7 +97,12 @@ class Context(WithLogging):
     @property
     def s3(self) -> S3ConnectionInfo | None:
         """The server state of the current running Unit."""
-        return S3ConnectionInfo(rel, rel.app) if (rel := self._s3_relation) else None
+        relation_data = (
+            self.s3_requirer.get_storage_connection_info(self._s3_relation)
+            if self._s3_relation
+            else None
+        )
+        return S3ConnectionInfo(relation_data) if relation_data else None
 
     @property
     def azure_storage(self) -> AzureStorageConnectionInfo | None:
