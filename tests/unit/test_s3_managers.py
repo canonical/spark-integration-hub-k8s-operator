@@ -40,7 +40,7 @@ def test_verify_bucket_and_path_exist():
 
     assert manager.verify() is True
     mock_s3.list_objects_v2.assert_called_once_with(Bucket="my-bucket", Prefix="logs/", MaxKeys=1)
-    mock_s3.put_object.assert_called_once_with(Bucket="my-bucket", Key="logs/", Body=b"")
+    mock_s3.put_object.assert_called_once_with(Bucket="my-bucket", Key="logs/.keep", Body=b"")
     mock_s3.create_bucket.assert_not_called()
 
 
@@ -50,7 +50,7 @@ def test_verify_bucket_exists_path_empty():
 
     assert manager.verify() is True
     mock_s3.list_objects_v2.assert_called_once_with(Bucket="my-bucket", Prefix="logs/", MaxKeys=1)
-    mock_s3.put_object.assert_called_once_with(Bucket="my-bucket", Key="logs/", Body=b"")
+    mock_s3.put_object.assert_called_once_with(Bucket="my-bucket", Key="logs/.keep", Body=b"")
     mock_s3.create_bucket.assert_not_called()
 
 
@@ -64,7 +64,7 @@ def test_verify_bucket_missing_creates_bucket_and_path():
 
     assert manager.verify() is True
     mock_s3.create_bucket.assert_called_once_with(Bucket="my-bucket")
-    mock_s3.put_object.assert_called_once_with(Bucket="my-bucket", Key="logs/", Body=b"")
+    mock_s3.put_object.assert_called_once_with(Bucket="my-bucket", Key="logs/.keep", Body=b"")
 
 
 def test_verify_bucket_missing_non_us_east_1_region():
@@ -81,7 +81,7 @@ def test_verify_bucket_missing_non_us_east_1_region():
         Bucket="my-bucket",
         CreateBucketConfiguration={"LocationConstraint": "eu-west-1"},
     )
-    mock_s3.put_object.assert_called_once_with(Bucket="my-bucket", Key="logs/", Body=b"")
+    mock_s3.put_object.assert_called_once_with(Bucket="my-bucket", Key="logs/.keep", Body=b"")
 
 
 def test_verify_composite_path():
@@ -93,7 +93,9 @@ def test_verify_composite_path():
     mock_s3.list_objects_v2.assert_called_once_with(
         Bucket="my-bucket", Prefix="logs/dev1/dev2/", MaxKeys=1
     )
-    mock_s3.put_object.assert_called_once_with(Bucket="my-bucket", Key="logs/dev1/dev2/", Body=b"")
+    mock_s3.put_object.assert_called_once_with(
+        Bucket="my-bucket", Key="logs/dev1/dev2/.keep", Body=b""
+    )
 
 
 def test_verify_read_but_no_write():
