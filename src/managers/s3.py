@@ -11,6 +11,7 @@ from functools import cached_property
 import boto3
 from botocore.client import Config
 from botocore.exceptions import ClientError, SSLError
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_fixed
 
 from common.utils import WithLogging, is_proxy_skipped
 from core.domain import S3ConnectionInfo
@@ -56,6 +57,48 @@ class S3Manager(WithLogging):
             self.logger.error(f"Failed to create bucket... {create_error}")
             return False
 
+    @retry(
+        stop=stop_after_attempt(2),
+        wait=wait_fixed(2),
+        retry=retry_if_exception(
+            lambda e: isinstance(e, ClientError) and e.response["Error"]["Code"] == "NoSuchBucket"
+        ),
+    )
+    def _verify_bucket_and_path(self, s3) -> bool:
+        """Verify read+write access to bucket/path, creating as needed. Retries with 2s backoff."""
+        try:
+            s3.list_objects_v2(
+                Bucket=self.connection_info.bucket,
+                Prefix=f"{self.connection_info.path}/",
+                MaxKeys=1,
+            )
+            s3.put_object(
+                Bucket=self.connection_info.bucket,
+                Key=f"{self.connection_info.path}/.keep",
+                Body=b"",
+            )
+            return True
+        except ClientError as client_error:
+            error_code = client_error.response["Error"]["Code"]
+            if error_code == "NoSuchBucket":
+                if not self._try_create_bucket(s3):
+                    return False
+                raise
+            elif error_code == "PermanentRedirect":
+                self.logger.error(
+                    f"S3 endpoint/region mismatch: bucket exists in a different region. "
+                    f"Update the endpoint or region configuration. {client_error}"
+                )
+            else:
+                self.logger.error(f"Invalid S3 credentials... {client_error}")
+            return False
+        except SSLError as ssl_error:
+            self.logger.error(f"SSL validation failed... {ssl_error}")
+            return False
+        except Exception as e:
+            self.logger.error(f"S3 related error {e}")
+            return False
+
     def verify(self) -> bool:
         """Verify S3 credentials."""
         with tempfile.NamedTemporaryFile() as ca_file:
@@ -74,38 +117,4 @@ class S3Manager(WithLogging):
                     proxies=self._get_proxy_config(),
                 ),
             )
-
-            for attempt in range(2):
-                try:
-                    s3.list_objects_v2(
-                        Bucket=self.connection_info.bucket,
-                        Prefix=f"{self.connection_info.path}/",
-                        MaxKeys=1,
-                    )
-                    s3.put_object(
-                        Bucket=self.connection_info.bucket,
-                        Key=f"{self.connection_info.path}/",
-                        Body=b"",
-                    )
-                    return True
-                except ClientError as client_error:
-                    error_code = client_error.response["Error"]["Code"]
-                    if error_code == "NoSuchBucket":
-                        if not self._try_create_bucket(s3):
-                            return False
-                        continue
-                    elif error_code == "PermanentRedirect":
-                        self.logger.error(
-                            f"S3 endpoint/region mismatch: bucket exists in a different region. "
-                            f"Update the endpoint or region configuration. {client_error}"
-                        )
-                    else:
-                        self.logger.error(f"Invalid S3 credentials... {client_error}")
-                    return False
-                except SSLError as ssl_error:
-                    self.logger.error(f"SSL validation failed... {ssl_error}")
-                    return False
-                except Exception as e:
-                    self.logger.error(f"S3 related error {e}")
-                    return False
-            return True
+            return self._verify_bucket_and_path(s3)
