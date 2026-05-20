@@ -37,6 +37,12 @@ def pytest_addoption(parser):
         default=False,
         help="keep temporarily-created models",
     )
+    parser.addoption(
+        "--model",
+        action="store",
+        help="Juju model to use; if not provided, a new model "
+        "will be created for each test which requires one",
+    )
 
 
 @pytest.fixture
@@ -202,21 +208,29 @@ def test_charm(platform: str) -> Path:
 @pytest.fixture(scope="module")
 def juju(request: pytest.FixtureRequest, platform: str):
     keep_models = bool(request.config.getoption("--keep-models"))
+    model = request.config.getoption("--model")
+    model_name = str(model)
 
-    with jubilant.temp_model(keep=keep_models) as juju:
+    if model is None:
+        with jubilant.temp_model(keep=keep_models) as juju:
+            juju.wait_timeout = 10 * 60
+            juju.cli("set-model-constraints", f"arch={platform}")
+            yield juju
+
+    else:
+        juju = jubilant.Juju()
+        juju.model = model_name
+        try:
+            juju.status()
+        except jubilant.CLIError:
+            juju.add_model(model_name)
+
         juju.wait_timeout = 10 * 60
         juju.cli("set-model-constraints", f"arch={platform}")
+        yield juju
 
-        yield juju  # run the test
-
-        if request.session.testsfailed:
-            log = juju.debug_log(limit=30)
-            print(log, end="")
-
-        status = juju.cli("status")
-        debug_log = juju.debug_log(limit=1000)
-        logger.info(debug_log)
-        logger.info(status)
+    if model is not None and not keep_models:
+        juju.destroy_model(model_name, destroy_storage=True, force=True)
 
 
 @pytest.fixture
