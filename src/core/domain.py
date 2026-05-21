@@ -61,11 +61,11 @@ class User:
     group: str
 
 
-class S3ConnectionInfo(StateBase):
+class S3ConnectionInfo:
     """Class representing credentials and endpoints to connect to S3."""
 
-    def __init__(self, relation: Relation, component: Application):
-        super().__init__(relation, component)
+    def __init__(self, relation_data):
+        self.relation_data = relation_data
 
     @property
     def endpoint(self) -> str:
@@ -100,11 +100,7 @@ class S3ConnectionInfo(StateBase):
     @property
     def tls_ca_chain(self) -> List[str] | None:
         """Return the CA chain (when applicable)."""
-        return (
-            json.loads(ca_chain)
-            if (ca_chain := self.relation_data.get("tls-ca-chain", ""))
-            else None
-        )
+        return self.relation_data.get("tls-ca-chain", None)
 
     @property
     def log_dir(self) -> str:
