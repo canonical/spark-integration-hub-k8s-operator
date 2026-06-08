@@ -35,7 +35,7 @@ optional = true
 [tool.poetry.group.lint.dependencies]
 ruff = ">=0.15.16"
 codespell = ">=2.4.2"
-mypy = "^1.20.2"
+mypy = "^2.1.0"
 types-boto3 = { extras = ["essentials"], version = ">=1.43.23,<1.44" }
 types-pyyaml = "^6.0.12.20250402"
 types-pygments = "^2.19.0.20250305"
