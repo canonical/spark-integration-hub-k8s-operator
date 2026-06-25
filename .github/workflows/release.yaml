@@ -53,6 +53,7 @@ jobs:
     uses: ./.github/workflows/ci.yaml
     permissions:
       actions: read
+      contents: read
 
   release-libs:
     name: Release to CharmHub
