@@ -7,6 +7,9 @@ on:
     branches:
       - 3/edge
 
+permissions:
+  contents: read
+
 jobs:
   release-checks:
     runs-on: ubuntu-22.04
@@ -51,9 +54,6 @@ jobs:
 
   ci-tests:
     uses: ./.github/workflows/ci.yaml
-    permissions:
-      actions: read
-      contents: read
 
   release-libs:
     name: Release to CharmHub
@@ -77,12 +77,11 @@ jobs:
     needs:
       - release-checks
       - ci-tests
-    uses: canonical/data-platform-workflows/.github/workflows/release_charm_edge.yaml@v49.0.2
+    uses: canonical/data-platform-workflows/.github/workflows/release_charm_edge.yaml@v50.0.0
     with:
       track: ${{ needs.release-checks.outputs.track }}
       artifact-prefix: ${{ needs.ci-tests.outputs.artifact-prefix }}
     secrets:
       charmhub-token: ${{ secrets.CHARMHUB_TOKEN }}
     permissions:
-      actions: read
       contents: write # Needed to create git tags
