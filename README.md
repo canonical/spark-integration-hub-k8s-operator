@@ -29,15 +29,26 @@ juju add-model <my-model>
 juju deploy spark-integration-hub-k8s --channel edge --trust
 ```
 
-You can use the `spark-integration-hub` to automatically configure Spark service account. For instance, you can inject s3 credentials by deploying the `s3-integrator` and then relating with the `spark-integration-hub` 
+You can use the `spark-integration-hub` to automatically configure Spark service account. For instance, you can inject s3 credentials by deploying the `s3-integrator`, configuring it and then relating with the `spark-integration-hub` as follows:
 
 ```shell
-juju deploy s3-integrator --channel 1/stable \
-  --config path=<path> \
-  --config endpoint=<s3-endpoint> \
-  --config bucket=<bucket>
+juju deploy s3-integrator --channel 2/stable
+
+SECRET_URI=$(juju add-secret s3-creds access-key=<access-key> secret-key=<secret-key>)
+juju grant-secret s3-creds s3-integrator
+
+juju config s3-integrator \
+  endpoint=<s3-endpoint> \
+  bucket=<bucket> \
+  path=<path> \
+  region=<region> \
+  credentials=$SECRET_URI
+
 juju integrate spark-integration-hub-k8s s3-integrator
 ```
+
+> [!NOTE]  
+> If the `region` is not configured in the `s3-integrator` charm before integrating it with `spark-integration-hub-k8s` charm, the `spark-integration-hub-k8s` charm uses `us-east-1` as the region to send requests to S3.
 
 When creating new Spark service account using the [`spark-client` snap](https://snapcraft.io/spark-client)
 
