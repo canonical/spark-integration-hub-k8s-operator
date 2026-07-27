@@ -174,18 +174,15 @@ class ProviderCharm(CharmBase):
 import logging
 from typing import List, Optional
 
-from ops import (
-    Model,
-    RelationCreatedEvent,
-    SecretChangedEvent,
+from ops import Model, RelationCreatedEvent, SecretChangedEvent
+from ops.charm import (
     CharmBase,
     CharmEvents,
     RelationBrokenEvent,
     RelationChangedEvent,
     RelationEvent,
-    EventSource,
-    ObjectEvents
 )
+from ops.framework import EventSource, ObjectEvents
 
 from charms.data_platform_libs.v0.data_interfaces import (
     SECRET_GROUPS,
