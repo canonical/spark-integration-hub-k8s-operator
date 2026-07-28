@@ -16,8 +16,8 @@ object-storage-charmlib = "^1.0.0"
 [tool.poetry.group.charm-libs.dependencies]
 ops = "^3.0"
 poetry-core = "*"
-# data_platform_libs.v0.data_interface.py
-pydantic = "^1.10.17, <2"
+# data_platform_libs.v1.data_interface.py
+pydantic = "^2"
 # loki_k8s/v1/loki_push_api.py
 pyyaml = "*"
 # loki_k8s/v1/loki_push_api.py
@@ -91,7 +91,7 @@ module = [
   "charms.prometheus_pushgateway_k8s.*",
   "charms.loki_k8s.*",
   "charms.spark_integration_hub_k8s.*",
-  "spark8t.*"
+  "spark8t.*",
 ]
 ignore_missing_imports = true
 
