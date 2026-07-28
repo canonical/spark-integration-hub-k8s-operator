@@ -19,7 +19,7 @@ class CharmConfig(BaseConfigModel):
     enable_dynamic_allocation: bool
     driver_pod_template: str
     executor_pod_template: str
-    monitored_service_accounts: list[str] = Field(default="")
+    monitored_service_accounts: list[str] = Field(default=[""])
     spark_image: str
 
     @validator("monitored_service_accounts", pre=True)
