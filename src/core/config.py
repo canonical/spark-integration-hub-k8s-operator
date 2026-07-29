@@ -7,7 +7,7 @@
 import logging
 import re
 
-from charms.data_platform_libs.v0.data_models import BaseConfigModel
+from charms.data_platform_libs.v1.data_models import BaseConfigModel
 from pydantic import Field, validator
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class CharmConfig(BaseConfigModel):
     enable_dynamic_allocation: bool
     driver_pod_template: str
     executor_pod_template: str
-    monitored_service_accounts: list[str] = Field(default="")
+    monitored_service_accounts: list[str] = Field(default=[""])
     spark_image: str
 
     @validator("monitored_service_accounts", pre=True)

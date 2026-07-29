@@ -4,7 +4,7 @@
 
 """Charmed Kubernetes Operator for the Spark Integration Hub Charm."""
 
-from charms.data_platform_libs.v0.data_models import TypedCharmBase
+from charms.data_platform_libs.v1.data_models import TypedCharmBase
 from ops import CollectStatusEvent, main
 
 from common.utils import WithLogging
