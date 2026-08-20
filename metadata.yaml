@@ -35,7 +35,7 @@ resources:
     type: oci-image
     description: OCI image for the Spark Integration Hub Charm
     # oci-tag=3-22.04_edge
-    upstream-source: ghcr.io/canonical/spark-integration-hub@sha256:60d965c9dafd9c9c32165639fcbf6523966ca7bd630a248f6c361188715805d7
+    upstream-source: ghcr.io/canonical/spark-integration-hub@sha256:495e22e0bbec902155f291bc7e94f79ad6819b15c8ba60ccf9d22ef887d864d7
 
 peers:
   hub-peers:
