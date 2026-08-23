@@ -62,3 +62,35 @@ def test_s3_proxy_plain_ip(monkeypatch: MonkeyPatch) -> None:
     assert s3_proxy_conf.get("spark.hadoop.fs.s3a.proxy.host", "") == proxy_host
     assert s3_proxy_conf.get("spark.hadoop.fs.s3a.proxy.ssl.enabled", "") == "false"
     assert s3_proxy_conf.get("spark.hadoop.fs.s3a.proxy.port", "0") == "80"
+
+
+def test_s3_tls_truststore_mounted_under_spark8t_conf() -> None:
+    """The S3 truststore secret is mounted under /etc/spark8t/conf (writable by _daemon_)."""
+    # Given
+    secret_name = "integrator-hub-conf-truststore-abcd1234"
+    context = mock.MagicMock()
+    context.cluster.truststore_password = "pass"
+    context.cluster.truststore_path = "/etc/hub/conf/truststore.jks"
+    context.cluster.truststore_secret_name = secret_name
+
+    with mock.patch("managers.integration_hub.S3Manager", mock.MagicMock()) as mocked_s3_manager:
+        instance = mocked_s3_manager.return_value
+        instance.connection_info = S3InfoTester(tls_ca_chain="cert")
+        config = IntegrationHubConfig(context, object(), None, None, None, None)  # type: ignore
+
+        # When
+        s3_conf = config._s3_conf
+
+    # Then
+    expected_mount = f"/etc/spark8t/conf/{secret_name}"
+    expected_file = f"{expected_mount}/truststore.jks"
+    assert s3_conf[f"spark.kubernetes.driver.secrets.{secret_name}"] == expected_mount
+    assert s3_conf[f"spark.kubernetes.executor.secrets.{secret_name}"] == expected_mount
+    assert (
+        s3_conf["spark.driver.extraJavaOptions"]
+        == f"-Djavax.net.ssl.trustStore={expected_file} -Djavax.net.ssl.trustStorePassword=pass"
+    )
+    assert (
+        s3_conf["spark.executor.extraJavaOptions"]
+        == f"-Djavax.net.ssl.trustStore={expected_file} -Djavax.net.ssl.trustStorePassword=pass"
+    )

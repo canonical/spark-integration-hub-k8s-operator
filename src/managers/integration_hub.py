@@ -15,6 +15,7 @@ from common.utils import (
     get_hub_truststore_secret_manifest,
     is_proxy_skipped,
 )
+from constants import TRUSTSTORE_MOUNT_BASE
 from core.config import CharmConfig
 from core.context import Context
 from core.domain import (
@@ -99,18 +100,20 @@ class IntegrationHubConfig(WithLogging):
             truststore_password = self.context.cluster.truststore_password
             truststore_filename = os.path.basename(Path(self.context.cluster.truststore_path))
             truststore_secret_name = self.context.cluster.truststore_secret_name
+            truststore_mount_path = f"{TRUSTSTORE_MOUNT_BASE}/{truststore_secret_name}"
+            truststore_file_path = f"{truststore_mount_path}/{truststore_filename}"
 
             base_s3_conf["spark.driver.extraJavaOptions"] = (
-                f"-Djavax.net.ssl.trustStore=/{truststore_secret_name}/{truststore_filename} -Djavax.net.ssl.trustStorePassword={truststore_password}"
+                f"-Djavax.net.ssl.trustStore={truststore_file_path} -Djavax.net.ssl.trustStorePassword={truststore_password}"
             )
             base_s3_conf["spark.executor.extraJavaOptions"] = (
-                f"-Djavax.net.ssl.trustStore=/{truststore_secret_name}/{truststore_filename} -Djavax.net.ssl.trustStorePassword={truststore_password}"
+                f"-Djavax.net.ssl.trustStore={truststore_file_path} -Djavax.net.ssl.trustStorePassword={truststore_password}"
             )
             base_s3_conf[f"spark.kubernetes.executor.secrets.{truststore_secret_name}"] = (
-                truststore_secret_name
+                truststore_mount_path
             )
             base_s3_conf[f"spark.kubernetes.driver.secrets.{truststore_secret_name}"] = (
-                truststore_secret_name
+                truststore_mount_path
             )
             base_s3_conf["spark.hadoop.fs.s3a.connection.ssl.enabled"] = "true"
 
