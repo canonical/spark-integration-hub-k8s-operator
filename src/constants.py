@@ -22,3 +22,9 @@ PEER_REL = "hub-peers"
 TRUSTSTORE_PASSWORD_KEY = "truststore_password"
 TRUSTSTORE_PATH_KEY = "truststore_path"
 TRUSTSTORE_SECRET_NAME_KEY = "truststore_secret_name"
+
+# Base directory where the S3 truststore secret is mounted in the Spark
+# driver/executor pods. It must be writable by the `_daemon_` (584792) user so
+# that non-root workloads (e.g. Kyuubi) can replicate the file for client-side
+# operations.
+TRUSTSTORE_MOUNT_BASE = "/etc/spark8t/conf"
