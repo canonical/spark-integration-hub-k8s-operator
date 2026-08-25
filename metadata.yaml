@@ -26,9 +26,13 @@ assumes:
       - juju < 3.6.10
       - juju >= 3.6.13
 
+charm-user: non-root
+
 containers:
   integration-hub:
     resource: integration-hub-image
+    uid: 584792
+    gid: 584792
 
 resources:
   integration-hub-image:
