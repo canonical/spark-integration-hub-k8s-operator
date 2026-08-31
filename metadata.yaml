@@ -63,3 +63,7 @@ provides:
   spark-service-account:
     interface: spark_service_account
     optional: true
+
+assumes:
+  - k8s-api
+  - juju >= 3.6
