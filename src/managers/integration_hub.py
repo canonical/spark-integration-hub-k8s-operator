@@ -234,6 +234,12 @@ class IntegrationHubConfig(WithLogging):
                     "spark.kubernetes.container.image": spark_image,
                 }
             )
+        # hub_conf.update(
+        #     {
+        #         "spark.kubernetes.driver.label.istio.io/dataplane-mode": "ambient",
+        #         "spark.kubernetes.executor.label.istio.io/dataplane-mode": "ambient",
+        #     }
+        # )
 
         return hub_conf
 
