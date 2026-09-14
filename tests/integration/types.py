@@ -23,6 +23,7 @@ class CharmVersion(BaseModel):
     num_units: int = 1
     alias: str | None = None
     trust: bool = False
+    revision: int | None = None
 
     @property
     def application_name(self) -> str:
@@ -36,6 +37,7 @@ class CharmVersion(BaseModel):
             "num_units": self.num_units,
             "app": self.application_name,
             "trust": self.trust,
+            "revision": self.revision,
         }
 
 
