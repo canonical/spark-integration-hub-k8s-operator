@@ -27,6 +27,8 @@ assumes:
 
 charm-user: non-root
 
+charm-user: non-root
+
 containers:
   integration-hub:
     resource: integration-hub-image
