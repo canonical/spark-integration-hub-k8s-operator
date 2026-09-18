@@ -9,7 +9,7 @@ requires-poetry = ">=2.0.0"
 python = ">3.10,<4.0"
 ops = "^3.8.2"
 boto3 = ">=1.43.96,<1.44"
-lightkube = "0.22.0"
+lightkube = "^1.0.0"
 spark8t = "^1.4.1"
 object-storage-charmlib = "^1.0.0"
 
