@@ -35,7 +35,7 @@ resources:
     type: oci-image
     description: OCI image for the Spark Integration Hub Charm
     # oci-tag=3-22.04_edge
-    upstream-source: ghcr.io/canonical/spark-integration-hub@sha256:495e22e0bbec902155f291bc7e94f79ad6819b15c8ba60ccf9d22ef887d864d7
+    upstream-source: ghcr.io/theoctober19th/spark-integration-hub:3_22.04_edge
 
 peers:
   hub-peers:
@@ -59,11 +59,12 @@ requires:
     interface: service_mesh
     description: |
       Integrate this charm into a service mesh
+    optional: true
   require-cmr-mesh:
     interface: cross_model_mesh
     description: |
       If this app relates to other applications on a charmed service mesh cross-model, use this relation to send that related app additional data needed to automatically generate traffic authorization policies.  This is required because Juju does not natively provide all information required to build these policies when related cross-model.
-
+    optional: true
 provides:
   spark-service-account:
     interface: spark_service_account
@@ -72,3 +73,4 @@ provides:
     interface: cross_model_mesh
     description: |
       If this app is generating policies to provide access to related applications that are cross-model, relate that app to this additional relation to retrieve additional data required for these policies.  This is required because Juju does not natively provide all information required to build these policies when related cross-model.
+    optional: true

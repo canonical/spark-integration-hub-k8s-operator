@@ -234,12 +234,13 @@ class IntegrationHubConfig(WithLogging):
                     "spark.kubernetes.container.image": spark_image,
                 }
             )
-        # hub_conf.update(
-        #     {
-        #         "spark.kubernetes.driver.label.istio.io/dataplane-mode": "ambient",
-        #         "spark.kubernetes.executor.label.istio.io/dataplane-mode": "ambient",
-        #     }
-        # )
+        if self.context.service_mesh_relation:
+            hub_conf.update(
+                {
+                    "spark.kubernetes.driver.label.istio.io/dataplane-mode": "ambient",
+                    "spark.kubernetes.executor.label.istio.io/dataplane-mode": "ambient",
+                }
+            )
 
         return hub_conf
 
@@ -390,16 +391,23 @@ class IntegrationHubManager(WithLogging):
             ]
         ):
             self.logger.info("Updating integration hub config...")
-
-            self.workload.set_environment(
-                {
-                    "SPARK_PROPERTIES_FILE": str(self.workload.paths.spark_properties),
-                    "SA_ALLOWLIST": str(self.workload.paths.allowlist),
-                    "TRUSTSTORE_PATH": str(self.context.cluster.truststore_path),
-                    "TRUSTSTORE_SECRET_NAME": str(self.context.cluster.truststore_secret_name),
-                },
-            )
-
+            environ: dict[str, str | None] = {
+                "SPARK_PROPERTIES_FILE": str(self.workload.paths.spark_properties),
+                "SA_ALLOWLIST": str(self.workload.paths.allowlist),
+                "TRUSTSTORE_PATH": str(self.context.cluster.truststore_path),
+                "TRUSTSTORE_SECRET_NAME": str(self.context.cluster.truststore_secret_name),
+            }
+            if self.context.service_mesh_relation:
+                environ["SERVICE_MESH_ENABLED"] = "true"
+                if self.context.client_relations:
+                    # It is assumed that Kyuubi is deployed in the same model as this charm (Integration Hub),
+                    # and hence the namespace of Kyuubi pod is the same as the current model name.
+                    client_app_service_accounts = [
+                        f"{self.context.model.name}:{relation.app.name}"
+                        for relation in self.context.client_relations
+                    ]
+                    environ["CLIENT_APP_SERVICE_ACCOUNTS"] = ",".join(client_app_service_accounts)
+            self.workload.set_environment(environ)
             self.workload.restart()
 
         if self.context.charm.unit.is_leader():

@@ -5,6 +5,7 @@
 """Service Mesh Integration related event handlers."""
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from charms.istio_beacon_k8s.v0.service_mesh import ServiceMeshConsumer

@@ -95,6 +95,7 @@ module = [
   "charms.loki_k8s.*",
   "charms.spark_integration_hub_k8s.*",
   "spark8t.*",
+  "charms.istio_beacon_k8s.*",
 ]
 ignore_missing_imports = true
 
