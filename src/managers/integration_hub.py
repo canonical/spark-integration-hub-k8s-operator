@@ -15,7 +15,7 @@ from common.utils import (
     get_hub_truststore_secret_manifest,
     is_proxy_skipped,
 )
-from constants import TRUSTSTORE_MOUNT_BASE
+from constants import ISTIO_AMBIENT_LABEL_KEY, ISTIO_AMBIENT_LABEL_VALUE, TRUSTSTORE_MOUNT_BASE
 from core.config import CharmConfig
 from core.context import Context
 from core.domain import (
@@ -237,8 +237,8 @@ class IntegrationHubConfig(WithLogging):
         if self.context.service_mesh_relation:
             hub_conf.update(
                 {
-                    "spark.kubernetes.driver.label.istio.io/dataplane-mode": "ambient",
-                    "spark.kubernetes.executor.label.istio.io/dataplane-mode": "ambient",
+                    f"spark.kubernetes.driver.label.{ISTIO_AMBIENT_LABEL_KEY}": ISTIO_AMBIENT_LABEL_VALUE,
+                    f"spark.kubernetes.executor.label.{ISTIO_AMBIENT_LABEL_KEY}": ISTIO_AMBIENT_LABEL_VALUE,
                 }
             )
 

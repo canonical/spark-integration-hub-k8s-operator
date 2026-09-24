@@ -20,22 +20,25 @@ website:
   - https://matrix.to/#/%23charmhub-analytics%3Aubuntu.com
 maintainers:
   - Canonical Data Platform <data-platform@lists.launchpad.net>
+
 assumes:
   - k8s-api
-  - any-of:
-      - juju < 3.6.10
-      - juju >= 3.6.13
+  - juju >= 3.6.13
+
+charm-user: non-root
 
 containers:
   integration-hub:
     resource: integration-hub-image
+    uid: 584792
+    gid: 584792
 
 resources:
   integration-hub-image:
     type: oci-image
     description: OCI image for the Spark Integration Hub Charm
     # oci-tag=3-22.04_edge
-    upstream-source: ghcr.io/theoctober19th/spark-integration-hub:3_22.04_edge
+    upstream-source: ghcr.io/theoctober19th/spark-integration-hub:3-22.04_edge
 
 peers:
   hub-peers:

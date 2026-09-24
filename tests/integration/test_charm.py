@@ -7,9 +7,17 @@ import logging
 from pathlib import Path
 
 import jubilant
+import lightkube
+import pytest
 import yaml
 
-from .helpers import does_secret_exist, get_secret_data
+from .helpers import (
+    assert_security_context,
+    does_secret_exist,
+    generate_container_securitycontext_map,
+    get_pod_names,
+    get_secret_data,
+)
 from .types import AzureInfo, IntegrationTestsCharms
 
 logger = logging.getLogger(__name__)
@@ -18,10 +26,32 @@ METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 CONTAINER_NAME = "test-container"
 SECRET_NAME_PREFIX = "integrator-hub-conf-"
+CONTAINERS_SECURITY_CONTEXT_MAP = generate_container_securitycontext_map(METADATA)
 
 
 def test_build_and_deploy_hub_charm(juju: jubilant.Juju, deploy_hub_charm: str) -> None:
     juju.wait(lambda status: jubilant.all_active(status, APP_NAME))
+
+
+@pytest.mark.parametrize("container_name", list(CONTAINERS_SECURITY_CONTEXT_MAP.keys()))
+def test_container_security_context(
+    juju: jubilant.Juju,
+    container_name: str,
+) -> None:
+    """Test container security context is correctly set.
+
+    Verify that container spec defines the security context with correct
+    user ID and group ID.
+    """
+    lightkube_client = lightkube.Client()
+    pod_name = get_pod_names(juju.model, APP_NAME)[0]
+    assert_security_context(
+        lightkube_client,
+        pod_name,
+        container_name,
+        CONTAINERS_SECURITY_CONTEXT_MAP,
+        juju.model,
+    )
 
 
 def test_deploy_s3_integrator(

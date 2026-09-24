@@ -8,7 +8,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from charms.istio_beacon_k8s.v0.service_mesh import ServiceMeshConsumer
+from charmlibs.interfaces.service_mesh import (
+    ServiceMeshConsumer,
+    UnitPolicy,
+)
 
 from common.utils import WithLogging
 from core.context import Context

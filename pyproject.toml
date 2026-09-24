@@ -7,11 +7,12 @@ requires-poetry = ">=2.0.0"
 
 [tool.poetry.dependencies]
 python = ">3.10,<4.0"
-ops = "^3.8.1"
-boto3 = ">=1.43.75,<1.44"
-lightkube = "0.22.0"
-spark8t = "^1.4.0"
+ops = "^3.8.2"
+boto3 = ">=1.43.96,<1.44"
+lightkube = "^1.0.0"
+spark8t = "^1.4.1"
 object-storage-charmlib = "^1.0.0"
+charmlibs-interfaces-service-mesh = "^1.0.2"
 
 [tool.poetry.group.charm-libs.dependencies]
 ops = "^3.0"
@@ -22,24 +23,21 @@ pydantic = "^2"
 pyyaml = "*"
 # loki_k8s/v1/loki_push_api.py
 cosl = "*"
-# istio_beacon_k8s/v0/service_mesh.py
-charmed-service-mesh-helpers = ">=0.2.0"
-lightkube-extensions = "*"
 
 [tool.poetry.group.format]
 optional = true
 
 [tool.poetry.group.format.dependencies]
-ruff = ">=0.16.3"
+ruff = ">=0.16.8"
 
 [tool.poetry.group.lint]
 optional = true
 
 [tool.poetry.group.lint.dependencies]
-ruff = ">=0.16.3"
+ruff = ">=0.16.8"
 codespell = ">=2.4.3"
 mypy = "^2.3.1"
-types-boto3 = { extras = ["essentials"], version = ">=1.43.75,<1.44" }
+types-boto3 = { extras = ["essentials"], version = ">=1.43.96,<1.44" }
 types-pyyaml = "^6.0.12.20250402"
 types-pygments = "^2.19.0.20250305"
 
@@ -49,7 +47,7 @@ optional = true
 [tool.poetry.group.unit.dependencies]
 pytest = "^9.1.1"
 coverage = { extras = ["toml"], version = ">7.0" }
-ops = { extras = ["testing"], version = "^3.8.1" }
+ops = { extras = ["testing"], version = "^3.8.2" }
 
 [tool.poetry.group.integration]
 optional = true
@@ -58,7 +56,7 @@ optional = true
 pytest = "^9.1.1"
 coverage = { extras = ["toml"], version = ">7.0" }
 tenacity = "^9.1.4"
-jubilant = "^1.12.0"
+jubilant = "^1.13.0"
 python-dotenv = "^1.2.3"
 
 [tool.ruff]
@@ -95,7 +93,6 @@ module = [
   "charms.loki_k8s.*",
   "charms.spark_integration_hub_k8s.*",
   "spark8t.*",
-  "charms.istio_beacon_k8s.*",
 ]
 ignore_missing_imports = true
 

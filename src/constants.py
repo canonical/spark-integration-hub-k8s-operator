@@ -30,3 +30,6 @@ TRUSTSTORE_SECRET_NAME_KEY = "truststore_secret_name"
 # that non-root workloads (e.g. Kyuubi) can replicate the file for client-side
 # operations.
 TRUSTSTORE_MOUNT_BASE = "/etc/spark8t/conf"
+
+ISTIO_AMBIENT_LABEL_KEY = "istio.io/dataplane-mode"
+ISTIO_AMBIENT_LABEL_VALUE = "ambient"
