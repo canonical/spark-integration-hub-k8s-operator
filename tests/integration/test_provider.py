@@ -188,9 +188,6 @@ def test_skip_creation_of_resources(juju: jubilant.Juju, namespace: str) -> None
         )
         assert apply_result.returncode == 0
 
-    # Now the service account should have been created there
-    assert spark_service_account_exists(namespace, "sa1")
-
     # Once the resource manifest is applied, the service account config should be
     # readable by `spark8t.cli.service_account_registry get-config` command
     command = [

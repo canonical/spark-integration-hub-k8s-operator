@@ -12,7 +12,6 @@ from pathlib import Path
 import jubilant
 import pytest
 import yaml
-from spark8t.utils import K8sSecretKeySerializer
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from .helpers.cos import assert_metrics_in_pushgateway, deploy_observability_setup
@@ -142,9 +141,8 @@ def test_relation_with_logging(
     )
 
     secret_data = get_integration_hub_secret_data(namespace, service_account_name)
-    serializer = K8sSecretKeySerializer()
-    assert serializer.serialize("spark.executorEnv.LOKI_URL") in secret_data
-    assert serializer.serialize("spark.kubernetes.driverEnv.LOKI_URL") in secret_data
+    assert "spark.executorEnv.LOKI_URL" in secret_data
+    assert "spark.kubernetes.driverEnv.LOKI_URL" in secret_data
 
     logger.info(
         "Remove relation between %s and %s",
@@ -155,5 +153,5 @@ def test_relation_with_logging(
     juju.wait(jubilant.all_agents_idle, delay=5)
 
     secret_data = get_integration_hub_secret_data(namespace, service_account_name)
-    assert serializer.serialize("spark.executorEnv.LOKI_URL") not in secret_data
-    assert serializer.serialize("spark.kubernetes.driverEnv.LOKI_URL") not in secret_data
+    assert "spark.executorEnv.LOKI_URL" not in secret_data
+    assert "spark.kubernetes.driverEnv.LOKI_URL" not in secret_data
