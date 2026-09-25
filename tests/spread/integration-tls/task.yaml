@@ -2,7 +2,6 @@
 # See LICENSE file for licensing details.
 
 summary: integration-tls
-prepare:
 prepare: |
   IP=$(ip -4 -j route get 2.2.2.2 | jq -r '.[] | .prefsrc')
 
@@ -22,17 +21,21 @@ prepare: |
     -CAcreateserial -out /tmp/certs/server.crt \
     -days 365 -extfile /tmp/certs/extfile.cnf
 
-  # Configure microceph with TLS
-  microceph cluster bootstrap
-  microceph disk add loop,1G,3
+  # microceph is already bootstrapped with a plaintext RGW by the top-level
+  # prepare in spread.yaml; reconfigure its RGW to serve TLS for this suite.
+  microceph disable rgw
   SERVER_CRT_B64=$(base64 -w0 /tmp/certs/server.crt)
   SERVER_KEY_B64=$(base64 -w0 /tmp/certs/server.key)
   microceph enable rgw --ssl-certificate "$SERVER_CRT_B64" --ssl-private-key "$SERVER_KEY_B64"
-  microceph.radosgw-admin user create \
-    --uid test --display-name test \
-    --access-key=foo --secret-key=bar
+  sleep 15
 
-  printf "S3_SERVER_URL=https://%s:443/\nS3_ACCESS_KEY=foo\nS3_SECRET_KEY=bar\nS3_CA_BUNDLE_PATH=/tmp/certs/ca.crt\n" "$IP" \
+  # The 'test' user is already created by the top-level prepare; create it only if missing.
+  microceph.radosgw-admin user info --uid test >/dev/null 2>&1 || \
+    microceph.radosgw-admin user create \
+      --uid test --display-name test \
+      --access-key=foo --secret-key=bar
+
+  printf "S3_CA_BUNDLE_PATH=/tmp/certs/ca.crt\n" \
     > "$SPREAD_PATH/.env"
 
 execute: |

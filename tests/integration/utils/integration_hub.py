@@ -10,6 +10,7 @@ import jubilant
 import yaml
 from lightkube import Client
 from lightkube.resources.core_v1 import Secret
+from spark8t.utils import K8sSecretKeySerializer
 
 from ..types import AzureInfo, IntegrationTestsCharms, S3Info
 from .azure_storage import prepare_azure_storage_setup
@@ -53,7 +54,10 @@ def integration_hub_secret_exists(
             continue
         if not secret.data:
             continue
-        spark_properties = {k: base64.b64decode(v).decode("utf-8") for k, v in secret.data.items()}
+        spark_properties = {
+            K8sSecretKeySerializer().deserialize(k): base64.b64decode(v).decode("utf-8")
+            for k, v in secret.data.items()
+        }
         if all(spark_properties.get(k) == v for k, v in with_properties.items()):
             return True
     return False

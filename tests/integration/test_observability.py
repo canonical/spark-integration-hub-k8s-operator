@@ -13,6 +13,7 @@ from pathlib import Path
 import jubilant
 import yaml
 from tenacity import retry, stop_after_attempt, wait_fixed
+from spark8t.utils import K8sSecretKeySerializer
 
 from .helpers import (
     get_address,
@@ -205,9 +206,9 @@ def test_relation_with_logging(
     secret_data = get_secret_data(
         namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
-    # Note(rgildein): Double underscores are used in secrets, but only one will be present in POD.
-    assert "spark.executorEnv.LOKI_5fURL" in secret_data
-    assert "spark.kubernetes.driverEnv.LOKI_5fURL" in secret_data
+    serializer = K8sSecretKeySerializer()
+    assert serializer.serialize("spark.executorEnv.LOKI_URL") in secret_data
+    assert serializer.serialize("spark.kubernetes.driverEnv.LOKI_URL") in secret_data
 
     logger.info(
         "Remove relation between %s and %s",
@@ -220,6 +221,5 @@ def test_relation_with_logging(
     secret_data = get_secret_data(
         namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
-    # Note(rgildein): Double underscores are used in secrets, but only one will be present in POD.
-    assert "spark.executorEnv.LOKI_5fURL" not in secret_data
-    assert "spark.kubernetes.driverEnv.LOKI_5fURL" not in secret_data
+    assert serializer.serialize("spark.executorEnv.LOKI_URL") not in secret_data
+    assert serializer.serialize("spark.kubernetes.driverEnv.LOKI_URL") not in secret_data

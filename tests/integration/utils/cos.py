@@ -72,7 +72,9 @@ def assert_metrics_in_pushgateway(pushgateway_address: str) -> None:
 def get_loki_push_endpoint(
     juju: jubilant.Juju, logging_relation_name: str, remote_app_name: str
 ) -> str:
-    loki_unit_data = get_related_unit_data(juju, APP_NAME, logging_relation_name, remote_app_name)
-    logger.error(loki_unit_data)
+    loki_unit_data_map = get_related_unit_data(
+        juju, APP_NAME, logging_relation_name, remote_app_name
+    )
+    loki_unit_data = next(iter(loki_unit_data_map.values()))
     endpoint_data = json.loads(loki_unit_data["endpoint"])
     return endpoint_data["url"]

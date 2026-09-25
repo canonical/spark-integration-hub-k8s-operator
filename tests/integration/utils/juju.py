@@ -23,7 +23,7 @@ def get_unit_address(
 
 def get_related_unit_data(
     juju: jubilant.Juju, app_name: str, relation_name: str, remote_app_name: str
-) -> dict:
+) -> dict[str, dict[str, str]]:
     """Retrieves the application data from a specific relation.
 
     Args:
