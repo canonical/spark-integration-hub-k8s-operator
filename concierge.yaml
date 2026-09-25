@@ -22,4 +22,7 @@ host:
   snaps:
     charmcraft:
       channel: latest/stable
+    spark-client:
+      channel: 3.5/stable
     microceph:
+      channel: squid/stable
