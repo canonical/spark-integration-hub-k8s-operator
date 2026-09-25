@@ -73,5 +73,6 @@ def get_loki_push_endpoint(
     juju: jubilant.Juju, logging_relation_name: str, remote_app_name: str
 ) -> str:
     loki_unit_data = get_related_unit_data(juju, APP_NAME, logging_relation_name, remote_app_name)
+    logger.error(loki_unit_data)
     endpoint_data = json.loads(loki_unit_data["endpoint"])
     return endpoint_data["url"]
