@@ -10,8 +10,7 @@ from typing import cast
 import jubilant
 import yaml
 
-from .types import IntegrationTestsCharms, S3Info
-from .utils.integration_hub import (
+from .helpers.integration_hub import (
     deploy_integration_hub_setup,
     deploy_test_charm_setup,
     get_integration_hub_secret_data,
@@ -19,12 +18,13 @@ from .utils.integration_hub import (
     integration_hub_secret_exists,
     prepare_s3_storage_setup,
 )
-from .utils.spark import (
+from .helpers.spark import (
     assert_spark_job_successful,
     cleanup_workload_pods,
     run_spark_job,
     setup_spark_job,
 )
+from .types import IntegrationTestsCharms, S3Info
 
 logger = logging.getLogger(__name__)
 

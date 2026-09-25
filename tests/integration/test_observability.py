@@ -15,19 +15,19 @@ import yaml
 from spark8t.utils import K8sSecretKeySerializer
 from tenacity import retry, stop_after_attempt, wait_fixed
 
-from .types import IntegrationTestsCharms, S3Info
-from .utils.cos import assert_metrics_in_pushgateway, deploy_observability_setup
-from .utils.integration_hub import (
+from .helpers.cos import assert_metrics_in_pushgateway, deploy_observability_setup
+from .helpers.integration_hub import (
     deploy_integration_hub_setup,
     get_integration_hub_secret_data,
     integration_hub_secret_exists,
 )
-from .utils.juju import get_unit_address
-from .utils.spark import (
+from .helpers.juju import get_unit_address
+from .helpers.spark import (
     cleanup_workload_pods,
     run_long_spark_job,
     wait_for_running_spark_workloads,
 )
+from .types import IntegrationTestsCharms, S3Info
 
 logger = logging.getLogger(__name__)
 

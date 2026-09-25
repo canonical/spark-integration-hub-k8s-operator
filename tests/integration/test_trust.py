@@ -8,10 +8,10 @@ from pathlib import Path
 import jubilant
 import yaml
 
-from .types import IntegrationTestsCharms
-from .utils.integration_hub import (
+from .helpers.integration_hub import (
     deploy_integration_hub_setup,
 )
+from .types import IntegrationTestsCharms
 
 logger = logging.getLogger(__name__)
 

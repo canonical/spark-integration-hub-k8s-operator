@@ -12,16 +12,16 @@ import lightkube
 import pytest
 import yaml
 
-from .types import AzureInfo, IntegrationTestsCharms, S3Info
-from .utils.azure_storage import prepare_azure_storage_setup
-from .utils.integration_hub import (
+from .helpers.azure_storage import prepare_azure_storage_setup
+from .helpers.integration_hub import (
     deploy_integration_hub_setup,
     get_integration_hub_secret_data,
     integration_hub_secret_exists,
 )
-from .utils.juju import get_unit_pod_names
-from .utils.k8s import assert_security_context, generate_container_securitycontext_map
-from .utils.s3 import prepare_s3_storage_setup
+from .helpers.juju import get_unit_pod_names
+from .helpers.k8s import assert_security_context, generate_container_securitycontext_map
+from .helpers.s3 import prepare_s3_storage_setup
+from .types import AzureInfo, IntegrationTestsCharms, S3Info
 
 logger = logging.getLogger(__name__)
 

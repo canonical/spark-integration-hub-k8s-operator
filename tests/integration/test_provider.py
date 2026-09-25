@@ -6,14 +6,14 @@ from pathlib import Path
 import jubilant
 import yaml
 
-from .types import IntegrationTestsCharms
-from .utils.file import umask_named_temporary_file
-from .utils.integration_hub import (
+from .helpers.file import umask_named_temporary_file
+from .helpers.integration_hub import (
     deploy_integration_hub_setup,
     deploy_test_charm_setup,
     integration_hub_secret_exists,
 )
-from .utils.spark import spark_service_account_exists
+from .helpers.spark import spark_service_account_exists
+from .types import IntegrationTestsCharms
 
 logger = logging.getLogger(__name__)
 
