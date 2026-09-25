@@ -12,8 +12,8 @@ from pathlib import Path
 
 import jubilant
 import yaml
-from tenacity import retry, stop_after_attempt, wait_fixed
 from spark8t.utils import K8sSecretKeySerializer
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from .helpers import (
     get_address,

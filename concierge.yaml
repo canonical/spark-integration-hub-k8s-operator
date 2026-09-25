@@ -23,6 +23,6 @@ host:
     charmcraft:
       channel: latest/stable
     spark-client:
-      channel: 3.5/stable
+      channel: 3.5/edge
     microceph:
       channel: squid/stable
