@@ -35,7 +35,8 @@ prepare: |
       --uid test --display-name test \
       --access-key=foo --secret-key=bar
 
-  printf "S3_CA_BUNDLE_PATH=/tmp/certs/ca.crt\n" \
+  S3_IP=$(ip -4 -j route get 2.2.2.2 | jq -r '.[0].prefsrc')
+  printf "S3_SERVER_URL=https://%s:443/\nS3_CA_BUNDLE_PATH=/tmp/certs/ca.crt\n" $S3_IP \
     >> "$SPREAD_PATH/.env"
 
 execute: |
