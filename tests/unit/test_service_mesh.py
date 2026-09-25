@@ -36,11 +36,13 @@ def service_mesh_relation() -> Relation:
 
 
 @patch("managers.k8s.KubernetesManager.trusted", return_value=True)
+@patch("lightkube.Client")
 @patch("charmlibs.interfaces.service_mesh._service_mesh.reconcile_charm_labels")
 @patch("workload.IntegrationHub.exec", return_value="")
 def test_service_mesh_relation_adds_labels(
     mock_exec,
     reconcile_charm_labels,
+    mock_lightkube_client,
     mock_trusted,
     integration_hub_ctx: Context[SparkIntegrationHub],
     integration_hub_container: Container,
