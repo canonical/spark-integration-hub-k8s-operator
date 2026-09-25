@@ -206,8 +206,8 @@ def test_relation_with_logging(
         namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
     # Note(rgildein): Double underscores are used in secrets, but only one will be present in POD.
-    assert "spark.executorEnv.LOKI__URL" in secret_data
-    assert "spark.kubernetes.driverEnv.LOKI__URL" in secret_data
+    assert "spark.executorEnv.LOKI_5fURL" in secret_data
+    assert "spark.kubernetes.driverEnv.LOKI_5fURL" in secret_data
 
     logger.info(
         "Remove relation between %s and %s",
@@ -221,5 +221,5 @@ def test_relation_with_logging(
         namespace, secret_name=f"{SECRET_NAME_PREFIX}{service_account_name}"
     )
     # Note(rgildein): Double underscores are used in secrets, but only one will be present in POD.
-    assert "spark.executorEnv.LOKI__URL" not in secret_data
-    assert "spark.kubernetes.driverEnv.LOKI__URL" not in secret_data
+    assert "spark.executorEnv.LOKI_5fURL" not in secret_data
+    assert "spark.kubernetes.driverEnv.LOKI_5fURL" not in secret_data
