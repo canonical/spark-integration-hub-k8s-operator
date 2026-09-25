@@ -13,28 +13,27 @@ import yaml
 
 from constants import ISTIO_AMBIENT_LABEL_KEY, ISTIO_AMBIENT_LABEL_VALUE
 
-from .types import IntegrationTestsCharms, S3Info
-from .utils.cos import (
+from .helpers.cos import (
     assert_metrics_in_pushgateway,
     deploy_observability_setup,
     get_loki_push_endpoint,
 )
-from .utils.integration_hub import (
+from .helpers.integration_hub import (
     TEST_CHARM_APP_NAME,
     TEST_CHARM_RELATION_A_NAME,
     deploy_integration_hub_setup,
     deploy_test_charm_setup,
     integration_hub_secret_exists,
 )
-from .utils.istio import (
+from .helpers.istio import (
     client_application_authorization_policy_exists,
     deploy_istio_mesh_setup,
     driver_authorization_policy_exists,
     executor_authorization_policy_exists,
 )
-from .utils.juju import get_unit_address, get_unit_pod_names
-from .utils.k8s import curl_using_pod, pod_has_labels
-from .utils.spark import (
+from .helpers.juju import get_unit_address, get_unit_pod_names
+from .helpers.k8s import curl_using_pod, pod_has_labels
+from .helpers.spark import (
     SPARK_DRIVER_UI_PORT,
     assert_spark_job_successful,
     cleanup_workload_pods,
@@ -46,6 +45,7 @@ from .utils.spark import (
     spark_service_account_exists,
     wait_for_running_spark_workloads,
 )
+from .types import IntegrationTestsCharms, S3Info
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
@@ -287,11 +287,15 @@ def test_integration_with_client_app(juju: jubilant.Juju, namespace: str, test_c
 
     logger.info("Removing relation between integration hub and test charm")
     juju.remove_relation(APP_NAME, f"{TEST_CHARM_APP_NAME}:{TEST_CHARM_RELATION_A_NAME}")
+    juju.wait(
+        lambda status: (
+            jubilant.all_active(status, TEST_CHARM_APP_NAME, APP_NAME)
+            and jubilant.all_agents_idle(status)
+        ),
+        delay=15,
+    )
     logger.info(
         "Asserting the cleanup of service account, integration hub secret, and authorization policies"
-    )
-    juju.wait(
-        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=15
     )
     assert not spark_service_account_exists(namespace, "sa1"), (
         "Spark service account 'sa1' should not exist after removing the relation"
@@ -322,7 +326,11 @@ def test_disable_service_mesh(juju: jubilant.Juju, charm_versions: IntegrationTe
         f"{APP_NAME}:service-mesh", f"{charm_versions.istio_beacon.application_name}:service-mesh"
     )
     juju.wait(
-        lambda status: jubilant.all_agents_idle(status) and jubilant.all_active(status), delay=5
+        lambda status: (
+            jubilant.all_agents_idle(status)
+            and jubilant.all_active(status, APP_NAME, charm_versions.istio_beacon.application_name)
+        ),
+        delay=15,
     )
     logger.info("Asserting the istio labels are removed from integration hub pods")
     for pod_name in get_unit_pod_names(cast(str, juju.model), APP_NAME):

@@ -8,17 +8,32 @@ from pathlib import Path
 import jubilant
 import yaml
 
+from .types import IntegrationTestsCharms
+from .utils.integration_hub import (
+    deploy_integration_hub_setup,
+)
+
 logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 
 
-def test_build_and_deploy_hub_charm(juju: jubilant.Juju, deploy_hub_charm: str) -> None:
-    juju.wait(lambda status: jubilant.all_active(status, APP_NAME))
+def test_deploy_integration_hub_with_trust(
+    juju: jubilant.Juju, charm_versions: IntegrationTestsCharms, hub_charm: str | Path
+) -> None:
+    """Test deploying the integration hub charm."""
+    deploy_integration_hub_setup(
+        juju=juju,
+        hub_charm=hub_charm,
+        charm_versions=charm_versions,
+        trust=True,
+    )
+    juju.wait(jubilant.all_active)
 
 
 def test_remove_clusterwide_trust_permissions(juju: jubilant.Juju) -> None:
+    """Test removing cluster-wide trust permissions."""
     juju.trust(APP_NAME, scope="cluster", remove=True)
 
     status = juju.wait(

@@ -3,13 +3,15 @@
 # See LICENSE file for licensing details.
 
 import base64
+import hashlib
 import logging
 from pathlib import Path
 
 import jubilant
 import yaml
-from lightkube import Client
+from lightkube import ApiError, Client
 from lightkube.resources.core_v1 import Secret
+from spark8t.literals import HUB_LABEL
 from spark8t.utils import K8sSecretKeySerializer
 
 from ..types import AzureInfo, IntegrationTestsCharms, S3Info
@@ -20,6 +22,8 @@ METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 TEST_CHARM_APP_NAME = "app"
 TEST_CHARM_RELATION_A_NAME = "spark-account-a"
+SECRET_NAME_PREFIX = "integrator-hub-conf-"
+
 
 # Label the integration hub stamps on the Kubernetes resources it manages.
 MANAGED_BY_LABEL = "app.kubernetes.io/managed-by"
@@ -28,6 +32,75 @@ MANAGED_BY_INTEGRATION_HUB = "integration-hub"
 
 logger = logging.getLogger(__name__)
 logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
+
+
+def get_integration_hub_secret(
+    namespace: str,
+    service_account: str,
+) -> Secret | None:
+    """Return the integration hub secret for the given service account, if it exists."""
+    client = Client()
+    try:
+        secret = client.get(Secret, name=f"{HUB_LABEL}-{service_account}", namespace=namespace)
+        labels = (secret.metadata.labels or {}) if secret.metadata else {}
+        if labels.get(MANAGED_BY_LABEL) != MANAGED_BY_INTEGRATION_HUB:
+            return None
+        return secret
+    except ApiError:
+        return None
+
+
+def get_truststore_secret(
+    model_name: str,
+    app_name: str,
+    namespace: str,
+) -> Secret | None:
+    """Return the truststore secret for the given service account, if it exists."""
+    client = Client()
+    try:
+        suffix = hashlib.sha256(f"{model_name}|{app_name}".encode()).hexdigest()[:8]
+        secret_name = f"{SECRET_NAME_PREFIX}truststore-{suffix}"
+        secret = client.get(Secret, name=secret_name, namespace=namespace)
+        labels = (secret.metadata.labels or {}) if secret.metadata else {}
+        if labels.get(MANAGED_BY_LABEL) != MANAGED_BY_INTEGRATION_HUB:
+            return None
+        return secret
+    except ApiError:
+        return None
+
+
+def get_integration_hub_secret_data(
+    namespace: str,
+    service_account: str,
+) -> dict[str, str]:
+    hub_secret = get_integration_hub_secret(namespace, service_account)
+    if not hub_secret:
+        return {}
+    if not hub_secret.data:
+        return {}
+    spark_properties = {
+        K8sSecretKeySerializer().deserialize(k): base64.b64decode(v).decode("utf-8")
+        for k, v in hub_secret.data.items()
+    }
+    return spark_properties
+
+
+def get_truststore_secret_data(
+    model_name: str,
+    app_name: str,
+    namespace: str,
+) -> dict[str, str]:
+    truststore_secret = get_truststore_secret(
+        model_name=model_name, app_name=app_name, namespace=namespace
+    )
+    if not truststore_secret:
+        return {}
+    if not truststore_secret.data:
+        return {}
+    return {
+        K8sSecretKeySerializer().deserialize(k): base64.b64decode(v).decode("utf-8")
+        for k, v in truststore_secret.data.items()
+    }
 
 
 def integration_hub_secret_exists(
@@ -42,24 +115,18 @@ def integration_hub_secret_exists(
     service account, and whose data pins it to the given namespace and service
     account.
     """
-    client = Client()
+    hub_secret = get_integration_hub_secret(
+        namespace=workload_namespace, service_account=workload_service_account
+    )
+    if not hub_secret:
+        return False
     if not with_properties:
-        with_properties = {"spark.eventLog.enabled": "true"}
-    for secret in client.list(Secret, namespace=workload_namespace):
-        labels = (secret.metadata.labels or {}) if secret.metadata else {}
-        if labels.get(MANAGED_BY_LABEL) != MANAGED_BY_INTEGRATION_HUB:
-            continue
-        name = secret.metadata.name if secret.metadata else ""
-        if not name or not name.endswith(f"-{workload_service_account}"):
-            continue
-        if not secret.data:
-            continue
-        spark_properties = {
-            K8sSecretKeySerializer().deserialize(k): base64.b64decode(v).decode("utf-8")
-            for k, v in secret.data.items()
-        }
-        if all(spark_properties.get(k) == v for k, v in with_properties.items()):
-            return True
+        return True
+    spark_properties = get_integration_hub_secret_data(
+        namespace=workload_namespace, service_account=workload_service_account
+    )
+    if all(spark_properties.get(k) == v for k, v in with_properties.items()):
+        return True
     return False
 
 
@@ -112,6 +179,7 @@ def deploy_test_charm_setup(
     juju: jubilant.Juju,
     test_charm: str | Path,
     spark_workload_namespace: str,
+    integrate: bool = True,
 ) -> None:
     logger.info("Deploying test charm...")
     juju.deploy(test_charm, app=TEST_CHARM_APP_NAME)

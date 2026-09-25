@@ -33,6 +33,7 @@ def prepare_azure_storage_setup(
     juju: jubilant.Juju,
     charm_versions: IntegrationTestsCharms,
     azure_storage_credentials: AzureInfo,
+    integrate: bool = True,
 ):
     """Prepare the Azure storage setup for the history server.
 
@@ -40,6 +41,7 @@ def prepare_azure_storage_setup(
         juju: The Juju client instance.
         charm_versions: The versions of the charms to deploy.
         azure_storage_credentials: The Azure storage credentials information.
+        integrate: Whether to integrate the Azure storage with the integration hub.
     """
     juju.deploy(**charm_versions.azure_storage.deploy_dict())
 
@@ -73,7 +75,7 @@ def prepare_azure_storage_setup(
         lambda status: jubilant.all_active(status, charm_versions.azure_storage.application_name)
     )
 
-    logger.info("Integrating integration hub charm with azure-storage-integrator charm")
-
-    juju.integrate(charm_versions.azure_storage.application_name, APP_NAME)
+    if integrate:
+        logger.info("Integrating integration hub charm with azure-storage-integrator charm")
+        juju.integrate(charm_versions.azure_storage.application_name, APP_NAME)
     juju.wait(jubilant.all_active, delay=5)
