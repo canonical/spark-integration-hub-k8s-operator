@@ -17,8 +17,6 @@ charm-libs:
     version: "0"
   - lib: spark_integration_hub_k8s.spark_service_account
     version: "0"
-  - lib: istio_beacon_k8s.service_mesh
-    version: "0"
 
 # Files implicitly created by charmcraft without a part:
 # - dispatch (https://github.com/canonical/charmcraft/pull/1898)
