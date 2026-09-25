@@ -89,7 +89,7 @@ def get_truststore_secret_data(
     model_name: str,
     app_name: str,
     namespace: str,
-) -> dict[str, str]:
+) -> dict[str, bytes]:
     truststore_secret = get_truststore_secret(
         model_name=model_name, app_name=app_name, namespace=namespace
     )
@@ -98,7 +98,7 @@ def get_truststore_secret_data(
     if not truststore_secret.data:
         return {}
     return {
-        K8sSecretKeySerializer().deserialize(k): base64.b64decode(v).decode("utf-8")
+        K8sSecretKeySerializer().deserialize(k): base64.b64decode(v)
         for k, v in truststore_secret.data.items()
     }
 
