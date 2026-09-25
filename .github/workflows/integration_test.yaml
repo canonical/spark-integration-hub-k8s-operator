@@ -54,8 +54,8 @@ jobs:
               task = task.removeprefix("tests/spread/")
               architecture = "arm64" if runner.endswith("-arm") else "amd64"
 
-              if architecture == "arm64" and task == "integration-observability":
-                  # No ARM build for observability charms
+              if architecture == "arm64" and task in ("integration-observability", "integration-mesh"):
+                  # No ARM build for observability charms and istio charms
                   continue
 
               # Example: "integration-charm:juju36 | amd64"

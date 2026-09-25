@@ -25,27 +25,6 @@ REL_NAME_A = "spark-account-a"
 REL_NAME_B = "spark-account-b"
 
 
-def check_service_account_existance(namespace: str, service_account_name: str) -> bool:
-    """Retrieve secret data for a given namespace and secret."""
-    command = ["kubectl", "get", "sa", "-n", namespace, "--output", "json"]
-    try:
-        output = subprocess.run(command, check=True, capture_output=True)
-        result = output.stdout.decode()
-        logger.info(f"Command: {command}")
-        logger.info(f"Service accounts for namespace: {namespace}")
-        logger.info(f"results: {str(result)}")
-        accounts = json.loads(result)
-        for sa in accounts["items"]:
-            name = sa["metadata"]["name"]
-            logger.info(f"\t secretName: {name}")
-            if name == service_account_name:
-                return True
-        return False
-    except subprocess.CalledProcessError as e:
-        logger.error(e.stdout.decode(), e.stderr.decode(), e.returncode)
-        return False
-
-
 def test_build_and_deploy_charms(
     juju: jubilant.Juju,
     hub_charm: Path,

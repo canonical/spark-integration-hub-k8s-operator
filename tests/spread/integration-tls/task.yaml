@@ -36,7 +36,7 @@ prepare: |
       --access-key=foo --secret-key=bar
 
   printf "S3_CA_BUNDLE_PATH=/tmp/certs/ca.crt\n" \
-    > "$SPREAD_PATH/.env"
+    >> "$SPREAD_PATH/.env"
 
 execute: |
   cd "$SPREAD_PATH"

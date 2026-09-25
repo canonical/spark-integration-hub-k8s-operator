@@ -198,13 +198,13 @@ def deploy_test_charm_setup(
         ),
         delay=5,
     )
-
-    logger.info("Integrating integration hub with test application for service account sa1")
-    juju.integrate(APP_NAME, f"{TEST_CHARM_APP_NAME}:{TEST_CHARM_RELATION_A_NAME}")
-    juju.wait(
-        lambda status: (
-            jubilant.all_active(status, APP_NAME, TEST_CHARM_APP_NAME)
-            and jubilant.all_agents_idle(status)
-        ),
-        delay=15,
-    )
+    if integrate:
+        logger.info("Integrating integration hub with test application for service account sa1")
+        juju.integrate(APP_NAME, f"{TEST_CHARM_APP_NAME}:{TEST_CHARM_RELATION_A_NAME}")
+        juju.wait(
+            lambda status: (
+                jubilant.all_active(status, APP_NAME, TEST_CHARM_APP_NAME)
+                and jubilant.all_agents_idle(status)
+            ),
+            delay=15,
+        )

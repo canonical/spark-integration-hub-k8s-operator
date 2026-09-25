@@ -17,8 +17,8 @@ import yaml
 from botocore.client import Config
 from dotenv import load_dotenv
 
-from .types import AzureInfo, CharmVersion, IntegrationTestsCharms, S3Info
 from .helpers.spark import run_service_account_registry
+from .types import AzureInfo, CharmVersion, IntegrationTestsCharms, S3Info
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]

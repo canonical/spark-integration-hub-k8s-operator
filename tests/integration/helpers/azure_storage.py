@@ -5,7 +5,6 @@
 import logging
 import subprocess
 from pathlib import Path
-from time import sleep
 
 import jubilant
 import yaml
@@ -64,9 +63,6 @@ def prepare_azure_storage_setup(
     logger.info(
         f"Creating container {azure_storage_credentials['container']} with path {azure_storage_credentials['path']}"
     )
-    # First delete container
-    delete_azure_container(azure_storage_credentials["container"])
-    sleep(10)
 
     # apply new configuration options
     logger.info("Setting up configuration for azure-storage-integrator charm...")
