@@ -9,7 +9,7 @@
 job_file="$(dirname "$0")/long_running_spark_job.py"
 
 spark-client.spark-submit -v \
-  --username "$1" --namespace "$2" \
+  --username $1 --namespace $2 \
   --deploy-mode cluster \
   --conf spark.kubernetes.submission.waitAppCompletion=false \
   --conf spark.executor.instances=1 \

@@ -1,8 +1,10 @@
+import json
 import logging
 import subprocess
 import uuid
-from typing import cast
+from typing import TypedDict, cast
 
+import lightkube
 from lightkube import ApiError, Client
 from lightkube.core.client import LabelSelector
 from lightkube.resources.core_v1 import Pod
@@ -11,6 +13,13 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 CURL_IMAGE = "curlimages/curl:8.10.1"
 
 logger = logging.getLogger(__name__)
+
+
+class ContainerSecurityContext(TypedDict):
+    """TypedDict representing Kubernetes container security context settings."""
+
+    runAsUser: int | None  # noqa N815
+    runAsGroup: int | None  # noqa N815
 
 
 def get_pods_by_label(labels: dict[str, str], namespace: str | None = None) -> list[str]:
@@ -163,3 +172,60 @@ def curl_using_pod(
         capture_output=True,
         text=True,
     )
+
+
+def generate_container_securitycontext_map(
+    metadata_yaml: dict, juju_user_id: int = 170
+) -> dict[str, ContainerSecurityContext]:
+    """Generate a mapping of container names to their security context UID/GID settings."""
+    c_uid_map = {}
+    for k, v in metadata_yaml.get("containers", {}).items():
+        c_uid_map[k] = ContainerSecurityContext(
+            runAsUser=v["uid"],
+            runAsGroup=v["gid"],
+        )
+    c_uid_map["charm"] = {"runAsUser": juju_user_id, "runAsGroup": juju_user_id}
+    return c_uid_map
+
+
+def assert_security_context(
+    lightkube_client: lightkube.Client,
+    pod_name: str,
+    container_name: str,
+    container_securitycontext_map: dict[str, ContainerSecurityContext],
+    model_name: str,
+) -> None:
+    """Assert that a container's security context matches expected UID/GID settings."""
+    pod_spec = lightkube_client.get(Pod, pod_name, namespace=model_name).spec
+    assert pod_spec is not None
+    containers: list = pod_spec.containers
+    container = next((c for c in containers if c.name == container_name), None)
+    assert container is not None
+    security_context = container.securityContext
+    for key, value in container_securitycontext_map.get(container_name, {}).items():
+        assert getattr(security_context, key) == value
+
+
+def get_secret_data(namespace: str, secret_name: str):
+    """Retrieve secret data for a given namespace and secret."""
+    command = ["kubectl", "get", "secret", "-n", namespace, "--output", "json"]
+    try:
+        output = subprocess.run(command, check=True, capture_output=True)
+        # output.stdout.decode(), output.stderr.decode(), output.returncode
+        result = output.stdout.decode()
+        logger.info(f"Command: {command}")
+        logger.info(f"Secrets for namespace: {namespace}")
+        logger.info(f"Request secret: {secret_name}")
+        logger.info(f"results: {str(result)}")
+        secrets = json.loads(result)
+        data = {}
+        for secret in secrets["items"]:
+            name = secret["metadata"]["name"]
+            logger.info(f"\t secretName: {name}")
+            if name == secret_name:
+                data = {}
+                if "data" in secret:
+                    data = secret["data"]
+        return data
+    except subprocess.CalledProcessError as e:
+        return e.stdout.decode(), e.stderr.decode(), e.returncode

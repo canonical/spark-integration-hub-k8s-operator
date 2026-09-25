@@ -146,6 +146,7 @@ def assert_security_context(
     """Assert that a container's security context matches expected UID/GID settings."""
     containers: list = lightkube_client.get(Pod, pod_name, namespace=model_name).spec.containers
     container = next((c for c in containers if c.name == container_name), None)
+    assert container is not None
     security_context = container.securityContext
-    for key, value in container_securitycontext_map.get(container_name).items():
+    for key, value in container_securitycontext_map.get(container_name, {}).items():
         assert getattr(security_context, key) == value

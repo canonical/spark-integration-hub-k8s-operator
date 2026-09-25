@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 
 from charmlibs.interfaces.service_mesh import (
     ServiceMeshConsumer,
-    UnitPolicy,
 )
 
 from common.utils import WithLogging

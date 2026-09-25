@@ -13,7 +13,6 @@ from .k8s import (
     get_pod_logs,
     get_pod_phase,
     get_pods_by_label,
-    pod_has_labels,
     wait_for_pod_phase,
 )
 
@@ -34,7 +33,7 @@ def setup_spark_job(
         shell=True,
         stderr=None,
     ).decode("utf-8")
-
+    logger.info("Spark job setup output:\n%s", setup_spark_output)
     return setup_spark_output
 
 
@@ -50,6 +49,20 @@ def run_spark_job(
         stderr=None,
     ).decode("utf-8")
     return output
+
+
+def spark_service_account_exists(namespace: str, service_account: str) -> bool:
+    """Check whether a `namespace:service-account` Spark service account exists.
+
+    Args:
+        namespace: namespace of the Spark service account.
+        service_account: name of the Spark service account.
+    """
+    output = subprocess.check_output(
+        ["spark-client.service-account-registry", "list"],
+        text=True,
+    )
+    return f"{namespace}:{service_account}" in output.split()
 
 
 def run_long_spark_job(

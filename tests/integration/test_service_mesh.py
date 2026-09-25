@@ -7,10 +7,27 @@ from pathlib import Path
 from typing import cast
 
 import jubilant
+import pytest
 import yaml
 
+from constants import ISTIO_AMBIENT_LABEL_KEY, ISTIO_AMBIENT_LABEL_VALUE
+
 from .types import IntegrationTestsCharms, S3Info
-from .utils.integration_hub import deploy_integration_hub_setup
+from .utils.cos import assert_metrics_in_pushgateway, deploy_observability_setup
+from .utils.integration_hub import (
+    TEST_CHARM_APP_NAME,
+    deploy_integration_hub_setup,
+    deploy_test_charm_setup,
+    integration_hub_secret_exists,
+)
+from .utils.istio import (
+    client_application_authorization_policy_exists,
+    deploy_istio_mesh_setup,
+    driver_authorization_policy_exists,
+    executor_authorization_policy_exists,
+)
+from .utils.juju import get_unit_address, get_unit_pod_names
+from .utils.k8s import curl_using_pod, pod_has_labels
 from .utils.spark import (
     SPARK_DRIVER_UI_PORT,
     assert_spark_job_successful,
@@ -20,13 +37,9 @@ from .utils.spark import (
     run_long_spark_job,
     run_spark_job,
     setup_spark_job,
+    spark_service_account_exists,
     wait_for_running_spark_workloads,
 )
-from .utils.k8s import curl_using_pod, pod_has_labels
-from .utils.juju import get_unit_pod_names
-from .utils.istio import deploy_istio_mesh_setup
-
-from constants import ISTIO_AMBIENT_LABEL_KEY, ISTIO_AMBIENT_LABEL_VALUE
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
@@ -39,6 +52,7 @@ def test_deploy_integration_hub(
     hub_charm: str,
     charm_versions: IntegrationTestsCharms,
     s3_credentials: S3Info,
+    namespace: str,
 ):
     """Test deploying the integration hub with S3 storage integration."""
     deploy_integration_hub_setup(
@@ -46,6 +60,7 @@ def test_deploy_integration_hub(
         hub_charm=hub_charm,
         charm_versions=charm_versions,
         s3_credentials=s3_credentials,
+        monitored_service_accounts=f"{namespace}:*",
         trust=True,
     )
     juju.wait(jubilant.all_active)
@@ -188,16 +203,81 @@ def test_access_spark_workloads_from_meshed_pod_but_unauthorized_after_meshing(
         cleanup_workload_pods(namespace=namespace)
 
 
-def test_observability_with_ambient_mesh():
-    pass
+def test_observability_with_ambient_mesh(
+    juju: jubilant.Juju,
+    charm_versions: IntegrationTestsCharms,
+    service_account: str,
+    platform: str,
+):
+    if platform == "arm64":
+        pytest.skip("Skipping observability tests on arm64 platform...")
+
+    deploy_observability_setup(juju, charm_versions)
+
+    pushgateway_address = get_unit_address(juju, charm_versions.pushgateway.application_name)
+    with pytest.raises(AssertionError):
+        assert_metrics_in_pushgateway(pushgateway_address=pushgateway_address)
+
+    service_account_name, namespace = service_account
+    try:
+        run_long_spark_job(namespace=namespace, service_account=service_account_name)
+        wait_for_running_spark_workloads(namespace=namespace)
+        assert_metrics_in_pushgateway(pushgateway_address=pushgateway_address)
+    finally:
+        cleanup_workload_pods(namespace=namespace)
+
+    with pytest.raises(AssertionError):
+        assert_metrics_in_pushgateway(pushgateway_address=pushgateway_address)
 
 
-def test_deploy_and_integrate_client_app():
-    pass
+def test_integration_with_client_app(juju: jubilant.Juju, namespace: str, test_charm: str | Path):
+    deploy_test_charm_setup(
+        juju=juju,
+        test_charm=test_charm,
+        spark_workload_namespace=namespace,
+    )
+    assert spark_service_account_exists(namespace, "sa1")
+    assert integration_hub_secret_exists(namespace, "sa1"), (
+        "Integration hub secret for service account 'sa1' does not exist"
+    )
+    assert driver_authorization_policy_exists(namespace, "sa1"), (
+        "Driver authorization policy for service account 'sa1' does not exist"
+    )
+    assert executor_authorization_policy_exists(namespace, "sa1"), (
+        "Executor authorization policy for service account 'sa1' does not exist"
+    )
+    assert client_application_authorization_policy_exists(
+        workload_namespace=namespace,
+        workload_service_account="sa1",
+        client_app_namespace=cast(str, juju.model),
+        client_app_service_account=TEST_CHARM_APP_NAME,
+    ), "Client application authorization policy for service account 'sa1' does not exist"
 
-
-def test_access_spark_workload_from_client_app_after_meshing():
-    pass
+    logger.info("Removing relation between integration hub and test charm")
+    juju.remove_relation(APP_NAME, f"{TEST_CHARM_APP_NAME}:sa1")
+    juju.wait(
+        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
+    )
+    assert not spark_service_account_exists(namespace, "sa1"), (
+        "Spark service account 'sa1' should not exist after removing the relation"
+    )
+    assert not integration_hub_secret_exists(namespace, "sa1"), (
+        "Integration hub secret for service account 'sa1' should not exist after removing the relation"
+    )
+    assert not driver_authorization_policy_exists(namespace, "sa1"), (
+        "Driver authorization policy for service account 'sa1' should not exist after removing the relation"
+    )
+    assert not executor_authorization_policy_exists(namespace, "sa1"), (
+        "Executor authorization policy for service account 'sa1' should not exist after removing the relation"
+    )
+    assert not client_application_authorization_policy_exists(
+        workload_namespace=namespace,
+        workload_service_account="sa1",
+        client_app_namespace=cast(str, juju.model),
+        client_app_service_account=TEST_CHARM_APP_NAME,
+    ), (
+        "Client application authorization policy for service account 'sa1' should not exist after removing the relation"
+    )
 
 
 def test_disable_service_mesh(juju: jubilant.Juju, charm_versions: IntegrationTestsCharms):
