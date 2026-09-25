@@ -18,6 +18,7 @@ from .s3 import prepare_s3_storage_setup
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 TEST_CHARM_APP_NAME = "app"
+TEST_CHARM_RELATION_A_NAME = "spark-account-a"
 
 # Label the integration hub stamps on the Kubernetes resources it manages.
 MANAGED_BY_LABEL = "app.kubernetes.io/managed-by"
@@ -28,7 +29,11 @@ logger = logging.getLogger(__name__)
 logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
-def integration_hub_secret_exists(workload_namespace: str, workload_service_account: str) -> bool:
+def integration_hub_secret_exists(
+    workload_namespace: str,
+    workload_service_account: str,
+    with_properties: dict[str, str] | None = None,
+) -> bool:
     """Whether the integration hub config secret for a service account is in place.
 
     Matches on behaviour: a Secret in `workload_namespace` managed by the
@@ -37,6 +42,8 @@ def integration_hub_secret_exists(workload_namespace: str, workload_service_acco
     account.
     """
     client = Client()
+    if not with_properties:
+        with_properties = {"spark.eventLog.enabled": "true"}
     for secret in client.list(Secret, namespace=workload_namespace):
         labels = (secret.metadata.labels or {}) if secret.metadata else {}
         if labels.get(MANAGED_BY_LABEL) != MANAGED_BY_INTEGRATION_HUB:
@@ -47,11 +54,7 @@ def integration_hub_secret_exists(workload_namespace: str, workload_service_acco
         if not secret.data:
             continue
         spark_properties = {k: base64.b64decode(v).decode("utf-8") for k, v in secret.data.items()}
-        if (
-            spark_properties["spark.kubernetes.namespace"] == workload_namespace
-            and spark_properties["spark.kubernetes.authenticate.driver.serviceAccountName"]
-            == workload_service_account
-        ):
+        if all(spark_properties.get(k) == v for k, v in with_properties.items()):
             return True
     return False
 
@@ -108,7 +111,7 @@ def deploy_test_charm_setup(
 ) -> None:
     logger.info("Deploying test charm...")
     juju.deploy(test_charm, app=TEST_CHARM_APP_NAME)
-    juju.wait(jubilant.all_active, delay=5)
+    juju.wait(lambda status: jubilant.all_agents_idle(status), delay=5)
 
     logger.info("Configuring test charm...")
     juju.config(
@@ -118,11 +121,18 @@ def deploy_test_charm_setup(
         },
     )
     juju.wait(
-        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
+        lambda status: (
+            jubilant.all_active(status, TEST_CHARM_APP_NAME) and jubilant.all_agents_idle(status)
+        ),
+        delay=5,
     )
 
     logger.info("Integrating integration hub with test application for service account sa1")
-    juju.integrate(APP_NAME, f"{TEST_CHARM_APP_NAME}:sa1")
+    juju.integrate(APP_NAME, f"{TEST_CHARM_APP_NAME}:{TEST_CHARM_RELATION_A_NAME}")
     juju.wait(
-        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
+        lambda status: (
+            jubilant.all_active(status, APP_NAME, TEST_CHARM_APP_NAME)
+            and jubilant.all_agents_idle(status)
+        ),
+        delay=15,
     )

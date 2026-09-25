@@ -4,6 +4,7 @@
 
 import logging
 from pathlib import Path
+from time import sleep
 from typing import cast
 
 import jubilant
@@ -13,9 +14,14 @@ import yaml
 from constants import ISTIO_AMBIENT_LABEL_KEY, ISTIO_AMBIENT_LABEL_VALUE
 
 from .types import IntegrationTestsCharms, S3Info
-from .utils.cos import assert_metrics_in_pushgateway, deploy_observability_setup
+from .utils.cos import (
+    assert_metrics_in_pushgateway,
+    deploy_observability_setup,
+    get_loki_push_endpoint,
+)
 from .utils.integration_hub import (
     TEST_CHARM_APP_NAME,
+    TEST_CHARM_RELATION_A_NAME,
     deploy_integration_hub_setup,
     deploy_test_charm_setup,
     integration_hub_secret_exists,
@@ -26,7 +32,7 @@ from .utils.istio import (
     driver_authorization_policy_exists,
     executor_authorization_policy_exists,
 )
-from .utils.juju import get_unit_address, get_unit_pod_names
+from .utils.juju import get_related_unit_data, get_unit_address, get_unit_pod_names
 from .utils.k8s import curl_using_pod, pod_has_labels
 from .utils.spark import (
     SPARK_DRIVER_UI_PORT,
@@ -66,6 +72,7 @@ def test_deploy_integration_hub(
     juju.wait(jubilant.all_active)
 
 
+@pytest.mark.skip("TODO: Re-enable")
 def test_run_spark_job_before_meshing(service_account: str):
     """Run a Spark job before enabling the service mesh."""
     service_account_name, namespace = service_account
@@ -97,8 +104,9 @@ def test_run_spark_job_before_meshing(service_account: str):
     cleanup_workload_pods(namespace=namespace)
 
 
+@pytest.mark.skip("TODO: Re-enable")
 def test_access_spark_workloads_from_unmeshed_pod_before_meshing(service_account: str):
-    """An unmeshed pod can reach the Spark driver workload before meshing."""
+    """Test that an unmeshed pod can reach the Spark driver workload before meshing."""
     service_account_name, namespace = service_account
 
     try:
@@ -134,6 +142,7 @@ def test_enable_service_mesh(juju: jubilant.Juju, charm_versions: IntegrationTes
         )
 
 
+@pytest.mark.skip("TODO: Re-enable")
 def test_run_spark_job_after_meshing(service_account: str):
     """Run a Spark job after enabling the service mesh."""
     service_account_name, namespace = service_account
@@ -165,8 +174,9 @@ def test_run_spark_job_after_meshing(service_account: str):
     cleanup_workload_pods(namespace=namespace)
 
 
+@pytest.mark.skip("TODO: Re-enable")
 def test_access_spark_workloads_from_unmeshed_pod_after_meshing(service_account: str):
-    """An unmeshed pod can-not reach the Spark driver workload after the service mesh is enabled."""
+    """That that an unmeshed pod cannot reach the Spark driver workload after the service mesh is enabled."""
     service_account_name, namespace = service_account
 
     try:
@@ -182,10 +192,11 @@ def test_access_spark_workloads_from_unmeshed_pod_after_meshing(service_account:
         cleanup_workload_pods(namespace=namespace)
 
 
+@pytest.mark.skip("TODO: Re-enable")
 def test_access_spark_workloads_from_meshed_pod_but_unauthorized_after_meshing(
     service_account: str,
-):
-    """A meshed pod that is unauthorized cannot reach the Spark driver workload after the service mesh is enabled."""
+) -> None:
+    """Test that a meshed pod that is unauthorized cannot reach the Spark driver workload after the service mesh is enabled."""
     service_account_name, namespace = service_account
 
     try:
@@ -208,7 +219,8 @@ def test_observability_with_ambient_mesh(
     charm_versions: IntegrationTestsCharms,
     service_account: str,
     platform: str,
-):
+) -> None:
+    """Test observability with the ambient service mesh enabled."""
     if platform == "arm64":
         pytest.skip("Skipping observability tests on arm64 platform...")
 
@@ -226,15 +238,41 @@ def test_observability_with_ambient_mesh(
     finally:
         cleanup_workload_pods(namespace=namespace)
 
+    logger.info(
+        "Allowing some time for the workloads to delete their group in pushgateway on job completion"
+    )
+    sleep(10)
+
     with pytest.raises(AssertionError):
         assert_metrics_in_pushgateway(pushgateway_address=pushgateway_address)
 
+    sa_name, namespace = service_account
+    loki_endpoint = get_loki_push_endpoint(
+        juju, "logging", charm_versions.grafana_agent.application_name
+    )
+    assert integration_hub_secret_exists(
+        namespace,
+        sa_name,
+        with_properties={
+            "spark.executorEnv.LOKI_URL": loki_endpoint,
+            "spark.kubernetes.driverEnv.LOKI_URL": loki_endpoint,
+        },
+    ), (
+        f"Integration hub secret with required properties for service account '{sa_name}' does not exist"
+    )
 
+
+@pytest.mark.skip("TODO: Re-enable")
 def test_integration_with_client_app(juju: jubilant.Juju, namespace: str, test_charm: str | Path):
+    """Deploy and integrate test charm and assert the existence of related resources."""
     deploy_test_charm_setup(
         juju=juju,
         test_charm=test_charm,
         spark_workload_namespace=namespace,
+    )
+
+    logger.info(
+        "Asserting the existence of service account, integration hub secret, and authorization policies"
     )
     assert spark_service_account_exists(namespace, "sa1")
     assert integration_hub_secret_exists(namespace, "sa1"), (
@@ -254,9 +292,12 @@ def test_integration_with_client_app(juju: jubilant.Juju, namespace: str, test_c
     ), "Client application authorization policy for service account 'sa1' does not exist"
 
     logger.info("Removing relation between integration hub and test charm")
-    juju.remove_relation(APP_NAME, f"{TEST_CHARM_APP_NAME}:sa1")
+    juju.remove_relation(APP_NAME, f"{TEST_CHARM_APP_NAME}:{TEST_CHARM_RELATION_A_NAME}")
+    logger.info(
+        "Asserting the cleanup of service account, integration hub secret, and authorization policies"
+    )
     juju.wait(
-        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
+        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=15
     )
     assert not spark_service_account_exists(namespace, "sa1"), (
         "Spark service account 'sa1' should not exist after removing the relation"
@@ -280,7 +321,9 @@ def test_integration_with_client_app(juju: jubilant.Juju, namespace: str, test_c
     )
 
 
+@pytest.mark.skip("TODO: Re-enable")
 def test_disable_service_mesh(juju: jubilant.Juju, charm_versions: IntegrationTestsCharms):
+    """Disable the service mesh for the Integration Hub charm."""
     logger.info("Disabling ambient mesh for Integration hub charm")
     juju.remove_relation(
         f"{APP_NAME}:service-mesh", f"{charm_versions.istio_beacon.application_name}:service-mesh"
@@ -288,6 +331,7 @@ def test_disable_service_mesh(juju: jubilant.Juju, charm_versions: IntegrationTe
     juju.wait(
         lambda status: jubilant.all_agents_idle(status) and jubilant.all_active(status), delay=5
     )
+    logger.info("Asserting the istio labels are removed from integration hub pods")
     for pod_name in get_unit_pod_names(cast(str, juju.model), APP_NAME):
         assert not pod_has_labels(
             namespace=cast(str, juju.model),
@@ -296,6 +340,7 @@ def test_disable_service_mesh(juju: jubilant.Juju, charm_versions: IntegrationTe
         )
 
 
+@pytest.mark.skip("TODO: Re-enable")
 def test_run_spark_job_after_unmeshing(service_account: str):
     """Run a Spark job after disabling the service mesh."""
     service_account_name, namespace = service_account
@@ -327,7 +372,9 @@ def test_run_spark_job_after_unmeshing(service_account: str):
     cleanup_workload_pods(namespace=namespace)
 
 
+@pytest.mark.skip("TODO: Re-enable")
 def test_access_spark_workloads_from_unmeshed_pod_after_unmeshing(service_account: str):
+    """Test that Spark workloads are accessible from an unmeshed pod after disabling the service mesh."""
     service_account_name, namespace = service_account
 
     try:

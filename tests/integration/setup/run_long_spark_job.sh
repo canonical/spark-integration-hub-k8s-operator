@@ -15,3 +15,12 @@ spark-client.spark-submit -v \
   --conf spark.executor.instances=1 \
   --conf spark.kubernetes.executor.request.cores=0.1 \
   "$job_file"
+
+
+spark-client.spark-submit -v \
+  --username 1977da26-8048-4ac2-8547-45fef58b8286 --namespace 32164e94-49a6-4b91-b271-cb59f1b90139 \
+  --deploy-mode cluster \
+  --conf spark.kubernetes.submission.waitAppCompletion=false \
+  --conf spark.executor.instances=1 \
+  --conf spark.kubernetes.executor.request.cores=0.1 \
+  tests/integration/setup/long_running_spark_job.py
