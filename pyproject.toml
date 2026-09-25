@@ -10,7 +10,7 @@ python = ">3.10,<4.0"
 ops = "^3.8.2"
 boto3 = ">=1.43.96,<1.44"
 lightkube = "^1.0.0"
-spark8t = "^1.4.1"
+spark8t = "^1.5.0"
 object-storage-charmlib = "^1.0.0"
 charmlibs-interfaces-service-mesh = "^1.0.2"
 
