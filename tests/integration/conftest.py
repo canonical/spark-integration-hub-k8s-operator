@@ -17,7 +17,7 @@ import yaml
 from botocore.client import Config
 from dotenv import load_dotenv
 
-from .helpers import run_service_account_registry
+from .helpers.spark import run_service_account_registry
 from .types import AzureInfo, CharmVersion, IntegrationTestsCharms, S3Info
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
@@ -231,45 +231,3 @@ def juju(request: pytest.FixtureRequest, platform: str):
 
     if model is not None and not keep_models:
         juju.destroy_model(model_name, destroy_storage=True, force=True)
-
-
-@pytest.fixture
-def deploy_hub_charm(juju: jubilant.Juju, hub_charm: Path) -> str:
-    image_version = METADATA["resources"]["integration-hub-image"]["upstream-source"]
-    logger.info(f"Image version: {image_version}")
-
-    resources = {"integration-hub-image": image_version}
-    logger.info(
-        "Deploying Spark Integration hub charm, s3-integrator charm and azure-storage-integrator charm"
-    )
-    juju.deploy(
-        hub_charm, app=APP_NAME, resources=resources, num_units=1, base="ubuntu@22.04", trust=True
-    )
-    juju.wait(lambda status: jubilant.all_active(status, APP_NAME))
-    return APP_NAME
-
-
-@pytest.fixture
-def deploy_s3_integrator_charm(juju: jubilant.Juju, charm_versions, s3_credentials: S3Info) -> str:
-    juju.deploy(**charm_versions.s3.deploy_dict())
-    juju.wait(jubilant.all_agents_idle)
-
-    endpoint_url = s3_credentials["endpoint"]
-    access_key = s3_credentials["access_key"]
-    secret_key = s3_credentials["secret_key"]
-
-    creds_secret_uri = juju.add_secret(
-        "s3-creds", {"access-key": access_key, "secret-key": secret_key}
-    )
-    juju.grant_secret(creds_secret_uri, charm_versions.s3.application_name)
-    juju.config(
-        charm_versions.s3.application_name,
-        {
-            "bucket": BUCKET_NAME,
-            "path": "spark-events",
-            "endpoint": endpoint_url,
-            "credentials": creds_secret_uri,
-        },
-    )
-    juju.wait(lambda status: jubilant.all_active(status, charm_versions.s3.application_name))
-    return charm_versions.s3.application_name
