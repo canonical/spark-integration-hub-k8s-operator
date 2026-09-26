@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 from lightkube.codecs import AnyResource, dump_all_yaml
 from lightkube.resources.core_v1 import Secret
 from spark8t.literals import HUB_LABEL
-from spark8t.utils import PercentEncodingSerializer
+from spark8t.utils import K8sSecretKeySerializer
 
 PathLike = Union[str, "os.PathLike[str]"]
 
@@ -87,7 +87,7 @@ def get_hub_secret_manifest(
     if configurations is None:
         configurations = {}
     serialized_config = {
-        PercentEncodingSerializer().serialize(key): value for key, value in configurations.items()
+        K8sSecretKeySerializer().serialize(key): value for key, value in configurations.items()
     }
     secret = Secret.from_dict(
         {

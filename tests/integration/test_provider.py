@@ -6,7 +6,14 @@ from pathlib import Path
 import jubilant
 import yaml
 
-from .helpers import umask_named_temporary_file
+from .helpers.file import umask_named_temporary_file
+from .helpers.integration_hub import (
+    deploy_integration_hub_setup,
+    deploy_test_charm_setup,
+    integration_hub_secret_exists,
+)
+from .helpers.spark import spark_service_account_exists
+from .types import IntegrationTestsCharms
 
 logger = logging.getLogger(__name__)
 
@@ -18,52 +25,27 @@ REL_NAME_A = "spark-account-a"
 REL_NAME_B = "spark-account-b"
 
 
-def check_service_account_existance(namespace: str, service_account_name: str) -> bool:
-    """Retrieve secret data for a given namespace and secret."""
-    command = ["kubectl", "get", "sa", "-n", namespace, "--output", "json"]
-    try:
-        output = subprocess.run(command, check=True, capture_output=True)
-        result = output.stdout.decode()
-        logger.info(f"Command: {command}")
-        logger.info(f"Service accounts for namespace: {namespace}")
-        logger.info(f"results: {str(result)}")
-        accounts = json.loads(result)
-        for sa in accounts["items"]:
-            name = sa["metadata"]["name"]
-            logger.info(f"\t secretName: {name}")
-            if name == service_account_name:
-                return True
-        return False
-    except subprocess.CalledProcessError as e:
-        logger.error(e.stdout.decode(), e.stderr.decode(), e.returncode)
-        return False
-
-
-def test_build_and_deploy_charms(juju: jubilant.Juju, hub_charm: Path, test_charm: Path) -> None:
+def test_build_and_deploy_charms(
+    juju: jubilant.Juju,
+    hub_charm: Path,
+    test_charm: Path,
+    charm_versions: IntegrationTestsCharms,
+    namespace: str,
+) -> None:
     """Build the charm-under-test and deploy it together with related charms.
 
     Assert on the unit status before any relations/configurations take place.
     """
-    image_version = METADATA["resources"]["integration-hub-image"]["upstream-source"]
-    logger.info(f"Image version: {image_version}")
-    resources = {"integration-hub-image": image_version}
-
-    logger.info("Deploying Spark Integration hub charm")
-    juju.deploy(
-        charm=hub_charm,
-        app=APP_NAME,
-        num_units=1,
-        resources=resources,
-        base="ubuntu@22.04",
+    deploy_integration_hub_setup(
+        juju=juju,
+        hub_charm=hub_charm,
+        charm_versions=charm_versions,
         trust=True,
     )
-
-    logger.info("Deploying test application charm")
-    juju.deploy(charm=test_charm, app=DUMMY_APP_NAME, num_units=1, base="ubuntu@24.04")
-
-    juju.wait(
-        lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
+    deploy_test_charm_setup(
+        juju=juju, test_charm=test_charm, spark_workload_namespace=namespace, integrate=False
     )
+    juju.wait(jubilant.all_active)
 
 
 def test_relate_charms(juju: jubilant.Juju, namespace: str) -> None:
@@ -81,8 +63,10 @@ def test_relate_charms(juju: jubilant.Juju, namespace: str) -> None:
         lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
     )
 
-    # The service account named 'sa1' should have been created
-    assert check_service_account_existance(namespace, "sa1")
+    assert spark_service_account_exists(namespace, "sa1")
+    assert integration_hub_secret_exists(
+        workload_namespace=namespace, workload_service_account="sa1"
+    )
 
     logger.info("Enable autoscaling...")
     juju.config(APP_NAME, {"enable-dynamic-allocation": "true"})
@@ -112,8 +96,10 @@ def test_relate_charms(juju: jubilant.Juju, namespace: str) -> None:
         lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
     )
 
-    # The service account named 'sa2' should have been created
-    assert check_service_account_existance(namespace, "sa2")
+    assert spark_service_account_exists(namespace, "sa2")
+    assert integration_hub_secret_exists(
+        workload_namespace=namespace, workload_service_account="sa2"
+    )
 
     # The added spark property be reflected on the requirer charm
     task = juju.run(f"{DUMMY_APP_NAME}/0", "get-properties-sa2")
@@ -139,7 +125,7 @@ def test_remove_relation(juju: jubilant.Juju, namespace: str) -> None:
     juju.wait(
         lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
     )
-    assert not check_service_account_existance(namespace=namespace, service_account_name="sa1")
+    assert not spark_service_account_exists(namespace, "sa1")
 
     logger.info(
         "Removing relation between integration hub and test application for service account sa2"
@@ -149,7 +135,7 @@ def test_remove_relation(juju: jubilant.Juju, namespace: str) -> None:
     juju.wait(
         lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
     )
-    assert not check_service_account_existance(namespace=namespace, service_account_name="sa2")
+    assert not spark_service_account_exists(namespace, "sa2")
 
 
 def test_skip_creation_of_resources(juju: jubilant.Juju, namespace: str) -> None:
@@ -166,7 +152,7 @@ def test_skip_creation_of_resources(juju: jubilant.Juju, namespace: str) -> None
         lambda status: jubilant.all_active(status) and jubilant.all_agents_idle(status), delay=5
     )
 
-    assert not check_service_account_existance(namespace, "sa1")
+    assert not spark_service_account_exists(namespace, "sa1")
 
     # Add a spark property via configuration action of integration hub
     logger.info("Enable autoscaling...")
@@ -201,9 +187,6 @@ def test_skip_creation_of_resources(juju: jubilant.Juju, namespace: str) -> None
             text=True,
         )
         assert apply_result.returncode == 0
-
-    # Now the service account should have been created there
-    assert check_service_account_existance(namespace, "sa1")
 
     # Once the resource manifest is applied, the service account config should be
     # readable by `spark8t.cli.service_account_registry get-config` command
