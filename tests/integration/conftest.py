@@ -64,6 +64,20 @@ def charm_versions() -> IntegrationTestsCharms:
         grafana_agent=CharmVersion(
             name="grafana-agent-k8s", channel="1/stable", base="ubuntu@22.04"
         ),
+        istio=CharmVersion(
+            name="istio-k8s",
+            channel="2/stable",
+            base="ubuntu@24.04",
+            alias="istio-k8s",
+            trust=True,
+        ),
+        istio_beacon=CharmVersion(
+            name="istio-beacon-k8s",
+            channel="2/stable",
+            base="ubuntu@22.04",
+            alias="istio-beacon-k8s",
+            trust=True,
+        ),
     )
 
 
