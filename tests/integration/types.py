@@ -44,6 +44,8 @@ class IntegrationTestsCharms(BaseModel):
     pushgateway: CharmVersion
     azure_storage: CharmVersion
     grafana_agent: CharmVersion
+    istio: CharmVersion
+    istio_beacon: CharmVersion
 
 
 AzureInfo = TypedDict(
