@@ -161,16 +161,21 @@ description = "Shared utilities for Charmed Service Mesh."
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
-files = [
-    {file = "canonical_service_mesh-0.3.0-py3-none-any.whl", hash = "sha256:fe6cd6bdd839db0917c3fd586568311c25a36bfa692be9c7d7c02a716a4a2672"},
-    {file = "canonical_service_mesh-0.3.0.tar.gz", hash = "sha256:d0f3dcd0b584f217b229f0805547b2db3843de4c2dce831a6192903612cd51ee"},
-]
+files = []
+develop = false
 
 [package.dependencies]
 httpx = "*"
 lightkube = ">=0.11.0"
 ops = ">=2.23"
 pydantic = ">=2"
+
+[package.source]
+type = "git"
+url = "https://github.com/theoctober19th/service-mesh.git"
+reference = "fix/compat-lightkube-1.0"
+resolved_reference = "360bc5b77e5c99dec638e423fb60742f7254b5ea"
+subdirectory = "canonical_service_mesh"
 
 [[package]]
 name = "certifi"
@@ -2278,4 +2283,4 @@ h11 = ">=0.16.0,<1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">3.10,<4.0"
-content-hash = "f2067f50ff24c740c6139c8e85972a068f7bf08ca172643429ec01e74e74b20b"
+content-hash = "d73e6418ec2c977ba2450a01ac0afce5005211f66d9ea8366e3c1a15e079fe4d"

@@ -130,19 +130,6 @@ def deploy_istio_mesh_setup(
         delay=5,
     )
 
-    # TODO: Remove this hack, once https://github.com/canonical/service-mesh/issues/813 is fixed
-    subprocess.run(
-        [
-            "kubectl",
-            "create",
-            "configmap",
-            "-n",
-            cast(str, juju.model),
-            f"juju-service-mesh-{APP_NAME}-labels",
-        ],
-        check=True,
-    )
-
     logger.info("Integrating Integration hub charm with istio beacon charm")
     juju.integrate(
         f"{APP_NAME}:service-mesh", f"{charm_versions.istio_beacon.application_name}:service-mesh"
