@@ -31,7 +31,7 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
         self.container = container
         self.user = user
 
-        self.paths = IntegrationHubPaths(conf_path=self.CONFS_PATH, keytool="keytool")
+        self.paths = IntegrationHubPaths(conf_path=self.CONFS_PATH)
         self._envs: dict[str, str] | None = None
 
     @property

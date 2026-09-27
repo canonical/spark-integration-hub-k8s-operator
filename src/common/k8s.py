@@ -68,15 +68,15 @@ class K8sWorkload(AbstractWorkload, ABC):
             return f.read()
 
     @override
-    def write(self, content: str, path: str, mode: str = "w") -> None:
+    def write(self, content: str | bytes, path: str, mode: str = "w") -> None:
         """Writes content to a workload file.
 
         Args:
-            content: string of content to write
+            content: string or bytes content to write
             path: the full filepath to write to
             mode: the write mode. Usually "w" for write, or "a" for append. Default "w"
         """
-        if mode == "a" and (current := self.read(path)):
+        if mode == "a" and isinstance(content, str) and (current := self.read(path)):
             content = "\n".join(current + [content])
         self.container.push(path, content, make_dirs=True)
 

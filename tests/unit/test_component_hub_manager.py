@@ -70,7 +70,7 @@ def test_s3_tls_truststore_mounted_under_spark8t_conf() -> None:
     secret_name = "integrator-hub-conf-truststore-abcd1234"
     context = mock.MagicMock()
     context.cluster.truststore_password = "pass"
-    context.cluster.truststore_path = "/etc/hub/conf/truststore.jks"
+    context.cluster.truststore_path = "/etc/hub/conf/truststore.p12"
     context.cluster.truststore_secret_name = secret_name
 
     with mock.patch("managers.integration_hub.S3Manager", mock.MagicMock()) as mocked_s3_manager:
@@ -83,14 +83,14 @@ def test_s3_tls_truststore_mounted_under_spark8t_conf() -> None:
 
     # Then
     expected_mount = f"/etc/spark8t/conf/{secret_name}"
-    expected_file = f"{expected_mount}/truststore.jks"
+    expected_file = f"{expected_mount}/truststore.p12"
     assert s3_conf[f"spark.kubernetes.driver.secrets.{secret_name}"] == expected_mount
     assert s3_conf[f"spark.kubernetes.executor.secrets.{secret_name}"] == expected_mount
     assert (
         s3_conf["spark.driver.extraJavaOptions"]
-        == f"-Djavax.net.ssl.trustStore={expected_file} -Djavax.net.ssl.trustStorePassword=pass"
+        == f"-Djavax.net.ssl.trustStore={expected_file} -Djavax.net.ssl.trustStorePassword=pass -Djavax.net.ssl.trustStoreType=PKCS12"
     )
     assert (
         s3_conf["spark.executor.extraJavaOptions"]
-        == f"-Djavax.net.ssl.trustStore={expected_file} -Djavax.net.ssl.trustStorePassword=pass"
+        == f"-Djavax.net.ssl.trustStore={expected_file} -Djavax.net.ssl.trustStorePassword=pass -Djavax.net.ssl.trustStoreType=PKCS12"
     )

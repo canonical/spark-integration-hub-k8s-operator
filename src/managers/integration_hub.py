@@ -104,10 +104,10 @@ class IntegrationHubConfig(WithLogging):
             truststore_file_path = f"{truststore_mount_path}/{truststore_filename}"
 
             base_s3_conf["spark.driver.extraJavaOptions"] = (
-                f"-Djavax.net.ssl.trustStore={truststore_file_path} -Djavax.net.ssl.trustStorePassword={truststore_password}"
+                f"-Djavax.net.ssl.trustStore={truststore_file_path} -Djavax.net.ssl.trustStorePassword={truststore_password} -Djavax.net.ssl.trustStoreType=PKCS12"
             )
             base_s3_conf["spark.executor.extraJavaOptions"] = (
-                f"-Djavax.net.ssl.trustStore={truststore_file_path} -Djavax.net.ssl.trustStorePassword={truststore_password}"
+                f"-Djavax.net.ssl.trustStore={truststore_file_path} -Djavax.net.ssl.trustStorePassword={truststore_password} -Djavax.net.ssl.trustStoreType=PKCS12"
             )
             base_s3_conf[f"spark.kubernetes.executor.secrets.{truststore_secret_name}"] = (
                 truststore_mount_path
