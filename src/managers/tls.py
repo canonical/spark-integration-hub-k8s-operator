@@ -6,9 +6,9 @@
 
 import secrets
 import string
-import subprocess
 
-from ops.pebble import ExecError
+from cryptography import x509
+from cryptography.hazmat.primitives.serialization import BestAvailableEncryption, pkcs12
 
 from common.utils import WithLogging
 from core.context import Context
@@ -45,45 +45,25 @@ class TLSManager(WithLogging):
         """Import a certificate into the truststore.
 
         Args:
-            certificate: string representing the certificate
+            certificate: string representing the certificate (PEM, may be a chain)
         """
         self.workload.write(certificate, str(self.workload.paths.cert))
 
-        command = [
-            self.workload.paths.keytool,
-            "-import",
-            "-v",
-            "-alias",
-            "ca",
-            "-file",
-            str(self.workload.paths.cert),
-            "-keystore",
-            str(self.workload.paths.truststore),
-            "-storepass",
-            self.truststore_password(),
-            "-noprompt",
-        ]
-
-        try:
-            self.workload.exec(command=command, working_dir=str(self.workload.paths.conf_path))
-            self.workload.exec(
-                [
-                    "chown",
-                    "-R",
-                    f"{self.workload.user.name}:{self.workload.user.group}",
-                    str(self.workload.paths.truststore),
-                ]
-            )
-            self.workload.exec(["chmod", "-R", "660", str(self.workload.paths.truststore)])
-            self.context.cluster.set_truststore_path(str(self.workload.paths.truststore))
-            self.logger.info("Certificate imported to truststore successfully")
-
-        except (subprocess.CalledProcessError, ExecError) as e:
-            # in case this reruns and fails
-            if e.stdout and "already exists" in e.stdout:
-                return
-            self.logger.error(e.stdout)
-            raise e
+        # Build a PKCS12 truststore in-process; the JVM reads it via trustStoreType=PKCS12.
+        certs = x509.load_pem_x509_certificates(certificate.encode())
+        truststore = pkcs12.serialize_key_and_certificates(
+            name=b"ca",
+            key=None,
+            cert=None,
+            cas=certs,
+            encryption_algorithm=BestAvailableEncryption(self.truststore_password().encode()),
+        )
+        self.workload.write(
+            content=truststore,
+            path=str(self.workload.paths.truststore),
+        )
+        self.context.cluster.set_truststore_path(str(self.workload.paths.truststore))
+        self.logger.info("Certificate imported to truststore successfully")
 
     def reset(self):
         """Remove all files related to TLS configuration."""

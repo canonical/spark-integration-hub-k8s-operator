@@ -14,9 +14,8 @@ from core.domain import User
 class IntegrationHubPaths:
     """Object to store common paths for Kafka."""
 
-    def __init__(self, conf_path: Path | str, keytool: str):
+    def __init__(self, conf_path: Path | str):
         self.conf_path = conf_path if isinstance(conf_path, Path) else Path(conf_path)
-        self.keytool = keytool
 
     @property
     def spark_properties(self) -> Path:
@@ -36,7 +35,7 @@ class IntegrationHubPaths:
     @property
     def truststore(self):
         """Return the path of the truststore."""
-        return self.conf_path / "truststore.jks"
+        return self.conf_path / "truststore.p12"
 
 
 class IntegrationHubWorkloadBase(AbstractWorkload):

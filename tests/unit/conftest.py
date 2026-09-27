@@ -1,15 +1,39 @@
 # Copyright 2024 Canonical Limited
 # See LICENSE file for licensing details.
 
+import json
 from dataclasses import replace
+from datetime import datetime, timedelta, timezone
 
 import pytest
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.x509.oid import NameOID
 from ops import pebble
 from ops.testing import Container, Context, Model, Mount, Relation
 
 from charm import SparkIntegrationHub
 from constants import CONTAINER, INTEGRATION_HUB_REL, LOGGING_RELATION_NAME, PUSHGATEWAY
 from core.context import AZURE_RELATION_NAME, S3_RELATION_NAME
+
+
+def _self_signed_ca_pem() -> str:
+    """Return a throwaway self-signed CA certificate in PEM format."""
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "test-ca")])
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(name)
+        .issuer_name(name)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(datetime.now(timezone.utc))
+        .not_valid_after(datetime.now(timezone.utc) + timedelta(days=3650))
+        .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
+        .sign(key, hashes.SHA256())
+    )
+    return cert.public_bytes(serialization.Encoding.PEM).decode()
 
 
 @pytest.fixture
@@ -133,7 +157,7 @@ def s3_relation_tls():
             "endpoint": "https://s3.endpoint",
             "path": "spark-events",
             "secret-key": "secret-key",
-            "tls-ca-chain": '["certificate"]',
+            "tls-ca-chain": json.dumps([_self_signed_ca_pem()]),
         },
     )
 

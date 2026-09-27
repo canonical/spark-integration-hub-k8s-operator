@@ -525,7 +525,7 @@ def test_correct_tls_in_manifest(
     assert manifest.strip() != ""
     logger.info(f"Generated manifest:\n{manifest}")
 
-    assert "truststore.jks" in manifest
+    assert "truststore.p12" in manifest
 
 
 def test_remove_application(
