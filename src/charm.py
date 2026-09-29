@@ -18,6 +18,7 @@ from events.logging import LoggingEvents
 from events.provider import SparkServiceAccountProviderEvents
 from events.pushgateway import PushgatewayEvents
 from events.s3 import S3Events
+from events.service_mesh import ServiceMeshEvents
 from managers.k8s import KubernetesManager
 from managers.s3 import S3Manager
 from workload import IntegrationHub
@@ -42,6 +43,7 @@ class SparkIntegrationHub(TypedCharmBase[CharmConfig], WithLogging):
         self.pushgateway = PushgatewayEvents(self, self.context, self.workload)
         self.integration_hub = IntegrationHubEvents(self, self.context, self.workload)
         self.logging = LoggingEvents(self, self.context, self.workload)
+        self.service_mesh = ServiceMeshEvents(self, self.context, self.workload)
 
         self.framework.observe(self.on.collect_unit_status, self._on_collect_status)
         self.framework.observe(self.on.collect_app_status, self._on_collect_status)

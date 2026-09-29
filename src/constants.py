@@ -17,6 +17,8 @@ S3_RELATION_NAME = "s3-credentials"
 AZURE_RELATION_NAME = "azure-storage-credentials"
 PUSHGATEWAY = "cos"
 LOGGING_RELATION_NAME = "logging"
+SERVICE_MESH_RELATION_NAME = "service-mesh"
+CMR_MESH_RELATION_NAME = "provide-cmr-mesh"
 PEER_REL = "hub-peers"
 
 TRUSTSTORE_PASSWORD_KEY = "truststore_password"
@@ -28,3 +30,6 @@ TRUSTSTORE_SECRET_NAME_KEY = "truststore_secret_name"
 # that non-root workloads (e.g. Kyuubi) can replicate the file for client-side
 # operations.
 TRUSTSTORE_MOUNT_BASE = "/etc/spark8t/conf"
+
+ISTIO_AMBIENT_LABEL_KEY = "istio.io/dataplane-mode"
+ISTIO_AMBIENT_LABEL_VALUE = "ambient"
