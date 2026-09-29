@@ -1,7 +1,9 @@
+#!/usr/bin/env python3
+# Copyright 2026 Canonical Limited
+# See LICENSE file for licensing details.
+
 import logging
-import subprocess
 from pathlib import Path
-from typing import cast
 
 import jubilant
 import yaml
