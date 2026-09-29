@@ -4,6 +4,7 @@ import subprocess
 from pathlib import Path
 
 import jubilant
+import lightkube
 import yaml
 
 from .helpers.file import umask_named_temporary_file
@@ -48,7 +49,9 @@ def test_build_and_deploy_charms(
     juju.wait(jubilant.all_active)
 
 
-def test_relate_charms(juju: jubilant.Juju, namespace: str) -> None:
+def test_relate_charms(
+    juju: jubilant.Juju, namespace: str, lightkube_client: lightkube.Client
+) -> None:
     configuration_parameters = {"namespace": namespace}
 
     logger.info(f"Setting config for test application charm: {configuration_parameters}...")
@@ -65,7 +68,9 @@ def test_relate_charms(juju: jubilant.Juju, namespace: str) -> None:
 
     assert spark_service_account_exists(namespace, "sa1")
     assert integration_hub_secret_exists(
-        workload_namespace=namespace, workload_service_account="sa1"
+        lightkube_client=lightkube_client,
+        workload_namespace=namespace,
+        workload_service_account="sa1",
     )
 
     logger.info("Enable autoscaling...")
@@ -98,7 +103,9 @@ def test_relate_charms(juju: jubilant.Juju, namespace: str) -> None:
 
     assert spark_service_account_exists(namespace, "sa2")
     assert integration_hub_secret_exists(
-        workload_namespace=namespace, workload_service_account="sa2"
+        lightkube_client=lightkube_client,
+        workload_namespace=namespace,
+        workload_service_account="sa2",
     )
 
     # The added spark property be reflected on the requirer charm
@@ -116,7 +123,10 @@ def test_relate_charms(juju: jubilant.Juju, namespace: str) -> None:
     assert manifest.strip() != ""
 
 
-def test_remove_relation(juju: jubilant.Juju, namespace: str) -> None:
+def test_remove_relation(
+    juju: jubilant.Juju,
+    namespace: str,
+) -> None:
     logger.info(
         "Removing relation between integration hub and test application for service account sa1"
     )

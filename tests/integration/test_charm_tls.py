@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import cast
 
 import jubilant
+import lightkube
 import yaml
 
 from .helpers.integration_hub import (
@@ -61,7 +62,7 @@ def test_deploy_s3_integrator(
 
 
 def test_external_service_account_not_monitored(
-    juju: jubilant.Juju, service_account: tuple[str, str]
+    juju: jubilant.Juju, service_account: tuple[str, str], lightkube_client: lightkube.Client
 ) -> None:
     """Check that service accounts are not monitored by default.
 
@@ -70,15 +71,18 @@ def test_external_service_account_not_monitored(
     """
     name, namespace = service_account
     juju.wait(jubilant.all_active, delay=5)
-    assert not integration_hub_secret_exists(namespace, name)
+    assert not integration_hub_secret_exists(lightkube_client, namespace, name)
 
     juju.config(APP_NAME, {"monitored-service-accounts": f"{namespace}:{name}"})
     juju.wait(jubilant.all_active, delay=5)
-    assert integration_hub_secret_exists(namespace, name)
+    assert integration_hub_secret_exists(lightkube_client, namespace, name)
 
 
 def test_relation_with_s3(
-    juju: jubilant.Juju, service_account: tuple[str, str], charm_versions: IntegrationTestsCharms
+    juju: jubilant.Juju,
+    service_account: tuple[str, str],
+    charm_versions: IntegrationTestsCharms,
+    lightkube_client: lightkube.Client,
 ) -> None:
     """Test the relation between the Spark Integration Hub and the S3 integrator."""
     service_account_name, namespace = service_account
@@ -86,9 +90,12 @@ def test_relation_with_s3(
     juju.config(APP_NAME, {"monitored-service-accounts": f"{namespace}:{service_account_name}"})
     juju.wait(jubilant.all_active, delay=5)
 
-    assert integration_hub_secret_exists(namespace, service_account_name)
+    assert integration_hub_secret_exists(lightkube_client, namespace, service_account_name)
     # Verify that secret data is empty before S3 relation is added.
-    assert len(get_integration_hub_secret_data(namespace, service_account_name)) == 0
+    assert (
+        len(get_integration_hub_secret_data(lightkube_client, namespace, service_account_name))
+        == 0
+    )
 
     # Relate S3 integrator with Spark Integration Hub
     juju.integrate(
@@ -97,23 +104,31 @@ def test_relation_with_s3(
     )
     juju.wait(jubilant.all_active, delay=5)
 
-    secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     assert len(secret_data) > 0
     assert "spark.hadoop.fs.s3a.access.key" in secret_data
 
     secret_data_truststore = get_truststore_secret_data(
-        model_name=cast(str, juju.model), app_name=APP_NAME, namespace=namespace
+        lightkube_client=lightkube_client,
+        model_name=cast(str, juju.model),
+        app_name=APP_NAME,
+        namespace=namespace,
     )
     assert len(secret_data_truststore) > 0
 
     setup_spark_job(namespace, service_account_name)
     run_spark_job(namespace, service_account_name)
-    assert_spark_job_successful(namespace=namespace)
-    cleanup_workload_pods(namespace)
+    assert_spark_job_successful(lightkube_client, namespace=namespace)
+    cleanup_workload_pods(lightkube_client, namespace=namespace)
 
 
 def test_new_service_account_with_s3(
-    juju: jubilant.Juju, service_account: tuple[str, str], charm_versions: IntegrationTestsCharms
+    juju: jubilant.Juju,
+    service_account: tuple[str, str],
+    charm_versions: IntegrationTestsCharms,
+    lightkube_client: lightkube.Client,
 ) -> None:
     """Test that new service accounts also get the TLS configuration once S3 relation is added."""
     logger.info(
@@ -126,12 +141,17 @@ def test_new_service_account_with_s3(
     juju.wait(jubilant.all_active, delay=10, timeout=120)
 
     # check secret
-    secret_data = secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    secret_data = secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     assert len(secret_data) > 0
     assert "spark.hadoop.fs.s3a.access.key" in secret_data
 
     secret_data_truststore = get_truststore_secret_data(
-        model_name=cast(str, juju.model), app_name=APP_NAME, namespace=namespace
+        lightkube_client=lightkube_client,
+        model_name=cast(str, juju.model),
+        app_name=APP_NAME,
+        namespace=namespace,
     )
     logger.info(f"namespace: {namespace} -> secret_data: {secret_data_truststore}")
     assert len(secret_data_truststore) > 0
@@ -143,9 +163,15 @@ def test_new_service_account_with_s3(
     juju.remove_relation(APP_NAME, charm_versions.s3.application_name)
     juju.wait(jubilant.all_active, delay=10, timeout=120)
 
-    assert len(get_integration_hub_secret_data(namespace, service_account_name)) == 0
+    assert (
+        len(get_integration_hub_secret_data(lightkube_client, namespace, service_account_name))
+        == 0
+    )
     secret_data_truststore = get_truststore_secret_data(
-        model_name=cast(str, juju.model), app_name=APP_NAME, namespace=namespace
+        lightkube_client=lightkube_client,
+        model_name=cast(str, juju.model),
+        app_name=APP_NAME,
+        namespace=namespace,
     )
     assert len(secret_data_truststore) == 0
 
@@ -156,12 +182,17 @@ def test_new_service_account_with_s3(
     )
     juju.wait(jubilant.all_active, delay=5, timeout=120)
 
-    secret_data = secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    secret_data = secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     assert len(secret_data) > 0
     assert "spark.hadoop.fs.s3a.access.key" in secret_data
 
     secret_data_truststore = get_truststore_secret_data(
-        model_name=cast(str, juju.model), app_name=APP_NAME, namespace=namespace
+        lightkube_client=lightkube_client,
+        model_name=cast(str, juju.model),
+        app_name=APP_NAME,
+        namespace=namespace,
     )
     assert len(secret_data_truststore) > 0
 
@@ -201,6 +232,7 @@ def test_correct_tls_in_manifest(
 def test_remove_application(
     juju: jubilant.Juju,
     service_account: tuple[str, str],
+    lightkube_client: lightkube.Client,
 ) -> None:
     """Test removing the Spark Integration Hub application and verifying that the associated secrets are deleted."""
     service_account_name, namespace = service_account
@@ -209,7 +241,9 @@ def test_remove_application(
     juju.config(APP_NAME, {"monitored-service-accounts": f"{namespace}:{service_account_name}"})
     juju.wait(jubilant.all_active, delay=5)
 
-    secret_data = secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    secret_data = secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     assert len(secret_data) > 0
     assert "spark.hadoop.fs.s3a.access.key" in secret_data
 
@@ -217,8 +251,14 @@ def test_remove_application(
     juju.remove_application(APP_NAME)
     juju.wait(jubilant.all_active, delay=5)
 
-    assert len(get_integration_hub_secret_data(namespace, service_account_name)) == 0
+    assert (
+        len(get_integration_hub_secret_data(lightkube_client, namespace, service_account_name))
+        == 0
+    )
     secret_data_truststore = get_truststore_secret_data(
-        model_name=cast(str, juju.model), app_name=APP_NAME, namespace=namespace
+        lightkube_client=lightkube_client,
+        model_name=cast(str, juju.model),
+        app_name=APP_NAME,
+        namespace=namespace,
     )
     assert len(secret_data_truststore) == 0

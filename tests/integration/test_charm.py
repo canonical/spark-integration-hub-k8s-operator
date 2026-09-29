@@ -49,14 +49,14 @@ def test_deploy_integration_hub(
 def test_container_security_context(
     juju: jubilant.Juju,
     container_name: str,
+    lightkube_client: lightkube.Client,
 ) -> None:
     """Test container security context is correctly set.
 
     Verify that container spec defines the security context with correct
     user ID and group ID.
     """
-    lightkube_client = lightkube.Client()
-    pod_name = get_unit_pod_names(cast(str, juju.model), APP_NAME)[0]
+    pod_name = get_unit_pod_names(lightkube_client, cast(str, juju.model), APP_NAME)[0]
     assert_security_context(
         lightkube_client,
         pod_name,
@@ -88,7 +88,9 @@ def test_deploy_azure_storage_integrator(
 
 
 def test_external_service_account_not_monitored(
-    juju: jubilant.Juju, service_account: tuple[str, str]
+    juju: jubilant.Juju,
+    service_account: tuple[str, str],
+    lightkube_client: lightkube.Client,
 ) -> None:
     """Check that service accounts are not monitored by default.
 
@@ -97,24 +99,30 @@ def test_external_service_account_not_monitored(
     """
     name, namespace = service_account
     juju.wait(jubilant.all_active, delay=5)
-    assert not integration_hub_secret_exists(namespace, name)
+    assert not integration_hub_secret_exists(lightkube_client, namespace, name)
 
     juju.config(APP_NAME, {"monitored-service-accounts": f"{namespace}:{name}"})
     juju.wait(jubilant.all_active, delay=5)
-    assert integration_hub_secret_exists(namespace, name)
+    assert integration_hub_secret_exists(lightkube_client, namespace, name)
 
 
 def test_relation_with_s3(
-    juju: jubilant.Juju, service_account: tuple[str, str], charm_versions: IntegrationTestsCharms
+    juju: jubilant.Juju,
+    service_account: tuple[str, str],
+    charm_versions: IntegrationTestsCharms,
+    lightkube_client: lightkube.Client,
 ) -> None:
     service_account_name, namespace = service_account
     logger.info(f"Service account: {service_account_name}, namespace: {namespace}")
     juju.config(APP_NAME, {"monitored-service-accounts": f"{namespace}:{service_account_name}"})
     juju.wait(jubilant.all_active, delay=5)
 
-    assert integration_hub_secret_exists(namespace, service_account_name)
+    assert integration_hub_secret_exists(lightkube_client, namespace, service_account_name)
     # Verify that secret data is empty before S3 relation is added.
-    assert len(get_integration_hub_secret_data(namespace, service_account_name)) == 0
+    assert (
+        len(get_integration_hub_secret_data(lightkube_client, namespace, service_account_name))
+        == 0
+    )
 
     logger.info("Integrating S3 integrator with Spark Integration Hub...")
     juju.integrate(
@@ -123,14 +131,19 @@ def test_relation_with_s3(
     )
     juju.wait(jubilant.all_active, delay=5)
 
-    assert integration_hub_secret_exists(namespace, service_account_name)
-    secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    assert integration_hub_secret_exists(lightkube_client, namespace, service_account_name)
+    secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     assert len(secret_data) > 0
     assert "spark.hadoop.fs.s3a.access.key" in secret_data
 
 
 def test_new_service_account_with_s3(
-    juju: jubilant.Juju, service_account: tuple[str, str], charm_versions: IntegrationTestsCharms
+    juju: jubilant.Juju,
+    service_account: tuple[str, str],
+    charm_versions: IntegrationTestsCharms,
+    lightkube_client: lightkube.Client,
 ) -> None:
     service_account_name, namespace = service_account
     logger.info(f"Service account: {service_account_name}, namespace: {namespace}")
@@ -139,7 +152,9 @@ def test_new_service_account_with_s3(
     juju.wait(jubilant.all_active, delay=5)
 
     # check secret
-    secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     assert len(secret_data) > 0
     assert "spark.hadoop.fs.s3a.access.key" in secret_data
 
@@ -147,7 +162,9 @@ def test_new_service_account_with_s3(
     juju.remove_relation(APP_NAME, charm_versions.s3.application_name)
     juju.wait(jubilant.all_active, delay=10)
 
-    secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     assert len(secret_data) == 0
 
     # Re-integrate S3 integrator with Spark Integration Hub
@@ -157,13 +174,16 @@ def test_new_service_account_with_s3(
     )
     juju.wait(jubilant.all_active, delay=5)
 
-    secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     assert len(secret_data) > 0
     assert "spark.hadoop.fs.s3a.access.key" in secret_data
 
 
 def test_both_s3_and_azure_storage_integration(
-    juju: jubilant.Juju, charm_versions: IntegrationTestsCharms
+    juju: jubilant.Juju,
+    charm_versions: IntegrationTestsCharms,
 ) -> None:
     logger.info(
         "Relating spark integration hub charm with azure-storage-integrator along with existing relation with s3-integrator charm"
@@ -184,6 +204,7 @@ def test_relation_with_azure_storage(
     service_account: tuple[str, str],
     charm_versions: IntegrationTestsCharms,
     azure_credentials: AzureInfo,
+    lightkube_client: lightkube.Client,
 ) -> None:
     service_account_name, namespace = service_account
     logger.info(f"Service account: {service_account_name}, namespace: {namespace}")
@@ -191,7 +212,9 @@ def test_relation_with_azure_storage(
     juju.config(APP_NAME, {"monitored-service-accounts": f"{namespace}:{service_account_name}"})
     juju.wait(jubilant.all_active, delay=5)
     # Verify that secret data is empty before Azure storage relation is added.
-    secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     assert len(secret_data) == 0
 
     # Relate Azure Storage integrator with Spark Integration Hub
@@ -201,7 +224,9 @@ def test_relation_with_azure_storage(
     )
     juju.wait(jubilant.all_active, delay=5)
 
-    secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     assert len(secret_data) > 0
     assert (
         f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net"
@@ -214,6 +239,7 @@ def test_new_service_account_with_azure_storage(
     service_account: tuple[str, str],
     charm_versions: IntegrationTestsCharms,
     azure_credentials: AzureInfo,
+    lightkube_client: lightkube.Client,
 ) -> None:
     service_account_name, namespace = service_account
     logger.info(f"Service account: {service_account_name}, namespace: {namespace}")
@@ -222,7 +248,9 @@ def test_new_service_account_with_azure_storage(
     juju.wait(jubilant.all_active, delay=5)
 
     # check secret
-    secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     assert len(secret_data) > 0
     assert (
         f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net"
@@ -233,7 +261,9 @@ def test_new_service_account_with_azure_storage(
     juju.remove_relation(APP_NAME, charm_versions.azure_storage.application_name)
     juju.wait(jubilant.all_active, delay=10)
 
-    secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     assert len(secret_data) == 0
 
     # Re-integrate Azure Storage integrator with Spark Integration Hub
@@ -243,7 +273,9 @@ def test_new_service_account_with_azure_storage(
     )
     juju.wait(jubilant.all_active, delay=5)
 
-    secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     assert len(secret_data) > 0
     assert (
         f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net"
@@ -267,6 +299,7 @@ def test_remove_application(
     juju: jubilant.Juju,
     service_account: tuple[str, str],
     azure_credentials: AzureInfo,
+    lightkube_client: lightkube.Client,
 ) -> None:
     service_account_name, namespace = service_account
     logger.info(f"Service account: {service_account_name}, namespace: {namespace}")
@@ -274,7 +307,9 @@ def test_remove_application(
     juju.config(APP_NAME, {"monitored-service-accounts": f"{namespace}:{service_account_name}"})
     juju.wait(jubilant.all_active, delay=5)
 
-    secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     assert len(secret_data) > 0
     assert (
         f"spark.hadoop.fs.azure.account.key.{azure_credentials['storage-account']}.dfs.core.windows.net"
@@ -285,6 +320,8 @@ def test_remove_application(
     juju.remove_application(APP_NAME)
     juju.wait(jubilant.all_active, delay=5)
 
-    secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     logger.info(f"secret data: {secret_data}")
     assert len(secret_data) == 0

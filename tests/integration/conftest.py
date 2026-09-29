@@ -12,6 +12,7 @@ from typing import Iterable
 
 import boto3.session
 import jubilant
+import lightkube
 import pytest
 import yaml
 from botocore.client import Config
@@ -231,3 +232,8 @@ def juju(request: pytest.FixtureRequest, platform: str):
 
     if model is not None and not keep_models:
         juju.destroy_model(model_name, destroy_storage=True, force=True)
+
+
+@pytest.fixture(scope="module")
+def lightkube_client() -> lightkube.Client:
+    return lightkube.Client()

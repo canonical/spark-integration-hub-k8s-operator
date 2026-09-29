@@ -4,7 +4,6 @@ import subprocess
 import uuid
 from typing import TypedDict, cast
 
-import lightkube
 from lightkube import ApiError, Client
 from lightkube.core.client import LabelSelector
 from lightkube.resources.core_v1 import Pod
@@ -22,26 +21,34 @@ class ContainerSecurityContext(TypedDict):
     runAsGroup: int | None  # noqa N815
 
 
-def get_pods_by_label(labels: dict[str, str], namespace: str | None = None) -> list[str]:
+def get_pods_by_label(
+    lightkube_client: Client, labels: dict[str, str], namespace: str | None = None
+) -> list[str]:
     """Return the names of all pods that carry the given set of labels.
 
     Args:
+        lightkube_client: the Lightkube client instance.
         labels: label key/value pairs a pod must all match.
         namespace: namespace to search in. If None, searches all namespaces.
+
+    Returns:
+        A list of pod names matching the given labels.
     """
-    client = Client()
     try:
-        pods = client.list(Pod, labels=cast(LabelSelector, labels), namespace=namespace)
+        pods = lightkube_client.list(Pod, labels=cast(LabelSelector, labels), namespace=namespace)
         return [pod.metadata.name for pod in pods if pod.metadata and pod.metadata.name]
     except ApiError as e:
         logger.error(f"Error retrieving pods for labels {labels}: {e}")
         return []
 
 
-def pod_has_labels(pod_name: str, namespace: str, labels: dict[str, str]) -> bool:
+def pod_has_labels(
+    lightkube_client: Client, pod_name: str, namespace: str, labels: dict[str, str]
+) -> bool:
     """Check if a pod has the given set of labels.
 
     Args:
+        lightkube_client: the Lightkube client instance.
         pod_name: name of the pod to check.
         namespace: namespace of the pod.
         labels: label key/value pairs the pod must all match.
@@ -49,9 +56,8 @@ def pod_has_labels(pod_name: str, namespace: str, labels: dict[str, str]) -> boo
     Returns:
         True if the pod has all the given labels, False otherwise.
     """
-    client = Client()
     try:
-        pod = client.get(Pod, name=pod_name, namespace=namespace)
+        pod = lightkube_client.get(Pod, name=pod_name, namespace=namespace)
         if not pod.metadata or not pod.metadata.labels:
             return False
         return all(pod.metadata.labels.get(k) == v for k, v in labels.items())
@@ -60,67 +66,76 @@ def pod_has_labels(pod_name: str, namespace: str, labels: dict[str, str]) -> boo
         return False
 
 
-def get_pod_phase(pod_name: str, namespace: str) -> str | None:
+def get_pod_phase(lightkube_client: Client, pod_name: str, namespace: str) -> str | None:
     """Return the lifecycle phase of a pod (e.g. "Running", "Succeeded", "Failed").
 
     A pod that finished successfully reports the phase "Succeeded"; this is what
     `kubectl` displays as "Completed" in its STATUS column.
 
     Args:
+        lightkube_client: the Lightkube client instance.
         pod_name: name of the pod to check.
         namespace: namespace of the pod.
+
+    Returns:
+        The lifecycle phase of the pod, or None if not available.
     """
-    client = Client()
-    pod = client.get(Pod, name=pod_name, namespace=namespace)
+    pod = lightkube_client.get(Pod, name=pod_name, namespace=namespace)
     return pod.status.phase if pod.status else None
 
 
-def get_pod_logs(pod_name: str, namespace: str) -> str:
+def get_pod_logs(lightkube_client: Client, pod_name: str, namespace: str) -> str:
     """Return the full logs of a pod's (only) container.
 
     Args:
+        lightkube_client: the Lightkube client instance.
         pod_name: name of the pod to read logs from.
         namespace: namespace of the pod.
+
+    Returns:
+        The full logs of the pod's container as a string.
     """
-    client = Client()
-    return "".join(client.log(pod_name, namespace=namespace))
+    return "".join(lightkube_client.log(pod_name, namespace=namespace))
 
 
-def get_pod_ip(pod_name: str, namespace: str) -> str | None:
+def get_pod_ip(lightkube_client: Client, pod_name: str, namespace: str) -> str | None:
     """Return the cluster IP address of a pod, or None if not yet assigned.
 
     Args:
+        lightkube_client: the Lightkube client instance.
         pod_name: name of the pod.
         namespace: namespace of the pod.
     """
-    client = Client()
-    pod = client.get(Pod, name=pod_name, namespace=namespace)
+    pod = lightkube_client.get(Pod, name=pod_name, namespace=namespace)
     return pod.status.podIP if pod.status else None
 
 
 @retry(stop=stop_after_attempt(20), wait=wait_fixed(3), reraise=True)
-def wait_for_pod_phase(pod_name: str, namespace: str, phase: str = "Running") -> None:
+def wait_for_pod_phase(
+    lightkube_client: Client, pod_name: str, namespace: str, phase: str = "Running"
+) -> None:
     """Wait until a pod reaches the given lifecycle phase.
 
     Args:
+        lightkube_client: the Lightkube client instance.
         pod_name: name of the pod to wait for.
         namespace: namespace of the pod.
         phase: target phase, e.g. "Running" or "Succeeded".
     """
-    current = get_pod_phase(pod_name, namespace=namespace)
+    current = get_pod_phase(lightkube_client, pod_name, namespace=namespace)
     assert current == phase, f"Pod {pod_name} is in phase {current}, waiting for {phase}"
 
 
-def delete_pod(pod_name: str, namespace: str) -> None:
+def delete_pod(lightkube_client: Client, pod_name: str, namespace: str) -> None:
     """Delete a pod, ignoring the case where it no longer exists.
 
     Args:
+        lightkube_client: the Lightkube client instance.
         pod_name: name of the pod to delete.
         namespace: namespace of the pod.
     """
-    client = Client()
     try:
-        client.delete(Pod, name=pod_name, namespace=namespace)
+        lightkube_client.delete(Pod, name=pod_name, namespace=namespace)
         logger.info(f"Deleted pod {pod_name} in namespace {namespace}")
     except ApiError as e:
         if e.status.code == 404:
@@ -189,7 +204,7 @@ def generate_container_securitycontext_map(
 
 
 def assert_security_context(
-    lightkube_client: lightkube.Client,
+    lightkube_client: Client,
     pod_name: str,
     container_name: str,
     container_securitycontext_map: dict[str, ContainerSecurityContext],

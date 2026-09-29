@@ -5,6 +5,7 @@
 import logging
 import subprocess
 
+import lightkube
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from .k8s import (
@@ -57,12 +58,14 @@ def spark_service_account_exists(namespace: str, service_account: str) -> bool:
     Args:
         namespace: namespace of the Spark service account.
         service_account: name of the Spark service account.
+
+    Returns:
+        True if the service account exists, False otherwise.
     """
-    output = subprocess.check_output(
-        ["spark-client.service-account-registry", "list"],
-        text=True,
-    )
-    return f"{namespace}:{service_account}" in output.split()
+    out, err, retcode = run_service_account_registry("list")
+    if retcode != 0:
+        return False
+    return f"{namespace}:{service_account}" in out.split()
 
 
 def run_service_account_registry(*args):
@@ -99,60 +102,74 @@ def run_long_spark_job(
     return output
 
 
-def wait_for_running_spark_workloads(namespace: str) -> tuple[str, str]:
+def wait_for_running_spark_workloads(
+    lightkube_client: lightkube.Client, namespace: str
+) -> tuple[str, str]:
     """Wait until the driver and one executor pod are Running; return their IPs.
 
     Returns:
         A tuple of (driver_ip, executor_ip).
     """
-    driver_pod = _wait_for_driver_pod(namespace)
-    wait_for_pod_phase(driver_pod, namespace=namespace, phase="Running")
+    driver_pod = _wait_for_driver_pod(lightkube_client, namespace)
+    wait_for_pod_phase(lightkube_client, driver_pod, namespace=namespace, phase="Running")
 
-    executor_pod = _wait_for_executor_pod(namespace)
-    wait_for_pod_phase(executor_pod, namespace=namespace, phase="Running")
+    executor_pod = _wait_for_executor_pod(lightkube_client, namespace)
+    wait_for_pod_phase(lightkube_client, executor_pod, namespace=namespace, phase="Running")
 
-    driver_ip = get_pod_ip(driver_pod, namespace=namespace)
-    executor_ip = get_pod_ip(executor_pod, namespace=namespace)
+    driver_ip = get_pod_ip(lightkube_client, driver_pod, namespace=namespace)
+    executor_ip = get_pod_ip(lightkube_client, executor_pod, namespace=namespace)
     assert driver_ip and executor_ip, "Driver/executor pod has no IP yet"
     return driver_ip, executor_ip
 
 
 @retry(stop=stop_after_attempt(20), wait=wait_fixed(3), reraise=True)
-def _wait_for_driver_pod(namespace: str) -> str:
+def _wait_for_driver_pod(lightkube_client: lightkube.Client, namespace: str) -> str:
     """Wait until exactly one driver pod exists and return its name."""
-    driver_pods = get_spark_driver_pods(namespace=namespace)
+    driver_pods = get_spark_driver_pods(lightkube_client, namespace=namespace)
     assert len(driver_pods) == 1, f"Expected exactly one driver pod, found: {driver_pods}"
     return driver_pods[0]
 
 
 @retry(stop=stop_after_attempt(20), wait=wait_fixed(3), reraise=True)
-def _wait_for_executor_pod(namespace: str) -> str:
+def _wait_for_executor_pod(lightkube_client: lightkube.Client, namespace: str) -> str:
     """Wait until at least one executor pod exists and return its name."""
-    executor_pods = get_spark_executor_pods(namespace=namespace)
+    executor_pods = get_spark_executor_pods(lightkube_client, namespace=namespace)
     assert executor_pods, "No executor pod scheduled yet"
     return executor_pods[0]
 
 
-def get_spark_driver_pods(namespace: str | None = None) -> list[str]:
+def get_spark_driver_pods(
+    lightkube_client: lightkube.Client, namespace: str | None = None
+) -> list[str]:
     """Return the names of all Spark driver pods in the given namespace.
 
     Args:
+        lightkube_client: the Lightkube client object
         namespace: namespace to search in. If None, searches all namespaces.
     """
-    return get_pods_by_label(labels={"spark-role": "driver"}, namespace=namespace)
+    return get_pods_by_label(
+        lightkube_client, labels={"spark-role": "driver"}, namespace=namespace
+    )
 
 
-def get_spark_executor_pods(namespace: str | None = None) -> list[str]:
+def get_spark_executor_pods(
+    lightkube_client: lightkube.Client, namespace: str | None = None
+) -> list[str]:
     """Return the names of all Spark executor pods in the given namespace.
 
     Args:
+        lightkube_client: the Lightkube client object
         namespace: namespace to search in. If None, searches all namespaces.
     """
-    return get_pods_by_label(labels={"spark-role": "executor"}, namespace=namespace)
+    return get_pods_by_label(
+        lightkube_client, labels={"spark-role": "executor"}, namespace=namespace
+    )
 
 
 @retry(stop=stop_after_attempt(5), wait=wait_fixed(3), reraise=True)
-def assert_spark_job_successful(namespace: str, expected_output: str = "Pi is roughly") -> None:
+def assert_spark_job_successful(
+    lightkube_client: lightkube.Client, namespace: str, expected_output: str = "Pi is roughly"
+) -> None:
     """Assert the SparkPi job completed successfully in the given namespace.
 
     Must be called after `run_spark_job` returns: spark-submit runs with
@@ -160,33 +177,37 @@ def assert_spark_job_successful(namespace: str, expected_output: str = "Pi is ro
     cluster mode so that a driver pod exists.
 
     Args:
+        lightkube_client: the Lightkube client object
         namespace: namespace the driver pod runs in.
         expected_output: substring the driver logs must contain. SparkPi prints
             "Pi is roughly <value>".
     """
-    driver_pods = get_spark_driver_pods(namespace=namespace)
+    driver_pods = get_spark_driver_pods(lightkube_client, namespace=namespace)
     assert len(driver_pods) == 1, f"Expected exactly one driver pod, found: {driver_pods}"
     driver_pod = driver_pods[0]
 
-    phase = get_pod_phase(driver_pod, namespace=namespace)
+    phase = get_pod_phase(lightkube_client, driver_pod, namespace=namespace)
     assert phase == "Succeeded", f"Driver pod {driver_pod} is in phase {phase}, expected Succeeded"
 
-    logs = get_pod_logs(driver_pod, namespace=namespace)
+    logs = get_pod_logs(lightkube_client, driver_pod, namespace=namespace)
     assert expected_output in logs, f"'{expected_output}' not found in driver logs of {driver_pod}"
 
 
-def cleanup_workload_pods(namespace: str, pod_names: list[str] | None = None) -> None:
+def cleanup_workload_pods(
+    lightkube_client: lightkube.Client, namespace: str, pod_names: list[str] | None = None
+) -> None:
     """Delete Spark workload (driver/executor) pods.
 
     Args:
+        lightkube_client: lightkube.Client,
         namespace: namespace the pods live in.
         pod_names: names of the pods to delete. If None, deletes every Spark
             driver and executor pod found in the namespace.
     """
     if pod_names is None:
-        pod_names = get_spark_driver_pods(namespace=namespace) + get_spark_executor_pods(
-            namespace=namespace
-        )
+        pod_names = get_spark_driver_pods(
+            lightkube_client, namespace=namespace
+        ) + get_spark_executor_pods(lightkube_client, namespace=namespace)
 
     for pod_name in pod_names:
-        delete_pod(pod_name, namespace=namespace)
+        delete_pod(lightkube_client, pod_name, namespace=namespace)

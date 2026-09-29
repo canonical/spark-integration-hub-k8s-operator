@@ -10,6 +10,7 @@ import urllib.request
 from pathlib import Path
 
 import jubilant
+import lightkube
 import pytest
 import yaml
 from tenacity import retry, stop_after_attempt, wait_fixed
@@ -80,6 +81,7 @@ def test_relation_with_pushgateway(
     charm_versions: IntegrationTestsCharms,
     service_account: tuple[str, str],
     platform: str,
+    lightkube_client: lightkube.Client,
 ) -> None:
     """Test relation with prometheus pushgateway.
 
@@ -95,8 +97,10 @@ def test_relation_with_pushgateway(
         delay=15,
     )
 
-    assert integration_hub_secret_exists(namespace, service_account_name)
-    secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    assert integration_hub_secret_exists(lightkube_client, namespace, service_account_name)
+    secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     assert any("spark.metrics.conf" in key for key in secret_data.keys())
 
     pushgateway_address = get_unit_address(juju, charm_versions.pushgateway.application_name)
@@ -106,10 +110,10 @@ def test_relation_with_pushgateway(
     service_account_name, namespace = service_account
     try:
         run_long_spark_job(namespace=namespace, service_account=service_account_name)
-        wait_for_running_spark_workloads(namespace=namespace)
+        wait_for_running_spark_workloads(lightkube_client, namespace=namespace)
         assert_metrics_in_pushgateway(pushgateway_address=pushgateway_address)
     finally:
-        cleanup_workload_pods(namespace=namespace)
+        cleanup_workload_pods(lightkube_client, namespace=namespace)
 
     logger.info(
         "Allowing some time for the workloads to delete their group in pushgateway on job completion"
@@ -126,12 +130,17 @@ def test_relation_with_pushgateway(
         ),
         delay=15,
     )
-    secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     assert not any("spark.metrics.conf" in key for key in secret_data.keys())
 
 
 def test_relation_with_logging(
-    juju: jubilant.Juju, service_account: tuple[str, str], charm_versions: IntegrationTestsCharms
+    juju: jubilant.Juju,
+    service_account: tuple[str, str],
+    charm_versions: IntegrationTestsCharms,
+    lightkube_client: lightkube.Client,
 ) -> None:
     service_account_name, namespace = service_account
     juju.config(APP_NAME, {"monitored-service-accounts": f"{namespace}:{service_account_name}"})
@@ -140,7 +149,9 @@ def test_relation_with_logging(
         delay=15,
     )
 
-    secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     assert "spark.executorEnv.LOKI_URL" in secret_data
     assert "spark.kubernetes.driverEnv.LOKI_URL" in secret_data
 
@@ -152,6 +163,8 @@ def test_relation_with_logging(
     juju.remove_relation(APP_NAME, charm_versions.grafana_agent.application_name)
     juju.wait(jubilant.all_agents_idle, delay=5)
 
-    secret_data = get_integration_hub_secret_data(namespace, service_account_name)
+    secret_data = get_integration_hub_secret_data(
+        lightkube_client, namespace, service_account_name
+    )
     assert "spark.executorEnv.LOKI_URL" not in secret_data
     assert "spark.kubernetes.driverEnv.LOKI_URL" not in secret_data

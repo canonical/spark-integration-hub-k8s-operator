@@ -1,5 +1,6 @@
 import json
 import logging
+import urllib.request
 from datetime import datetime
 
 import jubilant
@@ -59,9 +60,6 @@ def deploy_observability_setup(juju: jubilant.Juju, charm_versions: IntegrationT
     reraise=True,
 )
 def assert_metrics_in_pushgateway(pushgateway_address: str) -> None:
-    import json
-    import urllib.request
-
     metrics = json.loads(
         urllib.request.urlopen(f"http://{pushgateway_address}:9091/api/v1/metrics").read()
     )

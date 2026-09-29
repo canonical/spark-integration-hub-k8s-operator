@@ -35,13 +35,15 @@ logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
 def get_integration_hub_secret(
+    lightkube_client: Client,
     namespace: str,
     service_account: str,
 ) -> Secret | None:
     """Return the integration hub secret for the given service account, if it exists."""
-    client = Client()
     try:
-        secret = client.get(Secret, name=f"{HUB_LABEL}-{service_account}", namespace=namespace)
+        secret = lightkube_client.get(
+            Secret, name=f"{HUB_LABEL}-{service_account}", namespace=namespace
+        )
         labels = (secret.metadata.labels or {}) if secret.metadata else {}
         if labels.get(MANAGED_BY_LABEL) != MANAGED_BY_INTEGRATION_HUB:
             return None
@@ -51,16 +53,16 @@ def get_integration_hub_secret(
 
 
 def get_truststore_secret(
+    lightkube_client: Client,
     model_name: str,
     app_name: str,
     namespace: str,
 ) -> Secret | None:
     """Return the truststore secret for the given service account, if it exists."""
-    client = Client()
     try:
         suffix = hashlib.sha256(f"{model_name}|{app_name}".encode()).hexdigest()[:8]
         secret_name = f"{SECRET_NAME_PREFIX}truststore-{suffix}"
-        secret = client.get(Secret, name=secret_name, namespace=namespace)
+        secret = lightkube_client.get(Secret, name=secret_name, namespace=namespace)
         labels = (secret.metadata.labels or {}) if secret.metadata else {}
         if labels.get(MANAGED_BY_LABEL) != MANAGED_BY_INTEGRATION_HUB:
             return None
@@ -70,10 +72,11 @@ def get_truststore_secret(
 
 
 def get_integration_hub_secret_data(
+    lightkube_client: Client,
     namespace: str,
     service_account: str,
 ) -> dict[str, str]:
-    hub_secret = get_integration_hub_secret(namespace, service_account)
+    hub_secret = get_integration_hub_secret(lightkube_client, namespace, service_account)
     if not hub_secret:
         return {}
     if not hub_secret.data:
@@ -86,12 +89,16 @@ def get_integration_hub_secret_data(
 
 
 def get_truststore_secret_data(
+    lightkube_client: Client,
     model_name: str,
     app_name: str,
     namespace: str,
 ) -> dict[str, bytes]:
     truststore_secret = get_truststore_secret(
-        model_name=model_name, app_name=app_name, namespace=namespace
+        lightkube_client=lightkube_client,
+        model_name=model_name,
+        app_name=app_name,
+        namespace=namespace,
     )
     if not truststore_secret:
         return {}
@@ -104,6 +111,7 @@ def get_truststore_secret_data(
 
 
 def integration_hub_secret_exists(
+    lightkube_client: Client,
     workload_namespace: str,
     workload_service_account: str,
     with_properties: dict[str, str] | None = None,
@@ -116,14 +124,18 @@ def integration_hub_secret_exists(
     account.
     """
     hub_secret = get_integration_hub_secret(
-        namespace=workload_namespace, service_account=workload_service_account
+        lightkube_client=lightkube_client,
+        namespace=workload_namespace,
+        service_account=workload_service_account,
     )
     if not hub_secret:
         return False
     if not with_properties:
         return True
     spark_properties = get_integration_hub_secret_data(
-        namespace=workload_namespace, service_account=workload_service_account
+        lightkube_client=lightkube_client,
+        namespace=workload_namespace,
+        service_account=workload_service_account,
     )
     if all(spark_properties.get(k) == v for k, v in with_properties.items()):
         return True
