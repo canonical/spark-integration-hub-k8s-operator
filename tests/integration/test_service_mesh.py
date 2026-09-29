@@ -8,6 +8,7 @@ from time import sleep
 from typing import cast
 
 import jubilant
+import lightkube
 import pytest
 import yaml
 
@@ -72,20 +73,21 @@ def test_deploy_integration_hub(
     juju.wait(jubilant.all_active)
 
 
-def test_run_spark_job_before_meshing(service_account: str):
+def test_run_spark_job_before_meshing(lightkube_client: lightkube.Client, service_account: str):
     """Run a Spark job before enabling the service mesh."""
     service_account_name, namespace = service_account
-    cleanup_workload_pods(namespace=namespace)
+    cleanup_workload_pods(lightkube_client, namespace=namespace)
 
     setup_spark_job(namespace=namespace, service_account=service_account_name)
     run_spark_job(namespace=namespace, service_account=service_account_name)
-    assert_spark_job_successful(namespace=namespace)
+    assert_spark_job_successful(lightkube_client, namespace=namespace)
 
-    driver_pods = get_spark_driver_pods(namespace=namespace)
-    executor_pods = get_spark_executor_pods(namespace=namespace)
+    driver_pods = get_spark_driver_pods(lightkube_client, namespace=namespace)
+    executor_pods = get_spark_executor_pods(lightkube_client, namespace=namespace)
 
     assert not any(
         pod_has_labels(
+            lightkube_client,
             pod_name,
             namespace=namespace,
             labels={ISTIO_AMBIENT_LABEL_KEY: ISTIO_AMBIENT_LABEL_VALUE},
@@ -94,22 +96,25 @@ def test_run_spark_job_before_meshing(service_account: str):
     )
     assert not any(
         pod_has_labels(
+            lightkube_client,
             pod_name,
             namespace=namespace,
             labels={ISTIO_AMBIENT_LABEL_KEY: ISTIO_AMBIENT_LABEL_VALUE},
         )
         for pod_name in executor_pods
     )
-    cleanup_workload_pods(namespace=namespace)
+    cleanup_workload_pods(lightkube_client, namespace=namespace)
 
 
-def test_access_spark_workloads_from_unmeshed_pod_before_meshing(service_account: str):
+def test_access_spark_workloads_from_unmeshed_pod_before_meshing(
+    service_account: str, lightkube_client: lightkube.Client
+):
     """Test that an unmeshed pod can reach the Spark driver workload before meshing."""
     service_account_name, namespace = service_account
 
     try:
         run_long_spark_job(namespace=namespace, service_account=service_account_name)
-        driver_ip, _ = wait_for_running_spark_workloads(namespace=namespace)
+        driver_ip, _ = wait_for_running_spark_workloads(lightkube_client, namespace=namespace)
         curl_driver_process = curl_using_pod(
             namespace=namespace, url=f"http://{driver_ip}:{SPARK_DRIVER_UI_PORT}"
         )
@@ -120,40 +125,45 @@ def test_access_spark_workloads_from_unmeshed_pod_before_meshing(service_account
             f"Unexpected HTTP status code: {curl_driver_process.stdout}"
         )
     finally:
-        cleanup_workload_pods(namespace=namespace)
+        cleanup_workload_pods(lightkube_client, namespace=namespace)
 
 
-def test_enable_service_mesh(juju: jubilant.Juju, charm_versions: IntegrationTestsCharms):
+def test_enable_service_mesh(
+    juju: jubilant.Juju, charm_versions: IntegrationTestsCharms, lightkube_client: lightkube.Client
+):
     """Enable the service mesh for the integration hub."""
-    for pod_name in get_unit_pod_names(cast(str, juju.model), APP_NAME):
+    for pod_name in get_unit_pod_names(lightkube_client, cast(str, juju.model), APP_NAME):
         assert not pod_has_labels(
+            lightkube_client,
             namespace=cast(str, juju.model),
             pod_name=pod_name,
             labels={ISTIO_AMBIENT_LABEL_KEY: ISTIO_AMBIENT_LABEL_VALUE},
         )
     deploy_istio_mesh_setup(juju=juju, charm_versions=charm_versions)
-    for pod_name in get_unit_pod_names(cast(str, juju.model), APP_NAME):
+    for pod_name in get_unit_pod_names(lightkube_client, cast(str, juju.model), APP_NAME):
         assert pod_has_labels(
+            lightkube_client,
             namespace=cast(str, juju.model),
             pod_name=pod_name,
             labels={ISTIO_AMBIENT_LABEL_KEY: ISTIO_AMBIENT_LABEL_VALUE},
         )
 
 
-def test_run_spark_job_after_meshing(service_account: str):
+def test_run_spark_job_after_meshing(service_account: str, lightkube_client: lightkube.Client):
     """Run a Spark job after enabling the service mesh."""
     service_account_name, namespace = service_account
-    cleanup_workload_pods(namespace=namespace)
+    cleanup_workload_pods(lightkube_client, namespace=namespace)
 
     setup_spark_job(namespace=namespace, service_account=service_account_name)
     run_spark_job(namespace=namespace, service_account=service_account_name)
-    assert_spark_job_successful(namespace=namespace)
+    assert_spark_job_successful(lightkube_client, namespace=namespace)
 
-    driver_pods = get_spark_driver_pods(namespace=namespace)
-    executor_pods = get_spark_executor_pods(namespace=namespace)
+    driver_pods = get_spark_driver_pods(lightkube_client, namespace=namespace)
+    executor_pods = get_spark_executor_pods(lightkube_client, namespace=namespace)
 
     assert all(
         pod_has_labels(
+            lightkube_client,
             pod_name,
             namespace=namespace,
             labels={ISTIO_AMBIENT_LABEL_KEY: ISTIO_AMBIENT_LABEL_VALUE},
@@ -162,22 +172,25 @@ def test_run_spark_job_after_meshing(service_account: str):
     )
     assert all(
         pod_has_labels(
+            lightkube_client,
             pod_name,
             namespace=namespace,
             labels={ISTIO_AMBIENT_LABEL_KEY: ISTIO_AMBIENT_LABEL_VALUE},
         )
         for pod_name in executor_pods
     )
-    cleanup_workload_pods(namespace=namespace)
+    cleanup_workload_pods(lightkube_client, namespace=namespace)
 
 
-def test_access_spark_workloads_from_unmeshed_pod_after_meshing(service_account: str):
+def test_access_spark_workloads_from_unmeshed_pod_after_meshing(
+    service_account: str, lightkube_client: lightkube.Client
+):
     """That that an unmeshed pod cannot reach the Spark driver workload after the service mesh is enabled."""
     service_account_name, namespace = service_account
 
     try:
         run_long_spark_job(namespace=namespace, service_account=service_account_name)
-        driver_ip, _ = wait_for_running_spark_workloads(namespace=namespace)
+        driver_ip, _ = wait_for_running_spark_workloads(lightkube_client, namespace=namespace)
         curl_driver_process = curl_using_pod(
             namespace=namespace, url=f"http://{driver_ip}:{SPARK_DRIVER_UI_PORT}"
         )
@@ -185,18 +198,19 @@ def test_access_spark_workloads_from_unmeshed_pod_after_meshing(service_account:
             f"Expected failure to curl driver pod, but succeeded: {curl_driver_process.stdout}"
         )
     finally:
-        cleanup_workload_pods(namespace=namespace)
+        cleanup_workload_pods(lightkube_client, namespace=namespace)
 
 
 def test_access_spark_workloads_from_meshed_pod_but_unauthorized_after_meshing(
     service_account: str,
+    lightkube_client: lightkube.Client,
 ) -> None:
     """Test that a meshed pod that is unauthorized cannot reach the Spark driver workload after the service mesh is enabled."""
     service_account_name, namespace = service_account
 
     try:
         run_long_spark_job(namespace=namespace, service_account=service_account_name)
-        driver_ip, _ = wait_for_running_spark_workloads(namespace=namespace)
+        driver_ip, _ = wait_for_running_spark_workloads(lightkube_client, namespace=namespace)
         curl_driver_process = curl_using_pod(
             namespace=namespace,
             url=f"http://{driver_ip}:{SPARK_DRIVER_UI_PORT}",
@@ -206,7 +220,7 @@ def test_access_spark_workloads_from_meshed_pod_but_unauthorized_after_meshing(
             f"Expected failure to curl driver pod, but succeeded: {curl_driver_process.stdout}"
         )
     finally:
-        cleanup_workload_pods(namespace=namespace)
+        cleanup_workload_pods(lightkube_client, namespace=namespace)
 
 
 def test_observability_with_ambient_mesh(
@@ -214,6 +228,7 @@ def test_observability_with_ambient_mesh(
     charm_versions: IntegrationTestsCharms,
     service_account: str,
     platform: str,
+    lightkube_client: lightkube.Client,
 ) -> None:
     """Test observability with the ambient service mesh enabled."""
     if platform == "arm64":
@@ -228,10 +243,10 @@ def test_observability_with_ambient_mesh(
     service_account_name, namespace = service_account
     try:
         run_long_spark_job(namespace=namespace, service_account=service_account_name)
-        wait_for_running_spark_workloads(namespace=namespace)
+        wait_for_running_spark_workloads(lightkube_client, namespace=namespace)
         assert_metrics_in_pushgateway(pushgateway_address=pushgateway_address)
     finally:
-        cleanup_workload_pods(namespace=namespace)
+        cleanup_workload_pods(lightkube_client, namespace=namespace)
 
     logger.info(
         "Allowing some time for the workloads to delete their group in pushgateway on job completion"
@@ -246,6 +261,7 @@ def test_observability_with_ambient_mesh(
         juju, "logging", charm_versions.grafana_agent.application_name
     )
     assert integration_hub_secret_exists(
+        lightkube_client,
         namespace,
         sa_name,
         with_properties={
@@ -257,7 +273,9 @@ def test_observability_with_ambient_mesh(
     )
 
 
-def test_integration_with_client_app(juju: jubilant.Juju, namespace: str, test_charm: str | Path):
+def test_integration_with_client_app(
+    juju: jubilant.Juju, namespace: str, test_charm: str | Path, lightkube_client: lightkube.Client
+):
     """Deploy and integrate test charm and assert the existence of related resources."""
     deploy_test_charm_setup(
         juju=juju,
@@ -269,7 +287,7 @@ def test_integration_with_client_app(juju: jubilant.Juju, namespace: str, test_c
         "Asserting the existence of service account, integration hub secret, and authorization policies"
     )
     assert spark_service_account_exists(namespace, "sa1")
-    assert integration_hub_secret_exists(namespace, "sa1"), (
+    assert integration_hub_secret_exists(lightkube_client, namespace, "sa1"), (
         "Integration hub secret for service account 'sa1' does not exist"
     )
     assert driver_authorization_policy_exists(namespace, "sa1"), (
@@ -300,7 +318,7 @@ def test_integration_with_client_app(juju: jubilant.Juju, namespace: str, test_c
     assert not spark_service_account_exists(namespace, "sa1"), (
         "Spark service account 'sa1' should not exist after removing the relation"
     )
-    assert not integration_hub_secret_exists(namespace, "sa1"), (
+    assert not integration_hub_secret_exists(lightkube_client, namespace, "sa1"), (
         "Integration hub secret for service account 'sa1' should not exist after removing the relation"
     )
     assert not driver_authorization_policy_exists(namespace, "sa1"), (
@@ -319,7 +337,9 @@ def test_integration_with_client_app(juju: jubilant.Juju, namespace: str, test_c
     )
 
 
-def test_disable_service_mesh(juju: jubilant.Juju, charm_versions: IntegrationTestsCharms):
+def test_disable_service_mesh(
+    juju: jubilant.Juju, charm_versions: IntegrationTestsCharms, lightkube_client: lightkube.Client
+):
     """Disable the service mesh for the Integration Hub charm."""
     logger.info("Disabling ambient mesh for Integration hub charm")
     juju.remove_relation(
@@ -333,28 +353,30 @@ def test_disable_service_mesh(juju: jubilant.Juju, charm_versions: IntegrationTe
         delay=15,
     )
     logger.info("Asserting the istio labels are removed from integration hub pods")
-    for pod_name in get_unit_pod_names(cast(str, juju.model), APP_NAME):
+    for pod_name in get_unit_pod_names(lightkube_client, cast(str, juju.model), APP_NAME):
         assert not pod_has_labels(
+            lightkube_client,
             namespace=cast(str, juju.model),
             pod_name=pod_name,
             labels={ISTIO_AMBIENT_LABEL_KEY: ISTIO_AMBIENT_LABEL_VALUE},
         )
 
 
-def test_run_spark_job_after_unmeshing(service_account: str):
+def test_run_spark_job_after_unmeshing(service_account: str, lightkube_client: lightkube.Client):
     """Run a Spark job after disabling the service mesh."""
     service_account_name, namespace = service_account
-    cleanup_workload_pods(namespace=namespace)
+    cleanup_workload_pods(lightkube_client, namespace=namespace)
 
     setup_spark_job(namespace=namespace, service_account=service_account_name)
     run_spark_job(namespace=namespace, service_account=service_account_name)
-    assert_spark_job_successful(namespace=namespace)
+    assert_spark_job_successful(lightkube_client, namespace=namespace)
 
-    driver_pods = get_spark_driver_pods(namespace=namespace)
-    executor_pods = get_spark_executor_pods(namespace=namespace)
+    driver_pods = get_spark_driver_pods(lightkube_client, namespace=namespace)
+    executor_pods = get_spark_executor_pods(lightkube_client, namespace=namespace)
 
     assert not any(
         pod_has_labels(
+            lightkube_client,
             pod_name,
             namespace=namespace,
             labels={ISTIO_AMBIENT_LABEL_KEY: ISTIO_AMBIENT_LABEL_VALUE},
@@ -363,22 +385,25 @@ def test_run_spark_job_after_unmeshing(service_account: str):
     )
     assert not any(
         pod_has_labels(
+            lightkube_client,
             pod_name,
             namespace=namespace,
             labels={ISTIO_AMBIENT_LABEL_KEY: ISTIO_AMBIENT_LABEL_VALUE},
         )
         for pod_name in executor_pods
     )
-    cleanup_workload_pods(namespace=namespace)
+    cleanup_workload_pods(lightkube_client, namespace=namespace)
 
 
-def test_access_spark_workloads_from_unmeshed_pod_after_unmeshing(service_account: str):
+def test_access_spark_workloads_from_unmeshed_pod_after_unmeshing(
+    service_account: str, lightkube_client: lightkube.Client
+):
     """Test that Spark workloads are accessible from an unmeshed pod after disabling the service mesh."""
     service_account_name, namespace = service_account
 
     try:
         run_long_spark_job(namespace=namespace, service_account=service_account_name)
-        driver_ip, _ = wait_for_running_spark_workloads(namespace=namespace)
+        driver_ip, _ = wait_for_running_spark_workloads(lightkube_client, namespace=namespace)
         curl_driver_process = curl_using_pod(
             namespace=namespace, url=f"http://{driver_ip}:{SPARK_DRIVER_UI_PORT}"
         )
@@ -389,4 +414,4 @@ def test_access_spark_workloads_from_unmeshed_pod_after_unmeshing(service_accoun
             f"Unexpected HTTP status code: {curl_driver_process.stdout}"
         )
     finally:
-        cleanup_workload_pods(namespace=namespace)
+        cleanup_workload_pods(lightkube_client, namespace=namespace)
