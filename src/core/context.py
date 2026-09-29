@@ -21,6 +21,7 @@ from constants import (
     PEER_REL,
     PUSHGATEWAY,
     S3_RELATION_NAME,
+    SERVICE_MESH_RELATION_NAME,
 )
 from core.domain import (
     AzureStorageConnectionInfo,
@@ -81,6 +82,11 @@ class Context(WithLogging):
     def _peer_relation(self) -> Relation | None:
         """The cluster peer relation."""
         return self.model.get_relation(PEER_REL)
+
+    @property
+    def service_mesh_relation(self) -> Relation | None:
+        """The Service Mesh relation."""
+        return self.charm.model.get_relation(SERVICE_MESH_RELATION_NAME)
 
     @property
     def cluster(self) -> HubCluster:
