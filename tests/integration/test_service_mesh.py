@@ -251,7 +251,7 @@ def test_observability_with_ambient_mesh(
     logger.info(
         "Allowing some time for the workloads to delete their group in pushgateway on job completion"
     )
-    sleep(10)
+    sleep(30)
 
     with pytest.raises(AssertionError):
         assert_metrics_in_pushgateway(pushgateway_address=pushgateway_address)
