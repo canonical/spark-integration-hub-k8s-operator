@@ -71,14 +71,14 @@ def test_props_serialization_in_resource_manifest(
     assert "spark.metrics.conf.*.sink.prometheus.pushgateway-address" in spark_properties
     assert "spark.metrics.conf.*.sink.prometheus.class" in spark_properties
 
-    # The resource-manifest keys should be serialized, so asterisk (*) becomes _2A
+    # The resource-manifest keys should be serialized, so asterisk (*) becomes _2a
     assert "spark.metrics.conf.*.sink.prometheus.class" not in resource_manifest["stringData"]
     assert (
         "spark.metrics.conf.*.sink.prometheus.pushgateway-address"
         not in resource_manifest["stringData"]
     )
     assert (
-        "spark.metrics.conf._2A.sink.prometheus.pushgateway-address"
+        "spark.metrics.conf._2a.sink.prometheus.pushgateway-address"
         in resource_manifest["stringData"]
     )
-    assert "spark.metrics.conf._2A.sink.prometheus.class" in resource_manifest["stringData"]
+    assert "spark.metrics.conf._2a.sink.prometheus.class" in resource_manifest["stringData"]

@@ -7,7 +7,7 @@
 import json
 from typing import cast
 
-from ops import Container
+from ops import Container, ModelError
 from ops.pebble import ConnectionError, LayerDict
 
 from common.k8s import K8sWorkload
@@ -90,9 +90,11 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
 
     def active(self) -> bool:
         """Return the health of the service."""
+        if not self.ready():
+            return False
         try:
             service = self.container.get_service(self.INTEGRATION_HUB_SERVICE)
-        except ConnectionError:
+        except (ConnectionError, ModelError):
             self.logger.debug(f"Service {self.INTEGRATION_HUB_SERVICE} not running")
             return False
 
