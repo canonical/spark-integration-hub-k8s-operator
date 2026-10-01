@@ -13,7 +13,6 @@ lightkube = "^1.0.0"
 spark8t = "^1.5.0"
 object-storage-charmlib = "^1.0.0"
 charmlibs-interfaces-service-mesh = "^1.0.2"
-canonical-service-mesh = { git = "https://github.com/theoctober19th/service-mesh.git", branch = "fix/compat-lightkube-1.0", subdirectory = "canonical_service_mesh" }
 
 [tool.poetry.group.charm-libs.dependencies]
 ops = "^3.0"
