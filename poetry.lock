@@ -156,14 +156,14 @@ botocore = ["botocore"]
 
 [[package]]
 name = "canonical-service-mesh"
-version = "0.3.0"
+version = "0.3.1"
 description = "Shared utilities for Charmed Service Mesh."
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "canonical_service_mesh-0.3.0-py3-none-any.whl", hash = "sha256:fe6cd6bdd839db0917c3fd586568311c25a36bfa692be9c7d7c02a716a4a2672"},
-    {file = "canonical_service_mesh-0.3.0.tar.gz", hash = "sha256:d0f3dcd0b584f217b229f0805547b2db3843de4c2dce831a6192903612cd51ee"},
+    {file = "canonical_service_mesh-0.3.1-py3-none-any.whl", hash = "sha256:6ae1bfaa54f157ba0880a33cd5711b9a0dd532b1245a453278caab04a51fd3e0"},
+    {file = "canonical_service_mesh-0.3.1.tar.gz", hash = "sha256:d41e09cfa7ab3be6aac8f6a72830414deb1c1430c940f9d01d1ea6ab363ce712"},
 ]
 
 [package.dependencies]
@@ -2278,4 +2278,4 @@ h11 = ">=0.16.0,<1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">3.10,<4.0"
-content-hash = "f2067f50ff24c740c6139c8e85972a068f7bf08ca172643429ec01e74e74b20b"
+content-hash = "e24a1377921ec7f8ed6d5e14f89e1a70eb339d316744918a542ef28a8708907d"
