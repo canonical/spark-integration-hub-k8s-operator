@@ -101,6 +101,8 @@ prepare: |
   snap install --classic concierge
   concierge prepare --trace
 
+  k8s kubectl rollout status deployment/coredns -n kube-system --timeout=10m
+
   # Configure microceph for S3-backed integration tests
   microceph cluster bootstrap
   microceph disk add loop,1G,3

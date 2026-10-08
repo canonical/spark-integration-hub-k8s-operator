@@ -9,7 +9,7 @@ providers:
   k8s:
     enable: true
     bootstrap: true
-    channel: 1.32-classic/stable
+    channel: 1.35-classic/stable
     features:
       local-storage:
     bootstrap-constraints:
@@ -20,8 +20,6 @@ host:
     - pipx
     - jq
   snaps:
-    charmcraft:
-      channel: latest/stable
     microceph:
       channel: squid/stable
     spark-client:
