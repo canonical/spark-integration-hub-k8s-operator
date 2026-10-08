@@ -114,6 +114,34 @@ def client_application_authorization_policy_exists(
     return False
 
 
+def client_application_to_driver_authorization_policy_exists(
+    workload_namespace: str,
+    client_app_namespace: str,
+    client_app_service_account: str,
+) -> bool:
+    """Whether a policy in the workload namespace lets the client app reach the driver.
+
+    Matches on behaviour: an ALLOW policy in `workload_namespace` selecting the
+    Spark driver pods (`spark-role=driver`) and allowing the client application
+    service account principal. This is the separate per-relation policy that
+    grants client-app access to the driver, distinct from the base driver policy
+    which only allows the workload service account.
+    """
+    client = Client()
+    principal = _workload_principal(client_app_namespace, client_app_service_account)
+    for policy in client.list(AuthorizationPolicy, namespace=workload_namespace):
+        spec = policy.spec or {}
+        if not _is_managed_by_integration_hub(policy):
+            continue
+        if spec.get("action") != "ALLOW":
+            continue
+        if _policy_selector_labels(policy).get("spark-role") != "driver":
+            continue
+        if principal in _policy_principals(policy):
+            return True
+    return False
+
+
 def deploy_istio_mesh_setup(
     juju: jubilant.Juju,
     charm_versions: IntegrationTestsCharms,
