@@ -25,10 +25,18 @@ AuthorizationPolicy = create_namespaced_resource(
     plural="authorizationpolicies",
 )
 
+# Owner label the integration hub stamps on every policy it creates for a workload.
+WORKLOAD_SERVICE_ACCOUNT_LABEL = "integration-hub/workload-service-account"
+
 
 def _workload_principal(workload_namespace: str, workload_service_account: str) -> str:
     """Build the SPIFFE principal for a workload service account."""
     return f"cluster.local/ns/{workload_namespace}/sa/{workload_service_account}"
+
+
+def _policy_owner_service_account(policy) -> str | None:
+    labels = (policy.metadata.labels or {}) if policy.metadata else {}
+    return labels.get(WORKLOAD_SERVICE_ACCOUNT_LABEL)
 
 
 def _policy_selector_labels(policy) -> dict[str, str]:
@@ -116,22 +124,31 @@ def client_application_authorization_policy_exists(
 
 def client_application_to_driver_authorization_policy_exists(
     workload_namespace: str,
+    workload_service_account: str,
     client_app_namespace: str,
     client_app_service_account: str,
 ) -> bool:
     """Whether a policy in the workload namespace lets the client app reach the driver.
 
-    Matches on behaviour: an ALLOW policy in `workload_namespace` selecting the
-    Spark driver pods (`spark-role=driver`) and allowing the client application
-    service account principal. This is the separate per-relation policy that
-    grants client-app access to the driver, distinct from the base driver policy
-    which only allows the workload service account.
+    Matches on behaviour: an ALLOW policy in `workload_namespace` owned by
+    `workload_service_account` (via the workload-service-account owner label),
+    selecting the Spark driver pods (`spark-role=driver`) and allowing the client
+    application service account principal. This is the separate per-relation
+    policy that grants client-app access to the driver, distinct from the base
+    driver policy which only allows the workload service account.
+
+    Scoping by the owner label is required because, under wildcard monitoring,
+    one app→driver policy is created per monitored workload SA and they all
+    allow the same client-app principal; without the label filter this would
+    also match other workloads' policies.
     """
     client = Client()
     principal = _workload_principal(client_app_namespace, client_app_service_account)
     for policy in client.list(AuthorizationPolicy, namespace=workload_namespace):
         spec = policy.spec or {}
         if not _is_managed_by_integration_hub(policy):
+            continue
+        if _policy_owner_service_account(policy) != workload_service_account:
             continue
         if spec.get("action") != "ALLOW":
             continue

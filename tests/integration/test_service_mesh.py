@@ -306,6 +306,7 @@ def test_integration_with_client_app(
     ), "Client application authorization policy for service account 'sa1' does not exist"
     assert client_application_to_driver_authorization_policy_exists(
         workload_namespace=namespace,
+        workload_service_account="sa1",
         client_app_namespace=cast(str, juju.model),
         client_app_service_account=TEST_CHARM_APP_NAME,
     ), "Client-application-to-driver authorization policy for service account 'sa1' does not exist"
@@ -344,6 +345,7 @@ def test_removing_service_mesh_relation_deletes_authorization_policies(
     )
     assert not client_application_to_driver_authorization_policy_exists(
         workload_namespace=namespace,
+        workload_service_account="sa1",
         client_app_namespace=cast(str, juju.model),
         client_app_service_account=TEST_CHARM_APP_NAME,
     ), (
@@ -375,6 +377,7 @@ def test_removing_service_mesh_relation_deletes_authorization_policies(
     ), "Client application authorization policy for service account 'sa1' does not exist"
     assert client_application_to_driver_authorization_policy_exists(
         workload_namespace=namespace,
+        workload_service_account="sa1",
         client_app_namespace=cast(str, juju.model),
         client_app_service_account=TEST_CHARM_APP_NAME,
     ), "Client-application-to-driver authorization policy for service account 'sa1' does not exist"
@@ -426,6 +429,7 @@ def test_remove_client_app_integration(
         lambda: (
             not client_application_to_driver_authorization_policy_exists(
                 workload_namespace=namespace,
+                workload_service_account="sa1",
                 client_app_namespace=cast(str, juju.model),
                 client_app_service_account=TEST_CHARM_APP_NAME,
             )
