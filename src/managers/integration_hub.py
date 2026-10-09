@@ -396,6 +396,10 @@ class IntegrationHubManager(WithLogging):
                 "SA_ALLOWLIST": str(self.workload.paths.allowlist),
                 "TRUSTSTORE_PATH": str(self.context.cluster.truststore_path),
                 "TRUSTSTORE_SECRET_NAME": str(self.context.cluster.truststore_secret_name),
+                # Cleared explicitly so stale values are dropped when the mesh or the last
+                # client relation goes away (set_environment merges and only removes Nones).
+                "SERVICE_MESH_ENABLED": None,
+                "CLIENT_APP_SERVICE_ACCOUNTS": None,
             }
             if self.context.service_mesh_relation:
                 environ["SERVICE_MESH_ENABLED"] = "true"

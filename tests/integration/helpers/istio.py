@@ -57,16 +57,15 @@ def _policy_principals(policy) -> set[str]:
 
 
 def _workload_auth_policy_exists(
-    workload_namespace: str, workload_service_account: str, role: str
+    lightkube_client: Client, workload_namespace: str, workload_service_account: str, role: str
 ) -> bool:
     """Check for an ALLOW policy selecting `spark-role=role` that allows the workload SA.
 
     Matches on behaviour (managed-by label, selector, action and allowed
     principal) rather than the generated policy name.
     """
-    client = Client()
     principal = _workload_principal(workload_namespace, workload_service_account)
-    for policy in client.list(AuthorizationPolicy, namespace=workload_namespace):
+    for policy in lightkube_client.list(AuthorizationPolicy, namespace=workload_namespace):
         spec = policy.spec or {}
         if not _is_managed_by_integration_hub(policy):
             continue
@@ -80,20 +79,25 @@ def _workload_auth_policy_exists(
 
 
 def driver_authorization_policy_exists(
-    workload_namespace: str, workload_service_account: str
+    lightkube_client: Client, workload_namespace: str, workload_service_account: str
 ) -> bool:
     """Whether an authorization policy grants access to the driver of the workload SA."""
-    return _workload_auth_policy_exists(workload_namespace, workload_service_account, "driver")
+    return _workload_auth_policy_exists(
+        lightkube_client, workload_namespace, workload_service_account, "driver"
+    )
 
 
 def executor_authorization_policy_exists(
-    workload_namespace: str, workload_service_account: str
+    lightkube_client: Client, workload_namespace: str, workload_service_account: str
 ) -> bool:
     """Whether an authorization policy grants access to the executors of the workload SA."""
-    return _workload_auth_policy_exists(workload_namespace, workload_service_account, "executor")
+    return _workload_auth_policy_exists(
+        lightkube_client, workload_namespace, workload_service_account, "executor"
+    )
 
 
 def client_application_authorization_policy_exists(
+    lightkube_client: Client,
     workload_namespace: str,
     workload_service_account: str,
     client_app_namespace: str,
@@ -104,9 +108,8 @@ def client_application_authorization_policy_exists(
     Matches on behaviour: an ALLOW policy in `client_app_namespace` selecting the
     client application pods and allowing the workload service account principal.
     """
-    client = Client()
     principal = _workload_principal(workload_namespace, workload_service_account)
-    for policy in client.list(AuthorizationPolicy, namespace=client_app_namespace):
+    for policy in lightkube_client.list(AuthorizationPolicy, namespace=client_app_namespace):
         spec = policy.spec or {}
         if not _is_managed_by_integration_hub(policy):
             continue
@@ -123,6 +126,7 @@ def client_application_authorization_policy_exists(
 
 
 def client_application_to_driver_authorization_policy_exists(
+    lightkube_client: Client,
     workload_namespace: str,
     workload_service_account: str,
     client_app_namespace: str,
@@ -142,9 +146,8 @@ def client_application_to_driver_authorization_policy_exists(
     allow the same client-app principal; without the label filter this would
     also match other workloads' policies.
     """
-    client = Client()
     principal = _workload_principal(client_app_namespace, client_app_service_account)
-    for policy in client.list(AuthorizationPolicy, namespace=workload_namespace):
+    for policy in lightkube_client.list(AuthorizationPolicy, namespace=workload_namespace):
         spec = policy.spec or {}
         if not _is_managed_by_integration_hub(policy):
             continue

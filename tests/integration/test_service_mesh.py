@@ -292,19 +292,21 @@ def test_integration_with_client_app(
     assert integration_hub_secret_exists(lightkube_client, namespace, "sa1"), (
         "Integration hub secret for service account 'sa1' does not exist"
     )
-    assert driver_authorization_policy_exists(namespace, "sa1"), (
+    assert driver_authorization_policy_exists(lightkube_client, namespace, "sa1"), (
         "Driver authorization policy for service account 'sa1' does not exist"
     )
-    assert executor_authorization_policy_exists(namespace, "sa1"), (
+    assert executor_authorization_policy_exists(lightkube_client, namespace, "sa1"), (
         "Executor authorization policy for service account 'sa1' does not exist"
     )
     assert client_application_authorization_policy_exists(
+        lightkube_client,
         workload_namespace=namespace,
         workload_service_account="sa1",
         client_app_namespace=cast(str, juju.model),
         client_app_service_account=TEST_CHARM_APP_NAME,
     ), "Client application authorization policy for service account 'sa1' does not exist"
     assert client_application_to_driver_authorization_policy_exists(
+        lightkube_client,
         workload_namespace=namespace,
         workload_service_account="sa1",
         client_app_namespace=cast(str, juju.model),
@@ -316,6 +318,7 @@ def test_removing_service_mesh_relation_deletes_authorization_policies(
     juju: jubilant.Juju,
     charm_versions: IntegrationTestsCharms,
     namespace: str,
+    lightkube_client: lightkube.Client,
 ):
     """Test that removing the service mesh relation deletes all related authorization policies and that re-adding the relation restores them."""
     logger.info("Removing service mesh relation from integration hub charm")
@@ -329,13 +332,14 @@ def test_removing_service_mesh_relation_deletes_authorization_policies(
         ),
         delay=15,
     )
-    assert not driver_authorization_policy_exists(namespace, "sa1"), (
+    assert not driver_authorization_policy_exists(lightkube_client, namespace, "sa1"), (
         "Driver authorization policy for service account 'sa1' should not exist after removing the relation"
     )
-    assert not executor_authorization_policy_exists(namespace, "sa1"), (
+    assert not executor_authorization_policy_exists(lightkube_client, namespace, "sa1"), (
         "Executor authorization policy for service account 'sa1' should not exist after removing the relation"
     )
     assert not client_application_authorization_policy_exists(
+        lightkube_client,
         workload_namespace=namespace,
         workload_service_account="sa1",
         client_app_namespace=cast(str, juju.model),
@@ -344,6 +348,7 @@ def test_removing_service_mesh_relation_deletes_authorization_policies(
         "Client application authorization policy for service account 'sa1' should not exist after removing the relation"
     )
     assert not client_application_to_driver_authorization_policy_exists(
+        lightkube_client,
         workload_namespace=namespace,
         workload_service_account="sa1",
         client_app_namespace=cast(str, juju.model),
@@ -363,19 +368,21 @@ def test_removing_service_mesh_relation_deletes_authorization_policies(
         ),
         delay=15,
     )
-    assert driver_authorization_policy_exists(namespace, "sa1"), (
+    assert driver_authorization_policy_exists(lightkube_client, namespace, "sa1"), (
         "Driver authorization policy for service account 'sa1' does not exist"
     )
-    assert executor_authorization_policy_exists(namespace, "sa1"), (
+    assert executor_authorization_policy_exists(lightkube_client, namespace, "sa1"), (
         "Executor authorization policy for service account 'sa1' does not exist"
     )
     assert client_application_authorization_policy_exists(
+        lightkube_client,
         workload_namespace=namespace,
         workload_service_account="sa1",
         client_app_namespace=cast(str, juju.model),
         client_app_service_account=TEST_CHARM_APP_NAME,
     ), "Client application authorization policy for service account 'sa1' does not exist"
     assert client_application_to_driver_authorization_policy_exists(
+        lightkube_client,
         workload_namespace=namespace,
         workload_service_account="sa1",
         client_app_namespace=cast(str, juju.model),
@@ -407,16 +414,17 @@ def test_remove_client_app_integration(
         message="Integration hub secret for service account 'sa1' should not exist after removing the relation",
     )
     assert_eventually(
-        lambda: not driver_authorization_policy_exists(namespace, "sa1"),
+        lambda: not driver_authorization_policy_exists(lightkube_client, namespace, "sa1"),
         message="Driver authorization policy for service account 'sa1' should not exist after removing the relation",
     )
     assert_eventually(
-        lambda: not executor_authorization_policy_exists(namespace, "sa1"),
+        lambda: not executor_authorization_policy_exists(lightkube_client, namespace, "sa1"),
         message="Executor authorization policy for service account 'sa1' should not exist after removing the relation",
     )
     assert_eventually(
         lambda: (
             not client_application_authorization_policy_exists(
+                lightkube_client,
                 workload_namespace=namespace,
                 workload_service_account="sa1",
                 client_app_namespace=cast(str, juju.model),
@@ -428,6 +436,7 @@ def test_remove_client_app_integration(
     assert_eventually(
         lambda: (
             not client_application_to_driver_authorization_policy_exists(
+                lightkube_client,
                 workload_namespace=namespace,
                 workload_service_account="sa1",
                 client_app_namespace=cast(str, juju.model),
