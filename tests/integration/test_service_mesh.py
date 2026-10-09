@@ -390,7 +390,7 @@ def test_remove_client_app_integration(
             jubilant.all_active(status, TEST_CHARM_APP_NAME, APP_NAME)
             and jubilant.all_agents_idle(status)
         ),
-        delay=15,
+        delay=30,
     )
     logger.info(
         "Asserting the cleanup of service account, integration hub secret, and authorization policies"
