@@ -132,6 +132,7 @@ jobs:
         run: ~/go/bin/spread -vv -artifacts=artifacts '${{ matrix.job.spread_job }}'
       - name: Setup upterm session
         uses: owenthereal/action-upterm@v2
+        if: ${{ success() || (failure() && steps.spread.outcome == 'failure') }}
       - name: snap list
         timeout-minutes: 1
         if: ${{ success() || (failure() && steps.spread.outcome == 'failure') }}
