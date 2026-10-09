@@ -6,6 +6,7 @@ import base64
 import hashlib
 import logging
 from pathlib import Path
+from typing import Callable
 
 import jubilant
 import yaml
@@ -13,6 +14,7 @@ from lightkube import ApiError, Client
 from lightkube.resources.core_v1 import Secret
 from spark8t.literals import HUB_LABEL
 from spark8t.utils import K8sSecretKeySerializer
+from tenacity import Retrying, stop_after_attempt, wait_fixed
 
 from ..types import AzureInfo, IntegrationTestsCharms, S3Info
 from .azure_storage import prepare_azure_storage_setup
@@ -220,3 +222,19 @@ def deploy_test_charm_setup(
             ),
             delay=15,
         )
+
+
+def assert_eventually(
+    check: Callable[[], bool], *, attempts: int = 12, wait: float = 5, message: str = ""
+) -> None:
+    """Retry ``check`` until it returns True, or raise AssertionError once attempts are exhausted.
+
+    Kubernetes-side cleanup (the watcher's garbage-collection pass and the cluster garbage
+    collector) is eventually consistent and is not reflected in Juju status, so assertions on
+    resource deletion must poll rather than check once right after ``juju.wait``.
+    """
+    for attempt in Retrying(
+        stop=stop_after_attempt(attempts), wait=wait_fixed(wait), reraise=True
+    ):
+        with attempt:
+            assert check(), message or "Condition was not met within timeout"
