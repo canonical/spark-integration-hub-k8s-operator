@@ -22,6 +22,7 @@ from .helpers.cos import (
 from .helpers.integration_hub import (
     TEST_CHARM_APP_NAME,
     TEST_CHARM_RELATION_A_NAME,
+    assert_eventually,
     deploy_integration_hub_setup,
     deploy_test_charm_setup,
     integration_hub_secret_exists,
@@ -394,32 +395,42 @@ def test_remove_client_app_integration(
     logger.info(
         "Asserting the cleanup of service account, integration hub secret, and authorization policies"
     )
-    assert not spark_service_account_exists(namespace, "sa1"), (
-        "Spark service account 'sa1' should not exist after removing the relation"
+    assert_eventually(
+        lambda: not spark_service_account_exists(namespace, "sa1"),
+        message="Spark service account 'sa1' should not exist after removing the relation",
     )
-    assert not integration_hub_secret_exists(lightkube_client, namespace, "sa1"), (
-        "Integration hub secret for service account 'sa1' should not exist after removing the relation"
+    assert_eventually(
+        lambda: not integration_hub_secret_exists(lightkube_client, namespace, "sa1"),
+        message="Integration hub secret for service account 'sa1' should not exist after removing the relation",
     )
-    assert not driver_authorization_policy_exists(namespace, "sa1"), (
-        "Driver authorization policy for service account 'sa1' should not exist after removing the relation"
+    assert_eventually(
+        lambda: not driver_authorization_policy_exists(namespace, "sa1"),
+        message="Driver authorization policy for service account 'sa1' should not exist after removing the relation",
     )
-    assert not executor_authorization_policy_exists(namespace, "sa1"), (
-        "Executor authorization policy for service account 'sa1' should not exist after removing the relation"
+    assert_eventually(
+        lambda: not executor_authorization_policy_exists(namespace, "sa1"),
+        message="Executor authorization policy for service account 'sa1' should not exist after removing the relation",
     )
-    assert not client_application_authorization_policy_exists(
-        workload_namespace=namespace,
-        workload_service_account="sa1",
-        client_app_namespace=cast(str, juju.model),
-        client_app_service_account=TEST_CHARM_APP_NAME,
-    ), (
-        "Client application authorization policy for service account 'sa1' should not exist after removing the relation"
+    assert_eventually(
+        lambda: (
+            not client_application_authorization_policy_exists(
+                workload_namespace=namespace,
+                workload_service_account="sa1",
+                client_app_namespace=cast(str, juju.model),
+                client_app_service_account=TEST_CHARM_APP_NAME,
+            )
+        ),
+        message="Client application authorization policy for service account 'sa1' should not exist after removing the relation",
     )
-    assert not client_application_to_driver_authorization_policy_exists(
-        workload_namespace=namespace,
-        client_app_namespace=cast(str, juju.model),
-        client_app_service_account=TEST_CHARM_APP_NAME,
-    ), (
-        "Client-application-to-driver authorization policy for service account 'sa1' should not exist after removing the relation"
+    assert_eventually(
+        lambda: (
+            not client_application_to_driver_authorization_policy_exists(
+                workload_namespace=namespace,
+                client_app_namespace=cast(str, juju.model),
+                client_app_service_account=TEST_CHARM_APP_NAME,
+            )
+        ),
+        message="Client-application-to-driver authorization policy for service account 'sa1' should not exist after removing the relation",
     )
 
 
