@@ -6,23 +6,21 @@ juju:
     logging-config: <root>=INFO; unit=DEBUG
 
 providers:
-  microk8s:
+  k8s:
     enable: true
-    channel: 1.32-strict/stable
     bootstrap: true
-    addons:
-      - dns
-      - hostpath-storage
-      - rbac
+    channel: 1.35-classic/stable
+    features:
+      local-storage:
+    bootstrap-constraints:
+      root-disk: 4G
 
 host:
   packages:
     - pipx
     - jq
   snaps:
-    charmcraft:
-      channel: latest/stable
-    spark-client:
-      channel: 3.5/edge
     microceph:
       channel: squid/stable
+    spark-client:
+      channel: 3.5/edge

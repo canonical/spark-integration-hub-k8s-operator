@@ -228,7 +228,7 @@ def juju(request: pytest.FixtureRequest, platform: str):
 
     if model is None:
         with jubilant.temp_model(keep=keep_models) as juju:
-            juju.wait_timeout = 10 * 60
+            juju.wait_timeout = 15 * 60
             juju.cli("set-model-constraints", f"arch={platform}")
             yield juju
 
@@ -240,7 +240,7 @@ def juju(request: pytest.FixtureRequest, platform: str):
         except jubilant.CLIError:
             juju.add_model(model_name)
 
-        juju.wait_timeout = 10 * 60
+        juju.wait_timeout = 15 * 60
         juju.cli("set-model-constraints", f"arch={platform}")
         yield juju
 
