@@ -314,7 +314,6 @@ def test_removing_service_mesh_relation_deletes_authorization_policies(
     juju: jubilant.Juju,
     charm_versions: IntegrationTestsCharms,
     namespace: str,
-    lightkube_client: lightkube.Client,
 ):
     """Test that removing the service mesh relation deletes all related authorization policies and that re-adding the relation restores them."""
     logger.info("Removing service mesh relation from integration hub charm")
