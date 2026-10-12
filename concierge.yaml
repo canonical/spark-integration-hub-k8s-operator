@@ -11,7 +11,13 @@ providers:
     bootstrap: true
     channel: 1.32-classic/stable
     features:
+      load-balancer:
+        enabled: true
+        l2-mode: true
+        cidrs: 10.64.0.0/16
       local-storage:
+      network:
+      dns:
     bootstrap-constraints:
       root-disk: 4G
 
@@ -20,8 +26,6 @@ host:
     - pipx
     - jq
   snaps:
-    charmcraft:
-      channel: latest/stable
     microceph:
       channel: squid/stable
     spark-client:
