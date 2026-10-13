@@ -103,48 +103,12 @@ def client_application_authorization_policy_exists(
     client_app_namespace: str,
     client_app_service_account: str,
 ) -> bool:
-    """Whether a policy in the client app namespace allows the workload SA to reach it.
-
-    Matches on behaviour: an ALLOW policy in `client_app_namespace` selecting the
-    client application pods and allowing the workload service account principal.
-    """
-    principal = _workload_principal(workload_namespace, workload_service_account)
-    for policy in lightkube_client.list(AuthorizationPolicy, namespace=client_app_namespace):
-        spec = policy.spec or {}
-        if not _is_managed_by_integration_hub(policy):
-            continue
-        if spec.get("action") != "ALLOW":
-            continue
-        if (
-            _policy_selector_labels(policy).get("app.kubernetes.io/name")
-            != client_app_service_account
-        ):
-            continue
-        if principal in _policy_principals(policy):
-            return True
-    return False
-
-
-def client_application_to_driver_authorization_policy_exists(
-    lightkube_client: Client,
-    workload_namespace: str,
-    workload_service_account: str,
-    client_app_namespace: str,
-    client_app_service_account: str,
-) -> bool:
-    """Whether a policy in the workload namespace lets the client app reach the driver.
+    """Whether an authorization policy in the workload namespace lets the client app reach the driver.
 
     Matches on behaviour: an ALLOW policy in `workload_namespace` owned by
     `workload_service_account` (via the workload-service-account owner label),
     selecting the Spark driver pods (`spark-role=driver`) and allowing the client
-    application service account principal. This is the separate per-relation
-    policy that grants client-app access to the driver, distinct from the base
-    driver policy which only allows the workload service account.
-
-    Scoping by the owner label is required because, under wildcard monitoring,
-    one app→driver policy is created per monitored workload SA and they all
-    allow the same client-app principal; without the label filter this would
-    also match other workloads' policies.
+    application service account principal.
     """
     principal = _workload_principal(client_app_namespace, client_app_service_account)
     for policy in lightkube_client.list(AuthorizationPolicy, namespace=workload_namespace):
