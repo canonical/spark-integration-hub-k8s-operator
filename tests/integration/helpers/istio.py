@@ -26,7 +26,7 @@ AuthorizationPolicy = create_namespaced_resource(
 )
 
 # Owner label the integration hub stamps on every policy it creates for a workload.
-WORKLOAD_SERVICE_ACCOUNT_LABEL = "integration-hub/workload-service-account"
+WORKLOAD_SERVICE_ACCOUNT_LABEL = "spark.canonical.com/workload-service-account"
 
 
 def _workload_principal(workload_namespace: str, workload_service_account: str) -> str:
