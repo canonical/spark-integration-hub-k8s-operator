@@ -1601,14 +1601,14 @@ files = [
 
 [[package]]
 name = "spark8t"
-version = "1.5.0"
+version = "1.6.0"
 description = "This project provides some utilities function and CLI commands to run Spark on K8s."
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "spark8t-1.5.0-py3-none-any.whl", hash = "sha256:8e7bf5ebf0326fcf8a539766f9384f1fbfa093700410e69b7a54a5db6796370b"},
-    {file = "spark8t-1.5.0.tar.gz", hash = "sha256:71b8fef88a380b358842134a7c477c23359bf45f773da68c3271a177a8e30d85"},
+    {file = "spark8t-1.6.0-py3-none-any.whl", hash = "sha256:c5632ef5f9cd60fa7337a7a803d5a5048334344eb68d5b24b1581c2d1a61ce54"},
+    {file = "spark8t-1.6.0.tar.gz", hash = "sha256:aa2bb26aa4ad2f1f3fef1ca3cbb0e6bb62fcea054b82e002165542d2b1ebdea5"},
 ]
 
 [package.dependencies]
@@ -2278,4 +2278,4 @@ h11 = ">=0.16.0,<1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">3.10,<4.0"
-content-hash = "e24a1377921ec7f8ed6d5e14f89e1a70eb339d316744918a542ef28a8708907d"
+content-hash = "21bf4b160acf54f20afb0e08e2bd4cd5bc478ffdc58e2af09cdeda8246b2a9a4"
