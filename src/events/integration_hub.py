@@ -15,7 +15,7 @@ from ops import (
 )
 
 from common.utils import WithLogging
-from constants import INTEGRATION_HUB_LABEL
+from constants import INTEGRATION_HUB_LABEL, SPARK_UI_PORT
 from core.config import CharmConfig
 from core.context import Context
 from core.workload import IntegrationHubWorkloadBase
@@ -52,6 +52,9 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
 
     def _remove_resources(self, _: StopEvent) -> None:
         """Handle the stop event."""
+        if self.workload.ready():
+            self.workload.stop()
+        self.k8s_manager.delete_ui_resources(self.context.ui_owner)
         try:
             hub_conf: CharmConfig = self.charm.config  # type: ignore
             self.k8s_manager.delete_secrets(hub_conf.monitored_service_accounts)
@@ -61,6 +64,7 @@ class IntegrationHubEvents(BaseEventHandler, WithLogging):
     @defer_when_not_ready
     def _on_integration_hub_pebble_ready(self, _: PebbleReadyEvent) -> None:
         """Handle on Pebble ready event."""
+        self.charm.unit.set_ports(SPARK_UI_PORT)
         self.integration_hub.update()
 
     @defer_when_not_ready

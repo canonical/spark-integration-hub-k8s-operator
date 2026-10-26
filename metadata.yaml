@@ -46,6 +46,16 @@ peers:
     interface: hub-peers
 
 requires:
+  ingress:
+    interface: ingress
+    limit: 1
+    optional: true
+    description: Expose the Spark application index and allocate its application URL prefix.
+  gateway-metadata:
+    interface: gateway_metadata
+    limit: 1
+    optional: true
+    description: Gateway resource and workload identity used for live Spark UI routes.
   s3-credentials:
     interface: s3
     optional: true

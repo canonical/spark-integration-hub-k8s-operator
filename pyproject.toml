@@ -14,6 +14,7 @@ spark8t = "^1.6.0"
 object-storage-charmlib = "^1.0.0"
 charmlibs-interfaces-service-mesh = "^1.0.2"
 canonical-service-mesh = "^0.3.1"
+charmlibs-interfaces-gateway-metadata = ">=1,<2"
 
 [tool.poetry.group.charm-libs.dependencies]
 ops = "^3.0"
@@ -93,6 +94,7 @@ module = [
   "charms.prometheus_pushgateway_k8s.*",
   "charms.loki_k8s.*",
   "charms.spark_integration_hub_k8s.*",
+  "charms.traefik_k8s.*",
   "spark8t.*",
 ]
 ignore_missing_imports = true

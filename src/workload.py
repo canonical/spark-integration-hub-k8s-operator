@@ -23,6 +23,8 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
     CONTAINER_LAYER = "integration-hub"
 
     INTEGRATION_HUB_SERVICE = "integration-hub"
+    UI_SERVICE = "spark-ui"
+    UI_INDEX_SERVICE = "spark-ui-index"
 
     CONFS_PATH = "/etc/hub/conf"
     ENV_FILE = "/etc/hub/environment"
@@ -70,6 +72,22 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
 
         # Temporal fix to restart the container when the watch process fails
         layer["services"][self.INTEGRATION_HUB_SERVICE]["on-failure"] = "restart"
+        layer["services"][self.UI_SERVICE] = {
+            "override": "replace",
+            "summary": "Spark driver Pod watcher and UI route controller",
+            "command": "python3 -m app.spark_ui",
+            "startup": "enabled",
+            "on-failure": "restart",
+            "environment": self.envs,
+        }
+        layer["services"][self.UI_INDEX_SERVICE] = {
+            "override": "replace",
+            "summary": "Read-only Spark application index",
+            "command": "python3 -m app.spark_ui_index",
+            "startup": "enabled",
+            "on-failure": "restart",
+            "environment": self.envs,
+        }
 
         self.container.add_layer(self.CONTAINER_LAYER, cast(LayerDict, layer), combine=True)
 
@@ -79,10 +97,16 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
 
         # Push an updated layer with the new config
         self.container.restart(self.INTEGRATION_HUB_SERVICE)
+        self.container.restart(self.UI_SERVICE)
+        self.container.restart(self.UI_INDEX_SERVICE)
 
     def stop(self) -> None:
         """Execute business-logic for stopping the workload."""
         self.container.stop(self.INTEGRATION_HUB_SERVICE)
+        if self.UI_SERVICE in self.container.get_plan().services:
+            self.container.stop(self.UI_SERVICE)
+        if self.UI_INDEX_SERVICE in self.container.get_plan().services:
+            self.container.stop(self.UI_INDEX_SERVICE)
 
     def ready(self) -> bool:
         """Check whether the service is ready to be used."""
@@ -98,7 +122,16 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
             self.logger.debug(f"Service {self.INTEGRATION_HUB_SERVICE} not running")
             return False
 
-        return service.is_running()
+        if not service.is_running():
+            return False
+        try:
+            return all(
+                self.container.get_service(name).is_running()
+                for name in (self.UI_SERVICE, self.UI_INDEX_SERVICE)
+            )
+        except ModelError:
+            self.logger.debug("Spark UI service has not been configured yet")
+            return False
 
     def set_environment(self, env: dict[str, str | None]) -> None:
         """Set environment for workload."""
