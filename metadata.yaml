@@ -38,14 +38,24 @@ resources:
     type: oci-image
     description: OCI image for the Spark Integration Hub Charm
     # oci-tag=3-22.04_edge
-    upstream-source: ghcr.io/canonical/spark-integration-hub@sha256:0a13097c10bcb245801b3c0040b8a83123274a3351e7ae25f983dfefab233973 
-
+    # upstream-source: ghcr.io/canonical/spark-integration-hub@sha256:0a13097c10bcb245801b3c0040b8a83123274a3351e7ae25f983dfefab233973 
+    upstream-source: ghcr.io/theoctober19th/spark-integration-hub:poc-spark-ui1
 
 peers:
   hub-peers:
     interface: hub-peers
 
 requires:
+  ingress:
+    interface: ingress
+    limit: 1
+    optional: true
+    description: Expose the Spark application index and allocate its application URL prefix.
+  gateway-metadata:
+    interface: gateway_metadata
+    limit: 1
+    optional: true
+    description: Gateway resource and workload identity used for live Spark UI routes.
   s3-credentials:
     interface: s3
     optional: true

@@ -29,6 +29,11 @@ class IntegrationHubPaths:
         return self.conf_path / "allowlist"
 
     @property
+    def ui_config(self) -> Path:
+        """Return the live UI controller configuration path."""
+        return self.conf_path / "spark-ui.json"
+
+    @property
     def cert(self):
         """Return the path of the certificate file."""
         return self.conf_path / "ca.pem"

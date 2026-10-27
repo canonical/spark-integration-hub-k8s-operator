@@ -5,7 +5,7 @@
 """Charmed Kubernetes Operator for the Spark Integration Hub Charm."""
 
 from charms.data_platform_libs.v1.data_models import TypedCharmBase
-from ops import CollectStatusEvent, main
+from ops import ActiveStatus, CollectStatusEvent, StatusBase, main
 
 from common.utils import WithLogging
 from constants import CONTAINER, PEBBLE_USER
@@ -13,6 +13,7 @@ from core.config import CharmConfig
 from core.context import Context, Status
 from core.domain import User
 from events.azure_storage import AzureStorageEvents
+from events.ingress import IngressEvents
 from events.integration_hub import IntegrationHubEvents
 from events.logging import LoggingEvents
 from events.provider import SparkServiceAccountProviderEvents
@@ -44,9 +45,21 @@ class SparkIntegrationHub(TypedCharmBase[CharmConfig], WithLogging):
         self.integration_hub = IntegrationHubEvents(self, self.context, self.workload)
         self.logging = LoggingEvents(self, self.context, self.workload)
         self.service_mesh = ServiceMeshEvents(self, self.context, self.workload)
+        self.ingress = IngressEvents(self, self.context, self.workload)
 
         self.framework.observe(self.on.collect_unit_status, self._on_collect_status)
         self.framework.observe(self.on.collect_app_status, self._on_collect_status)
+
+    def _ui_status(self) -> StatusBase:
+        """Report incomplete ingress wiring or advertise the application URL base."""
+        ingress, gateway = self.context.ingress, self.context.gateway_metadata
+        if bool(self.context.ingress_relation) != bool(self.context.gateway_metadata_relation):
+            return Status.MISSING_UI_RELATION.value
+        if self.context.ingress_relation and not (ingress and gateway):
+            return Status.WAITING_UI_RELATIONS.value
+        if ingress and gateway:
+            return ActiveStatus(f"Serving Spark UI index at {ingress.url}")
+        return Status.ACTIVE.value
 
     def _on_collect_status(self, event: CollectStatusEvent) -> None:
         """Set the status of the app/unit.
@@ -77,7 +90,7 @@ class SparkIntegrationHub(TypedCharmBase[CharmConfig], WithLogging):
         if not self.workload.active():
             event.add_status(Status.NOT_RUNNING.value)
 
-        event.add_status(Status.ACTIVE.value)
+        event.add_status(self._ui_status())
 
 
 if __name__ == "__main__":  # pragma: nocover
