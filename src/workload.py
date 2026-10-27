@@ -23,8 +23,10 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
     CONTAINER_LAYER = "integration-hub"
 
     INTEGRATION_HUB_SERVICE = "integration-hub"
-    UI_SERVICE = "spark-ui"
-    UI_INDEX_SERVICE = "spark-ui-index"
+    UI_CONTROLLER_SERVICE = "spark-ui-controller"
+    UI_INDEX_SERVER_SERVICE = "spark-ui-index-server"
+
+    SERVICES = (INTEGRATION_HUB_SERVICE, UI_CONTROLLER_SERVICE, UI_INDEX_SERVER_SERVICE)
 
     CONFS_PATH = "/etc/hub/conf"
     ENV_FILE = "/etc/hub/environment"
@@ -55,7 +57,16 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
             "services": {
                 self.INTEGRATION_HUB_SERVICE: {
                     "environment": self.envs,
-                }
+                },
+                # Defined and disabled by default in the rock; the charm enables and configures them.
+                self.UI_CONTROLLER_SERVICE: {
+                    "startup": "enabled",
+                    "environment": self.envs,
+                },
+                self.UI_INDEX_SERVER_SERVICE: {
+                    "startup": "enabled",
+                    "environment": self.envs,
+                },
             },
         }
         self.logger.info(f"Layer: {json.dumps(layer)}")
@@ -65,29 +76,13 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
         """Execute business-logic for starting the workload."""
         layer: dict = dict(self.container.get_plan().to_dict())
 
-        layer["services"][self.INTEGRATION_HUB_SERVICE] = (
-            layer["services"][self.INTEGRATION_HUB_SERVICE]
-            | self._spark_integration_hub_layer["services"][self.INTEGRATION_HUB_SERVICE]
-        )
+        for service in self.SERVICES:
+            layer["services"][service] = (
+                layer["services"][service] | self._spark_integration_hub_layer["services"][service]
+            )
 
         # Temporal fix to restart the container when the watch process fails
         layer["services"][self.INTEGRATION_HUB_SERVICE]["on-failure"] = "restart"
-        layer["services"][self.UI_SERVICE] = {
-            "override": "replace",
-            "summary": "Spark driver Pod watcher and UI route controller",
-            "command": "python3 -m app.spark_ui",
-            "startup": "enabled",
-            "on-failure": "restart",
-            "environment": self.envs,
-        }
-        layer["services"][self.UI_INDEX_SERVICE] = {
-            "override": "replace",
-            "summary": "Read-only Spark application index",
-            "command": "python3 -m app.spark_ui_index",
-            "startup": "enabled",
-            "on-failure": "restart",
-            "environment": self.envs,
-        }
 
         self.container.add_layer(self.CONTAINER_LAYER, cast(LayerDict, layer), combine=True)
 
@@ -96,17 +91,11 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
             raise FileNotFoundError(self.paths.spark_properties)
 
         # Push an updated layer with the new config
-        self.container.restart(self.INTEGRATION_HUB_SERVICE)
-        self.container.restart(self.UI_SERVICE)
-        self.container.restart(self.UI_INDEX_SERVICE)
+        self.container.restart(*self.SERVICES)
 
     def stop(self) -> None:
         """Execute business-logic for stopping the workload."""
-        self.container.stop(self.INTEGRATION_HUB_SERVICE)
-        if self.UI_SERVICE in self.container.get_plan().services:
-            self.container.stop(self.UI_SERVICE)
-        if self.UI_INDEX_SERVICE in self.container.get_plan().services:
-            self.container.stop(self.UI_INDEX_SERVICE)
+        self.container.stop(*self.SERVICES)
 
     def ready(self) -> bool:
         """Check whether the service is ready to be used."""
@@ -125,10 +114,7 @@ class IntegrationHub(IntegrationHubWorkloadBase, K8sWorkload, WithLogging):
         if not service.is_running():
             return False
         try:
-            return all(
-                self.container.get_service(name).is_running()
-                for name in (self.UI_SERVICE, self.UI_INDEX_SERVICE)
-            )
+            return all(self.container.get_service(name).is_running() for name in self.SERVICES[1:])
         except ModelError:
             self.logger.debug("Spark UI service has not been configured yet")
             return False

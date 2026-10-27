@@ -56,12 +56,18 @@ class IntegrationHubConfig(WithLogging):
     ):
         self.context = context
         self.service_mesh = service_mesh
-        self.ingress = IngressManager(context.ui_owner, ingress, gateway)
+        self._ingress = ingress
+        self._gateway = gateway
         self.s3 = S3Manager(s3) if s3 else None
         self.azure_storage = AzureStorageManager(azure_storage) if azure_storage else None
         self.pushgateway = pushgateway
         self.hub_conf = hub_conf
         self.loki_url = loki_url
+
+    @property
+    def ingress(self) -> IngressManager:
+        """Return the manager of the live Spark UI exposure."""
+        return IngressManager(self.context.ui_owner, self._ingress, self._gateway)
 
     @staticmethod
     def _ssl_enabled(endpoint: str | None) -> str:
