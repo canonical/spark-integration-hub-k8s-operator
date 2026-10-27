@@ -61,7 +61,9 @@ class KubernetesManager(WithLogging):
         try:
             objects = list(
                 self.client.list(
-                    resource, namespace="*", labels={"spark.canonical.com/ui-hub": owner}
+                    resource,
+                    namespace="*",
+                    labels={"spark.canonical.com/ui-integration-hub": owner},
                 )
             )
         except HTTPStatusError as exc:
