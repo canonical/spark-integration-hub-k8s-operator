@@ -58,7 +58,7 @@ class SparkIntegrationHub(TypedCharmBase[CharmConfig], WithLogging):
         if self.context.ingress_relation and not (ingress and gateway):
             return Status.WAITING_UI_RELATIONS.value
         if ingress and gateway:
-            return ActiveStatus(f"Spark UI index: {ingress.url}")
+            return ActiveStatus(f"Serving Spark UI index at {ingress.url}")
         return Status.ACTIVE.value
 
     def _on_collect_status(self, event: CollectStatusEvent) -> None:
