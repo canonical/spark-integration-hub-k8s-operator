@@ -9,6 +9,7 @@ from hashlib import sha256
 
 from charmlibs.interfaces.gateway_metadata import GatewayMetadata
 from charms.data_platform_libs.v0.data_interfaces import DataPeerData
+from charms.oauth2_proxy_k8s.v0.auth_proxy import AuthProxyConfig
 from charms.spark_integration_hub_k8s.v0.spark_service_account import (
     SparkServiceAccountProviderData,
 )
@@ -23,6 +24,8 @@ from constants import (
     INGRESS_RELATION_NAME,
     INTEGRATION_HUB_REL,
     LOGGING_RELATION_NAME,
+    OAUTH2_PROXY_HEADERS,
+    OAUTH2_PROXY_RELATION_NAME,
     PEER_REL,
     PUSHGATEWAY,
     S3_RELATION_NAME,
@@ -97,6 +100,30 @@ class Context(WithLogging):
     def ingress_relation(self) -> Relation | None:
         """Return the ingress relation."""
         return self.model.get_relation(INGRESS_RELATION_NAME)
+
+    @property
+    def oauth2_proxy_relation(self) -> Relation | None:
+        """Return the optional OAuth2-proxy relation."""
+        return self.model.get_relation(OAUTH2_PROXY_RELATION_NAME)
+
+    @property
+    def ui_authorized_users(self) -> str | None:
+        """Return the UI allowlist only when authentication is integrated."""
+        return (
+            str(self.charm.config["ui-authorized-users"]) if self.oauth2_proxy_relation else None
+        )
+
+    @property
+    def oauth2_proxy_config(self) -> AuthProxyConfig | None:
+        """Publish the protected UI base URL and identity headers."""
+        if not self.oauth2_proxy_relation:
+            return None
+        ingress = self.ingress
+        return AuthProxyConfig(
+            protected_urls=[str(ingress.url)] if ingress else [],
+            allowed_endpoints=[],
+            headers=OAUTH2_PROXY_HEADERS,
+        )
 
     @property
     def gateway_metadata_relation(self) -> Relation | None:
@@ -204,6 +231,7 @@ class Status(Enum):
         "Live Spark UI requires both ingress and gateway-metadata from the same Istio ingress."
     )
     WAITING_UI_RELATIONS = MaintenanceStatus("Waiting for ingress URL and Gateway metadata")
+    MISSING_AUTH_INGRESS = BlockedStatus("Missing ingress integration for OAuth2 proxy")
     NOT_TRUSTED = BlockedStatus("Run `juju trust {app} --scope=cluster`. Needed to run.")
     MULTIPLE_OBJECT_STORAGE_RELATIONS = BlockedStatus(
         "Integration Hub can be related to only one storage backend at a time."

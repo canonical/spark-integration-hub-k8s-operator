@@ -12,10 +12,17 @@ from charms.traefik_k8s.v2.ingress import IngressUrl
 class IngressManager:
     """Translate ingress and gateway data into Spark and UI-controller configuration."""
 
-    def __init__(self, owner: str, ingress: IngressUrl | None, gateway: GatewayMetadata | None):
+    def __init__(
+        self,
+        owner: str,
+        ingress: IngressUrl | None,
+        gateway: GatewayMetadata | None,
+        authorized_users: str | None = None,
+    ):
         self.owner = owner
         self.ingress = ingress
         self.gateway = gateway
+        self.authorized_users = authorized_users
 
     @property
     def config(self) -> dict:
@@ -27,6 +34,7 @@ class IngressManager:
             if self.ingress and self.gateway
             else None,
             "gateway": self.gateway.model_dump() if enabled and self.gateway else None,
+            "authorized_users": self.authorized_users,
         }
 
     @property

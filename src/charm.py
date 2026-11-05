@@ -52,6 +52,8 @@ class SparkIntegrationHub(TypedCharmBase[CharmConfig], WithLogging):
 
     def _ui_status(self) -> StatusBase:
         """Report incomplete ingress wiring or advertise the application URL base."""
+        if self.context.oauth2_proxy_relation and not self.context.ingress_relation:
+            return Status.MISSING_AUTH_INGRESS.value
         ingress, gateway = self.context.ingress, self.context.gateway_metadata
         if bool(self.context.ingress_relation) != bool(self.context.gateway_metadata_relation):
             return Status.MISSING_UI_RELATION.value

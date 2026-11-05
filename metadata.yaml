@@ -46,6 +46,11 @@ peers:
     interface: hub-peers
 
 requires:
+  oauth2-proxy:
+    interface: auth_proxy
+    limit: 1
+    optional: true
+    description: Authenticate access to the Spark UI index and live application UIs.
   ingress:
     interface: ingress
     limit: 1
