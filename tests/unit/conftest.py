@@ -50,6 +50,18 @@ def integration_hub_container(tmp_path):
                         "SPARK_PROPERTIES_FILE": "/etc/hub/conf/spark-properties.conf"
                     },
                 },
+                "spark-ui-controller": {
+                    "override": "replace",
+                    "summary": "Spark driver Pod watcher and UI route controller",
+                    "command": "python3 -m app.ui_controller",
+                    "startup": "disabled",
+                },
+                "spark-ui-index-server": {
+                    "override": "replace",
+                    "summary": "Read-only Spark application index",
+                    "command": "python3 -m app.ui_server",
+                    "startup": "disabled",
+                },
             },
         }
     )
@@ -60,7 +72,11 @@ def integration_hub_container(tmp_path):
         name=CONTAINER,
         can_connect=True,
         layers={"base": layer},
-        service_statuses={"integration-hub": pebble.ServiceStatus.ACTIVE},
+        service_statuses={
+            "integration-hub": pebble.ServiceStatus.ACTIVE,
+            "spark-ui-controller": pebble.ServiceStatus.ACTIVE,
+            "spark-ui-index-server": pebble.ServiceStatus.ACTIVE,
+        },
         mounts={"etc": etc},
     )
 

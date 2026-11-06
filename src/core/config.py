@@ -21,6 +21,7 @@ class CharmConfig(BaseConfigModel):
     executor_pod_template: str
     monitored_service_accounts: list[str] = Field(default=[""])
     spark_image: str
+    ui_authorized_users: str = "*"
 
     @validator("monitored_service_accounts", pre=True)
     @classmethod

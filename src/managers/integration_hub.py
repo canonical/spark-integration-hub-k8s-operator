@@ -4,10 +4,14 @@
 
 """Integration Hub manager."""
 
+import json
 import os
 import re
 from pathlib import Path
 from urllib.parse import ParseResult, urlparse
+
+from charmlibs.interfaces.gateway_metadata import GatewayMetadata
+from charms.traefik_k8s.v2.ingress import IngressUrl
 
 from common.utils import (
     WithLogging,
@@ -15,7 +19,12 @@ from common.utils import (
     get_hub_truststore_secret_manifest,
     is_proxy_skipped,
 )
-from constants import ISTIO_AMBIENT_LABEL_KEY, ISTIO_AMBIENT_LABEL_VALUE, TRUSTSTORE_MOUNT_BASE
+from constants import (
+    ISTIO_AMBIENT_LABEL_KEY,
+    ISTIO_AMBIENT_LABEL_VALUE,
+    OAUTH2_PROXY_HEADERS,
+    TRUSTSTORE_MOUNT_BASE,
+)
 from core.config import CharmConfig
 from core.context import Context
 from core.domain import (
@@ -26,6 +35,7 @@ from core.domain import (
 )
 from core.workload import IntegrationHubWorkloadBase
 from managers.azure_storage import AzureStorageManager
+from managers.ingress import IngressManager
 from managers.s3 import S3Manager
 from managers.tls import TLSManager
 
@@ -45,13 +55,40 @@ class IntegrationHubConfig(WithLogging):
         pushgateway: PushGatewayInfo | None,
         hub_conf: CharmConfig,
         loki_url: LokiURL | None,
+        service_mesh: bool = False,
+        ingress: IngressUrl | None = None,
+        gateway: GatewayMetadata | None = None,
+        ui_authorized_users: str | None = None,
     ):
         self.context = context
+        self.service_mesh = service_mesh
+        self._ingress = ingress
+        self._gateway = gateway
+        self.ui_authorized_users = ui_authorized_users
         self.s3 = S3Manager(s3) if s3 else None
         self.azure_storage = AzureStorageManager(azure_storage) if azure_storage else None
         self.pushgateway = pushgateway
         self.hub_conf = hub_conf
         self.loki_url = loki_url
+
+    @property
+    def ingress(self) -> IngressManager:
+        """Return the manager of the live Spark UI exposure."""
+        return IngressManager(
+            self.context.ui_owner, self._ingress, self._gateway, self.ui_authorized_users
+        )
+
+    @property
+    def _auth_conf(self) -> dict[str, str]:
+        """Use the History Server's servlet filter for live application UIs."""
+        if self.ui_authorized_users is None:
+            return {}
+        filter_class = "com.canonical.charmedspark.history.AuthorizationServletFilter"
+        return {
+            "spark.ui.filters": filter_class,
+            f"spark.{filter_class}.param.authorizedParameter": OAUTH2_PROXY_HEADERS[1],
+            f"spark.{filter_class}.param.authorizedEntities": self.ui_authorized_users,
+        }
 
     @staticmethod
     def _ssl_enabled(endpoint: str | None) -> str:
@@ -234,7 +271,7 @@ class IntegrationHubConfig(WithLogging):
                     "spark.kubernetes.container.image": spark_image,
                 }
             )
-        if self.context.service_mesh_relation:
+        if self.service_mesh:
             hub_conf.update(
                 {
                     f"spark.kubernetes.driver.label.{ISTIO_AMBIENT_LABEL_KEY}": ISTIO_AMBIENT_LABEL_VALUE,
@@ -253,6 +290,8 @@ class IntegrationHubConfig(WithLogging):
             | self._pushgateway_conf
             | self._hub_conf
             | self._log_forwarding_conf
+            | self.ingress.spark_properties
+            | self._auth_conf
         )
         return to_return
 
@@ -343,12 +382,20 @@ class IntegrationHubManager(WithLogging):
         set_azure_storage_none: bool = False,
         set_pushgateway_none: bool = False,
         set_loki_url_none: bool = False,
+        set_service_mesh_none: bool = False,
+        set_ingress_none: bool = False,
+        set_gateway_metadata_none: bool = False,
+        set_oauth2_proxy_none: bool = False,
     ) -> None:
         """Update the Integration Hub service if needed."""
         s3 = None if set_s3_none else self.context.s3
         azure_storage = None if set_azure_storage_none else self.context.azure_storage
         pushgateway = None if set_pushgateway_none else self.context.pushgateway
         loki_url = None if set_loki_url_none else self.context.loki_url
+        service_mesh = not set_service_mesh_none and bool(self.context.service_mesh_relation)
+        ingress = None if set_ingress_none else self.context.ingress
+        gateway = None if set_gateway_metadata_none else self.context.gateway_metadata
+        ui_authorized_users = None if set_oauth2_proxy_none else self.context.ui_authorized_users
         hub_conf = self.config
 
         self.logger.debug("Update")
@@ -365,13 +412,26 @@ class IntegrationHubManager(WithLogging):
             self.tls.import_ca("\n".join(s3.tls_ca_chain))
 
         config = IntegrationHubConfig(
-            self.context, s3, azure_storage, pushgateway, hub_conf, loki_url
+            self.context,
+            s3,
+            azure_storage,
+            pushgateway,
+            hub_conf,
+            loki_url,
+            service_mesh,
+            ingress,
+            gateway,
+            ui_authorized_users,
         )
 
         if any(
             [
                 self._compare_and_update_file(
                     config.contents, str(self.workload.paths.spark_properties)
+                ),
+                self._compare_and_update_file(
+                    json.dumps(config.ingress.config, sort_keys=True),
+                    str(self.workload.paths.ui_config),
                 ),
                 self._compare_and_update_file(
                     "\n".join(
@@ -400,17 +460,23 @@ class IntegrationHubManager(WithLogging):
                 # client relation goes away (set_environment merges and only removes Nones).
                 "SERVICE_MESH_ENABLED": None,
                 "CLIENT_APP_SERVICE_ACCOUNTS": None,
+                "SPARK_UI_CONFIG": str(self.workload.paths.ui_config),
             }
-            if self.context.service_mesh_relation:
+            if service_mesh:
                 environ["SERVICE_MESH_ENABLED"] = "true"
-                if self.context.client_relations:
-                    # It is assumed that Kyuubi is deployed in the same model as this charm (Integration Hub),
-                    # and hence the namespace of Kyuubi pod is the same as the current model name.
-                    client_app_service_accounts = [
-                        f"{self.context.model.name}:{relation.app.name}"
-                        for relation in self.context.client_relations
-                    ]
-                    environ["CLIENT_APP_SERVICE_ACCOUNTS"] = ",".join(client_app_service_accounts)
+                # Client charms are assumed to run in this model; the gateway may not.
+                client_app_service_accounts = {
+                    f"{self.context.model.name}:{relation.app.name}"
+                    for relation in self.context.client_relations
+                }
+                if ingress and gateway:
+                    client_app_service_accounts.add(
+                        f"{gateway.namespace}:{gateway.service_account}"
+                    )
+                if client_app_service_accounts:
+                    environ["CLIENT_APP_SERVICE_ACCOUNTS"] = ",".join(
+                        sorted(client_app_service_accounts)
+                    )
             self.workload.set_environment(environ)
             self.workload.restart()
 

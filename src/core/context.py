@@ -5,19 +5,27 @@
 """Charm Context definition and parsing logic."""
 
 from enum import Enum
+from hashlib import sha256
 
+from charmlibs.interfaces.gateway_metadata import GatewayMetadata
 from charms.data_platform_libs.v0.data_interfaces import DataPeerData
+from charms.oauth2_proxy_k8s.v0.auth_proxy import AuthProxyConfig
 from charms.spark_integration_hub_k8s.v0.spark_service_account import (
     SparkServiceAccountProviderData,
 )
+from charms.traefik_k8s.v2.ingress import IngressProviderAppData, IngressUrl
 from object_storage import AzureStorageRequirer, S3Requirer
 from ops import ActiveStatus, BlockedStatus, CharmBase, MaintenanceStatus, Relation
 
 from common.utils import WithLogging
 from constants import (
     AZURE_RELATION_NAME,
+    GATEWAY_METADATA_RELATION_NAME,
+    INGRESS_RELATION_NAME,
     INTEGRATION_HUB_REL,
     LOGGING_RELATION_NAME,
+    OAUTH2_PROXY_HEADERS,
+    OAUTH2_PROXY_RELATION_NAME,
     PEER_REL,
     PUSHGATEWAY,
     S3_RELATION_NAME,
@@ -86,7 +94,67 @@ class Context(WithLogging):
     @property
     def service_mesh_relation(self) -> Relation | None:
         """The Service Mesh relation."""
-        return self.charm.model.get_relation(SERVICE_MESH_RELATION_NAME)
+        return self.model.get_relation(SERVICE_MESH_RELATION_NAME)
+
+    @property
+    def ingress_relation(self) -> Relation | None:
+        """Return the ingress relation."""
+        return self.model.get_relation(INGRESS_RELATION_NAME)
+
+    @property
+    def oauth2_proxy_relation(self) -> Relation | None:
+        """Return the optional OAuth2-proxy relation."""
+        return self.model.get_relation(OAUTH2_PROXY_RELATION_NAME)
+
+    @property
+    def ui_authorized_users(self) -> str | None:
+        """Return the UI allowlist only when authentication is integrated."""
+        return (
+            str(self.charm.config["ui-authorized-users"]) if self.oauth2_proxy_relation else None
+        )
+
+    @property
+    def oauth2_proxy_config(self) -> AuthProxyConfig | None:
+        """Publish the protected UI base URL and identity headers."""
+        if not self.oauth2_proxy_relation:
+            return None
+        ingress = self.ingress
+        return AuthProxyConfig(
+            protected_urls=[str(ingress.url)] if ingress else [],
+            allowed_endpoints=[],
+            headers=OAUTH2_PROXY_HEADERS,
+        )
+
+    @property
+    def gateway_metadata_relation(self) -> Relation | None:
+        """Return the gateway metadata relation."""
+        return self.model.get_relation(GATEWAY_METADATA_RELATION_NAME)
+
+    @property
+    def ingress(self) -> IngressUrl | None:
+        """Return the URL published by the ingress provider."""
+        relation = self.ingress_relation
+        if not relation or not relation.app:
+            return None
+        return IngressProviderAppData.load(relation.data[relation.app]).ingress
+
+    @property
+    def gateway_metadata(self) -> GatewayMetadata | None:
+        """Return validated Gateway identity data."""
+        relation = self.gateway_metadata_relation
+        if not relation or not relation.app:
+            return None
+        metadata = relation.data[relation.app].get("metadata")
+        return GatewayMetadata.model_validate_json(metadata) if metadata else None
+
+    @property
+    def ui_owner(self) -> str:
+        """Identify resources owned by this hub, including across models."""
+        readable = f"{self.model.name}-{self.model.app.name}"
+        # Kubernetes label values are limited to 63 characters.
+        if len(readable) <= 63:
+            return readable
+        return sha256(readable.encode()).hexdigest()[:16]
 
     @property
     def cluster(self) -> HubCluster:
@@ -159,6 +227,11 @@ class Status(Enum):
     WAITING_PEBBLE = MaintenanceStatus("Waiting for Pebble")
     INVALID_S3_CREDENTIALS = BlockedStatus("Invalid S3 credentials")
     NOT_RUNNING = BlockedStatus("Integration Hub is not running. Please check logs.")
+    MISSING_UI_RELATION = BlockedStatus(
+        "Live Spark UI requires both ingress and gateway-metadata from the same Istio ingress."
+    )
+    WAITING_UI_RELATIONS = MaintenanceStatus("Waiting for ingress URL and Gateway metadata")
+    MISSING_AUTH_INGRESS = BlockedStatus("Missing ingress integration for OAuth2 proxy")
     NOT_TRUSTED = BlockedStatus("Run `juju trust {app} --scope=cluster`. Needed to run.")
     MULTIPLE_OBJECT_STORAGE_RELATIONS = BlockedStatus(
         "Integration Hub can be related to only one storage backend at a time."

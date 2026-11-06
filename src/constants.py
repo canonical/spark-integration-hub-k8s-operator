@@ -20,6 +20,11 @@ LOGGING_RELATION_NAME = "logging"
 SERVICE_MESH_RELATION_NAME = "service-mesh"
 CMR_MESH_RELATION_NAME = "provide-cmr-mesh"
 PEER_REL = "hub-peers"
+INGRESS_RELATION_NAME = "ingress"
+GATEWAY_METADATA_RELATION_NAME = "gateway-metadata"
+OAUTH2_PROXY_RELATION_NAME = "oauth2-proxy"
+OAUTH2_PROXY_HEADERS = ["X-Auth-Request-User", "X-Auth-Request-Email"]
+SPARK_UI_PORT = 8080
 
 TRUSTSTORE_PASSWORD_KEY = "truststore_password"
 TRUSTSTORE_PATH_KEY = "truststore_path"
