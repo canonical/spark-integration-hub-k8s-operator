@@ -2,6 +2,15 @@
 # See LICENSE file for licensing details.
 
 options:
+  ui-authorized-users:
+    type: string
+    default: "*"
+    description: |
+      Comma-separated list of email addresses authorized to view the Spark UI index
+      and live application UIs when integrated with oauth2-proxy.
+      By default all authenticated users (*) are authorized.
+      Changes to application UI permissions apply to newly submitted applications.
+
   enable-dynamic-allocation:
     type: boolean
     description: |

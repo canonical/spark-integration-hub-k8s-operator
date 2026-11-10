@@ -7,6 +7,10 @@ platforms:
   ubuntu@22.04:arm64:
 
 charm-libs:
+  - lib: oauth2_proxy_k8s.auth_proxy
+    version: "0"
+  - lib: traefik_k8s.ingress
+    version: "2"
   - lib: data_platform_libs.data_models
     version: "1"
   - lib: data_platform_libs.data_interfaces
