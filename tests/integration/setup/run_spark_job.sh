@@ -9,5 +9,5 @@ spark-client.spark-submit -v \
   --conf spark.kubernetes.executor.request.cores=0.1 \
   --conf spark.kubernetes.executor.deleteOnTermination=false \
   --class org.apache.spark.examples.SparkPi \
-  local:///opt/spark/examples/jars/spark-examples_2.12-3.5.8.jar \
+  local:///opt/spark/examples/jars/spark-examples_2.12-3.5.9.jar \
   10000
