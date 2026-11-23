@@ -8,12 +8,12 @@ requires-poetry = ">=2.0.0"
 [tool.poetry.dependencies]
 python = ">3.10,<4.0"
 ops = "^3.9.0"
-boto3 = ">=1.43.114,<1.44"
-lightkube = "^1.0.1"
+boto3 = ">=1.44.6,<1.45"
+lightkube = "^1.0.2"
 spark8t = "^1.6.0"
 object-storage-charmlib = "^1.0.0"
 charmlibs-interfaces-service-mesh = "^1.0.2"
-canonical-service-mesh = "^0.3.1"
+canonical-service-mesh = "^0.4.0"
 
 [tool.poetry.group.charm-libs.dependencies]
 ops = "^3.0"
@@ -29,16 +29,16 @@ cosl = "*"
 optional = true
 
 [tool.poetry.group.format.dependencies]
-ruff = ">=0.17.1"
+ruff = ">=0.17.6"
 
 [tool.poetry.group.lint]
 optional = true
 
 [tool.poetry.group.lint.dependencies]
-ruff = ">=0.17.1"
+ruff = ">=0.17.6"
 codespell = ">=2.4.3"
-mypy = "^2.4.0"
-types-boto3 = { extras = ["essentials"], version = ">=1.43.114,<1.44" }
+mypy = "^2.4.1"
+types-boto3 = { extras = ["essentials"], version = ">=1.44.6,<1.45" }
 types-pyyaml = "^6.0.12.20250402"
 types-pygments = "^2.19.0.20250305"
 
@@ -46,7 +46,7 @@ types-pygments = "^2.19.0.20250305"
 optional = true
 
 [tool.poetry.group.unit.dependencies]
-pytest = "^9.1.1"
+pytest = "^9.2.0"
 coverage = { extras = ["toml"], version = ">7.0" }
 ops = { extras = ["testing"], version = "^3.9.0" }
 
@@ -54,7 +54,7 @@ ops = { extras = ["testing"], version = "^3.9.0" }
 optional = true
 
 [tool.poetry.group.integration.dependencies]
-pytest = "^9.1.1"
+pytest = "^9.2.0"
 coverage = { extras = ["toml"], version = ">7.0" }
 tenacity = "^9.2.1"
 jubilant = "^1.14.0"
