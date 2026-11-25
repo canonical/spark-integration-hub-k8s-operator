@@ -14,4 +14,7 @@ charm-libs:
 
 parts:
   charm:
-    plugin: charm
+    plugin: uv
+    source: .
+    build-snaps:
+      - astral-uv
