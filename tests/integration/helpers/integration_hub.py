@@ -160,7 +160,7 @@ def deploy_integration_hub_setup(
     deploy_args = {
         "app": APP_NAME,
         "num_units": 1,
-        "base": "ubuntu@22.04",
+        "base": "ubuntu@26.04",
         "resources": resources,
         "config": {"monitored-service-accounts": monitored_service_accounts},
         "trust": trust,

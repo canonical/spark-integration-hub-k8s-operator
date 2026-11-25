@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   release-checks:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -77,7 +77,7 @@ jobs:
     needs:
       - release-checks
       - ci-tests
-    uses: canonical/data-platform-workflows/.github/workflows/release_charm_edge.yaml@3e06c25ea6d5922a25a96d0c7b6a3c7522e65c9a # v54.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/release_charm_edge.yaml@5539aeb76df18b43f6b10f77bb45e51d6867f554 # v56.0.0
     with:
       track: ${{ needs.release-checks.outputs.track }}
       artifact-prefix: ${{ needs.ci-tests.outputs.artifact-prefix }}
@@ -85,3 +85,4 @@ jobs:
       charmhub-token: ${{ secrets.CHARMHUB_TOKEN_EDGE }}
     permissions:
       contents: write # Needed to create git tags
+    cache-mode: none
